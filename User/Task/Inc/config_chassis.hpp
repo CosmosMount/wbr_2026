@@ -9,7 +9,7 @@
 #define LQR_MAX_LEN_CTRL       0.35f
 #define LQR_LEN_RESOLUTION     0.01f
 
-/*腿长，单位m*/
+/* 腿长，单位m */
 #define VMC_L1 0.150f
 #define VMC_L2 0.270f
 #define VMC_MotorDistance 0.150f
@@ -26,14 +26,25 @@
 #define MAX_HIP_TOR 40.0f
 #define MAX_WHEEL_TOR 15.0f
 
+#define LEG_NORMAL_STEP 0.001f
+#define LEG_JUMP_STEP 0.007f
+
+#define LEG_NORMAL_LEN 0.21f
+#define LEG_JUMP_START_LEN 0.370f
+#define LEG_JUMP_AIR_LEN 0.140f
+
 #ifndef DEBUG
 #define DEBUG
 #endif
 
-typedef enum{
-    ON_GROUND = 0,
-    OFF_GROUND = 1,
-} fly_flag_e;
+typedef enum
+{
+    DONT_JUMP,
+    START_JUMP,
+    EXTEND_LEGS,
+    IN_AIR,
+    LANDING
+}jump_stage_e;
 
 /*底盘运动模式*/
 typedef enum

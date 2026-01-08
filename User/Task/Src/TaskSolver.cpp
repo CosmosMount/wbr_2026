@@ -291,6 +291,14 @@ __attribute__((section(".RAM_D3"))) force_debug_t force_debug;
 
             odom.Reset();
         }
+
+        // LJoint4.currentSet = 0;
+        // LJoint1.currentSet = 0;
+        // RJoint4.currentSet = 0;
+        // RJoint1.currentSet = 0;
+
+        // LWheel.currentSet = 0;
+        // RWheel.currentSet = 0;
         
         LKMotorHandler::Instance()->sendControlData();
         tx_thread_sleep(MIN(1, 1-(tx_time_get()-thread_start_time)));

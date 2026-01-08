@@ -12,10 +12,10 @@ typedef enum {
 }CTRL_STATE;
 
 typedef enum {
-    Closed = 2,
-    Warm = 3,
-    Fire = 1
-}SHOOT_STATE;
+    None = 2,
+    Prepared = 3,
+    Jump = 1
+}JUMP_STATE;
 
 typedef enum {
     SPD,
@@ -29,9 +29,9 @@ typedef enum {
 struct msg_remoter_t 
 {
     CTRL_STATE ctrl_sw;
-    SHOOT_STATE shoot_sw;
+    JUMP_STATE jump_sw;
     CTRL_STATE last_ctrl_sw;
-    SHOOT_STATE last_shoot_sw;
+    JUMP_STATE last_jump_sw;
     float left_x;
     float left_y;
     float right_x;
@@ -138,10 +138,10 @@ struct msg_cmd_t
     float x;
     float v;
     float w;
+    float len;
     float dyaw;
-    float dlen;
     float roll;
     bool move;
-    bool ifjump;
+    bool inair;
     bool ifflip;
 };

@@ -46,7 +46,7 @@ __attribute__((section(".RAM_D3"))) msg_remoter_t debug_remoter;
     /* Slope Updaters */
     SLOPE yaw_updater(0.0f, 0.01f);
     SLOPE v_updater(0.0f,0.005f);
-    SLOPE len_updater(0.13f,0.0001f);
+    SLOPE len_updater(0.13f,LEG_NORMAL_STEP);
 
     /* om publishers */
     om_topic_t *cmd_topic = om_config_topic(nullptr, "ca", "cmd", sizeof(msg_cmd_t));
@@ -61,6 +61,9 @@ __attribute__((section(".RAM_D3"))) msg_remoter_t debug_remoter;
     msg_solver_t solver_fdb{};
     om_suber_t *odom_suber = om_subscribe(om_find_topic("odom", UINT32_MAX));
     msg_odometry_t odom{};
+
+    /* Jump Stage */
+    jump_stage_e jump_stage = DONT_JUMP;
 
     for (;;)
     {
@@ -173,17 +176,77 @@ __attribute__((section(".RAM_D3"))) msg_remoter_t debug_remoter;
             {
                 cmd.v = 0.0f;
                 cmd.w = 0.0f;
-                cmd.dlen = 0.0f;
+                cmd.len = LEG_NORMAL_LEN;
                 cmd.dyaw = 0.0f;
                 cmd.move = false;
+                cmd.inair = false;
             }
             else if (remoter.ctrl_sw == Normal)
             {
                 cmd.move = true;
-                cmd.dyaw = yaw_updater.UpdateVal(-remoter.right_x);
-                cmd.v = v_updater.UpdateVal(remoter.left_y*2.0f);
-                cmd.roll = 0.0f;//remoter.right_x*0.1f;
-                cmd.w = 0.0f;
+                if (remoter.jump_sw == None)
+                {
+                    cmd.dyaw = yaw_updater.UpdateVal(-remoter.right_x);
+                    cmd.v = v_updater.UpdateVal(remoter.left_y*2.0f);
+                    cmd.roll = 0.0f;//remoter.right_x*0.1f;
+                    cmd.len = LEG_NORMAL_LEN;
+                    cmd.w = 0.0f;
+                    cmd.inair = false;
+                }
+                else
+                {
+                    static uint16_t delay_timer;
+                    cmd.dyaw = 0.0f;
+                    cmd.w = 0.0f;
+                    if (remoter.jump_sw == Prepared)
+                    {
+                        cmd.len = LEG_NORMAL_LEN;
+                        cmd.v = v_updater.UpdateVal(remoter.left_y);
+                        cmd.inair = false;
+                        jump_stage = START_JUMP;
+                        delay_timer = 0;
+                        len_updater.SetPath(LEG_JUMP_STEP);
+                    }
+                    else if (remoter.jump_sw == Jump)
+                    {
+                        cmd.v = 0.0f;
+                        if (jump_stage == START_JUMP)
+                        {
+                            cmd.len = len_updater.UpdateVal(LEG_NORMAL_LEN);
+                            if (len_updater.CheckReached())
+                                jump_stage = EXTEND_LEGS;
+                        }
+                        else if (jump_stage == EXTEND_LEGS)
+                        {
+                            cmd.len = len_updater.UpdateVal(LEG_JUMP_START_LEN);
+                            if (++delay_timer == 70)
+                            {
+                                delay_timer = 0;
+                                jump_stage = IN_AIR;
+                            }                                
+                        }
+                        else if (jump_stage == IN_AIR)
+                        {
+                            cmd.inair = true;
+                            cmd.len = len_updater.UpdateVal(LEG_JUMP_AIR_LEN);
+                            if (++delay_timer == 150)
+                            {
+                                delay_timer = 0;
+                                jump_stage = LANDING;
+                            }
+                        }
+                        else if (jump_stage == LANDING)
+                        {
+                            cmd.inair = false;
+                            cmd.len = len_updater.UpdateVal(LEG_NORMAL_LEN);
+                            if (solver_fdb.N > 20.0f)
+                            {
+                                jump_stage = DONT_JUMP;
+                                len_updater.SetPath(LEG_NORMAL_STEP);
+                            }
+                        }
+                    }
+                }
             }
             else if (remoter.ctrl_sw == Spin)
             {

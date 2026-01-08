@@ -78,7 +78,6 @@ float debug_alpha_dot = 0.0f;
     float refX[10] = {0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f};
     lqr_controller.InitMatX(&refX[0], &observedX[0]);
 
-    float lenref = 0.21f;
     float thread_start_time;
 
     /* One Message Initialization */
@@ -156,12 +155,12 @@ float debug_alpha_dot = 0.0f;
                 roll_pd.fdb = ins.roll*DegreeToRad;
                 roll_pd.UpdateResult(ins.gyro_r);
 
-                lleg_len_pd.ref = lenref+0.03f+roll_pd.result;
+                lleg_len_pd.ref = cmd.len+0.03f+roll_pd.result;
                 lleg_len_pd.fdb = solver_fdb.llen;
                 lleg_len_pd.UpdateResult(solver_fdb.llen_dot);
                 pendulum_ctrl.Tl[0] = lleg_len_pd.result;//0.0f;//
 
-                rleg_len_pd.ref = lenref+0.03f-roll_pd.result;
+                rleg_len_pd.ref = cmd.len+0.03f-roll_pd.result;
                 rleg_len_pd.fdb = solver_fdb.rlen;
                 rleg_len_pd.UpdateResult(solver_fdb.rlen_dot);
                 pendulum_ctrl.Tr[0] = rleg_len_pd.result;//0.0f;//
@@ -177,7 +176,7 @@ float debug_alpha_dot = 0.0f;
                 refX[8] = 0.0f;
                 refX[9] = 0.0f;
 
-                lqr_controller.refreshLQRK(solver_fdb.llen, solver_fdb.rlen, solver_fdb.N<20.0f);
+                lqr_controller.refreshLQRK(solver_fdb.llen, solver_fdb.rlen,((solver_fdb.N<20.0f)||cmd.inair));
                 lqr_controller.LQRCal(Tout);
                 pendulum_ctrl.Twl = Tout[0];
                 pendulum_ctrl.Twr = Tout[1];
@@ -198,7 +197,7 @@ float debug_alpha_dot = 0.0f;
         pendulum_debug.Fl = pendulum_ctrl.Tl[0];
         pendulum_debug.Fr = pendulum_ctrl.Tr[0];
         // pendulum_debug.l = lenfdb;
-        pendulum_debug.l_ref = lenref;
+        pendulum_debug.l_ref = cmd.len;
         pendulum_debug.x = odom.x;
         pendulum_debug.xref = refX[0];
         pendulum_debug.v = odom.v;
