@@ -1,19 +1,19 @@
-#include "DM8009.hpp"
+#include "DM8009P.hpp"
 #include "math.hpp"
 
-DM8009::DM8009()
+DM8009P::DM8009P()
 {
-    ControlMode = RELAX_MODE;
-    SpeedSet = 0.0f;
-    PositionSet = 0.0f;
-    MotorFeedback.ID = 0;
-    MotorFeedback.ERR = ERR_DISABLE;
-    MotorFeedback.SpeedFdb = 0.0f;
-    MotorFeedback.PositionFdb = 0.0f;
-    MotorFeedback.TorqueFdb = 0.0f;
-    MotorFeedback.TemMOS = 0.0f;
-    MotorFeedback.TemRotor = 0.0f;
-    // DM8009 的最大最小位置、速度、扭矩值，需要再上位机中设置和确认
+    controlMode = RELAX_MODE;
+    speedSet = 0.0f;
+    positionSet = 0.0f;
+    motorFeedback.ID = 0;
+    motorFeedback.ERR = ERR_DISABLE;
+    motorFeedback.speedFdb = 0.0f;
+    motorFeedback.positionFdb = 0.0f;
+    motorFeedback.torqueFdb = 0.0f;
+    motorFeedback.temMOS = 0.0f;
+    motorFeedback.temRotor = 0.0f;
+    // DM8009P 的最大最小位置、速度、扭矩值，需要再上位机中设置和确认
     P_MAX = 12.5f;
     P_MIN = -12.5f;
 
@@ -22,7 +22,7 @@ DM8009::DM8009()
 
     T_MAX = 54.0f;
     T_MIN = -54.0f;
-    MotorState = MOTOR_OFFLINE;
+    motorState = MOTOR_OFFLINE;
 
     AliveFlag = 0;
     Pre_Flag = 0;
@@ -31,16 +31,16 @@ DM8009::DM8009()
     UpperPosLimit = P_MAX;
 }
 
-DM8009::~DM8009()
+DM8009P::~DM8009P()
 {
 }
 
-void DM8009::SetOutput()
+void DM8009P::SetOutput()
 {
     uint8_t OutputData[8] = {0};
-    uint32_t CAN_ID = this->CAN_ID;
+    uint32_t CAN_ID = this->canId;
 
-    switch (this->ControlMode)
+    switch (this->controlMode)
     {
     case DMMotor::RELAX_MODE:
     {
@@ -53,7 +53,7 @@ void DM8009::SetOutput()
         uint16_t vel_tmp = float_to_uint(0, this->Get_V_MIN(), this->Get_V_MAX(), 12);
         uint16_t kp_tmp = float_to_uint(0, KP_MIN, KP_MAX, 12);
         uint16_t kd_tmp = float_to_uint(0, KD_MIN, KD_MAX, 12);
-        uint16_t tor_tmp = float_to_uint(this->TorqueSet, this->Get_T_MIN(), this->Get_T_MAX(), 12);
+        uint16_t tor_tmp = float_to_uint(this->torqueSet, this->Get_T_MIN(), this->Get_T_MAX(), 12);
         OutputData[0] = (pos_tmp >> 8);
         OutputData[1] = pos_tmp;
         OutputData[2] = (vel_tmp >> 4);
@@ -67,12 +67,12 @@ void DM8009::SetOutput()
 
     case DMMotor::POS_SPD_MODE:
     {
-        this->PositionSet = FloatConstrain(this->PositionSet, this->LowerPosLimit, this->UpperPosLimit);
+        this->positionSet = FloatConstrain(this->positionSet, this->LowerPosLimit, this->UpperPosLimit);
         CAN_ID += 0x100;
         uint8_t *pbuf, *vbuf;
-        float postion_set = this->PositionSet;
+        float postion_set = this->positionSet;
         pbuf = (uint8_t *)&postion_set;
-        vbuf = (uint8_t *)&this->SpeedSet;
+        vbuf = (uint8_t *)&this->speedSet;
         OutputData[0] = *pbuf;
         OutputData[1] = *(pbuf + 1);
         OutputData[2] = *(pbuf + 2);
@@ -87,7 +87,7 @@ void DM8009::SetOutput()
     {
         CAN_ID += 0x200;
         uint8_t *vbuf;
-        vbuf = (uint8_t *)&this->SpeedSet;
+        vbuf = (uint8_t *)&this->speedSet;
         OutputData[0] = *vbuf;
         OutputData[1] = *(vbuf + 1);
         OutputData[2] = *(vbuf + 2);
@@ -104,11 +104,11 @@ void DM8009::SetOutput()
     CAN_Transmit(this->hcan, CAN_ID, OutputData, 8);
 }
 
-void DM8009::ReceiveData(uint8_t *buffer)
+void DM8009P::ReceiveData(uint8_t *buffer)
 {
     this->AliveFlag++; // 电机在线标志
-    this->MotorFeedback.ID = buffer[0] & 0x0F;
-    this->MotorFeedback.ERR = (DMMotor::MotorErrorTypeDef)(buffer[0] >> 4);
+    this->motorFeedback.ID = buffer[0] & 0x0F;
+    this->motorFeedback.ERR = (DMMotor::MotorErrorTypeDef)(buffer[0] >> 4);
 
     // 提取位置、速度、扭矩的整型值
     uint16_t p_int = (buffer[1] << 8) | buffer[2];
@@ -116,25 +116,25 @@ void DM8009::ReceiveData(uint8_t *buffer)
     uint16_t t_int = ((buffer[4] & 0x0F) << 8) | buffer[5];
 
     // 使用 uint_to_float 进行转换
-    this->MotorFeedback.PositionFdb = LoopFloatConstrain(uint_to_float(p_int, this->Get_P_MIN(), this->Get_P_MAX(), 16), this->Get_P_MIN(), this->Get_P_MAX());
-    this->MotorFeedback.PositionFdb = LoopFloatConstrain(uint_to_float(p_int, this->Get_P_MIN(), this->Get_P_MAX(), 16), -Pi, Pi);
-    this->MotorFeedback.SpeedFdb = uint_to_float(v_int, this->Get_V_MIN(), this->Get_V_MAX(), 12);
-    this->MotorFeedback.TorqueFdb = uint_to_float(t_int, this->Get_T_MIN(), this->Get_T_MAX(), 12);
+    this->motorFeedback.positionFdb = LoopFloatConstrain(uint_to_float(p_int, this->Get_P_MIN(), this->Get_P_MAX(), 16), this->Get_P_MIN(), this->Get_P_MAX());
+    this->motorFeedback.positionFdb = LoopFloatConstrain(uint_to_float(p_int, this->Get_P_MIN(), this->Get_P_MAX(), 16), -Pi, Pi);
+    this->motorFeedback.speedFdb = uint_to_float(v_int, this->Get_V_MIN(), this->Get_V_MAX(), 12);
+    this->motorFeedback.torqueFdb = uint_to_float(t_int, this->Get_T_MIN(), this->Get_T_MAX(), 12);
     // 温度信息
-    this->MotorFeedback.TemMOS = buffer[6];
-    this->MotorFeedback.TemRotor = buffer[7];
+    this->motorFeedback.temMOS = buffer[6];
+    this->motorFeedback.temRotor = buffer[7];
 }
 
-DM8009::MotorStateTypeDef DM8009::AliveCheck()
+DM8009P::MotorStateTypeDef DM8009P::AliveCheck()
 {
     if (AliveFlag == Pre_Flag)
     {
-        MotorState = MOTOR_OFFLINE;
+        motorState = MOTOR_OFFLINE;
     }
     else
     {
         Pre_Flag = AliveFlag;
-        MotorState = MOTOR_ONLINE;
+        motorState = MOTOR_ONLINE;
     }
-    return MotorState;
+    return motorState;
 }

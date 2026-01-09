@@ -96,14 +96,14 @@ GM6020::MotorStateTypedef GM6020::AliveCheck()
 {
     if (AliveFlag == Pre_AliveFlag)
     {
-        MotorState = MOTOR_OFFLINE;
+        motorState = MOTOR_OFFLINE;
     }
     else
     {
         Pre_AliveFlag = AliveFlag;
-        MotorState = MOTOR_ONLINE;
+        motorState = MOTOR_ONLINE;
     }
-    return MotorState;
+    return motorState;
 }
 
 //TODO:堵转检测

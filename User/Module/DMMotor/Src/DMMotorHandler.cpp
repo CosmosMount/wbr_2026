@@ -1,9 +1,5 @@
 #include "DMMotorHandler.hpp"
 
-
-
-// 电机数据转换因子
-
 /**
  * @brief 构造函数，将所有值初始化
  */
@@ -14,12 +10,7 @@ DMMotorHandler::DMMotorHandler()
 
         DMMotorList[0][i] = nullptr;
         DMMotorList[1][i] = nullptr;
-    }
-
-    for (uint8_t i = 0; i < MAX_CAN_NUM; i++)
-    {
-        receive_num[i][0] = 0;
-        receive_num[i][1] = 0;
+        DMMotorList[2][i] = nullptr;
     }
 }
 
@@ -34,8 +25,8 @@ DMMotorHandler::~DMMotorHandler()
  */
 void DMMotorHandler::EnableMotor_Block(DMMotor *motor)
 {
-    uint32_t CAN_ID = motor->CAN_ID;
-    switch (motor->ControlMode)
+    uint32_t CAN_ID = motor->canId;
+    switch (motor->controlMode)
     {
     case DMMotor::RELAX_MODE:
         break;
@@ -46,6 +37,9 @@ void DMMotorHandler::EnableMotor_Block(DMMotor *motor)
         break;
     case DMMotor::SPD_MODE:
         CAN_ID += 0x200;
+        break;
+    case DMMotor::MUTI_MODE:
+        // CAN_ID = 0x200; // 1拖4模式下，忘记了，等会查看
         break;
     default:
         break;
@@ -55,13 +49,13 @@ void DMMotorHandler::EnableMotor_Block(DMMotor *motor)
     do
     {
         timeout++;
-        CAN_Transmit(&hfdcan1, CAN_ID, (uint8_t *)DMMotor::Enable_Frame, 8);
+        CAN_Transmit(motor->hcan, CAN_ID, (uint8_t *)DMMotor::Enable_Frame, 8);
         if (timeout > 1000)
         {
-            //printf("Enable DM Motor Timeout\n");
+            // printf("Enable DM Motor Timeout\n");
             break;
         }
-    } while (motor->MotorState != DMMotor::MOTOR_OFFLINE && motor->MotorFeedback.ERR != DMMotor::ERR_ENABLE);
+    } while (motor->motorState != DMMotor::MOTOR_OFFLINE && motor->motorFeedback.ERR != DMMotor::ERR_ENABLE);
 };
 
 /**
@@ -70,8 +64,8 @@ void DMMotorHandler::EnableMotor_Block(DMMotor *motor)
  */
 void DMMotorHandler::EnableMotor(DMMotor *motor)
 {
-    uint32_t CAN_ID = motor->CAN_ID;
-    switch (motor->ControlMode)
+    uint32_t CAN_ID = motor->canId;
+    switch (motor->controlMode)
     {
     case DMMotor::RELAX_MODE:
         break;
@@ -83,11 +77,14 @@ void DMMotorHandler::EnableMotor(DMMotor *motor)
     case DMMotor::SPD_MODE:
         CAN_ID += 0x200;
         break;
+    case DMMotor::MUTI_MODE:
+        // 1拖4模式不需要使能，也无法失能
+        return;
     default:
         break;
     }
 
-    CAN_Transmit(&hfdcan1, CAN_ID, (uint8_t *)DMMotor::Enable_Frame, 8);
+    CAN_Transmit(motor->hcan, CAN_ID, (uint8_t *)DMMotor::Enable_Frame, 8);
 };
 
 /**
@@ -96,8 +93,8 @@ void DMMotorHandler::EnableMotor(DMMotor *motor)
  */
 void DMMotorHandler::DisableMotor(DMMotor *motor)
 {
-    uint32_t CAN_ID = motor->CAN_ID;
-    switch (motor->ControlMode)
+    uint32_t CAN_ID = motor->canId;
+    switch (motor->controlMode)
     {
     case DMMotor::RELAX_MODE:
         break;
@@ -109,11 +106,14 @@ void DMMotorHandler::DisableMotor(DMMotor *motor)
     case DMMotor::SPD_MODE:
         CAN_ID += 0x200;
         break;
+    case DMMotor::MUTI_MODE:
+        // 1拖4模式不需要使能，也无法失能
+        return;
     default:
         break;
     }
 
-    CAN_Transmit(&hfdcan1, CAN_ID, (uint8_t *)DMMotor::Disable_Frame, 8);
+    CAN_Transmit(motor->hcan, CAN_ID, (uint8_t *)DMMotor::Disable_Frame, 8);
 };
 
 /**
@@ -126,36 +126,64 @@ void DMMotorHandler::RegisterMotor(DMMotor *DMmotor, FDCAN_HandleTypeDef *hcan, 
 {
     if (canID >= DM_CAN_ID + MAX_DMMOTOR_NUM)
     {
-        canID = 0x04; // 默认CAN ID
+        // ID超出范围，返回
+        // printf("DMMotor Register Motor Failed: CAN ID Out of Range\n");
+        return;
     }
-    DMmotor->CAN_ID = canID;
+    DMmotor->canId = canID;
     DMmotor->hcan = hcan;
 
-    if (canID >= 0x01 && canID <= 0x04)
+    /**
+     * @todo 后续应该将底层定义hfdcan分离，这里直接通过循环或数组寻址实现，以减少耦合和代码量
+     */
+    if (hcan == &hfdcan1)
     {
-        if (DMmotor->hcan == &hfdcan1)
-        {
-            DMMotorList[0][canID - DM_CAN_ID] = DMmotor;
-            if(canID >= 0x01 && canID <= 0x04){
-                CAN1_0x3FE_Exist = true;
-            }
-            else if (canID >= 0x05 && canID <= 0x08){
-                CAN1_0x4FE_Exist = true;
-            }
-            return;
-        }
-
-        else if (DMmotor->hcan == &hfdcan2)
-        {
-            DMMotorList[1][canID - DM_CAN_ID] = DMmotor;
-            if(canID >= 0x01 && canID <= 0x04){
-                CAN1_0x3FE_Exist = true;
-            }
-            else if (canID >= 0x05 && canID <= 0x08){
-                CAN1_0x4FE_Exist = true;
-            }
-            return;
-        }
+        DMMotorList[0][canID - DM_CAN_ID] = DMmotor;
+        // 计算标志位，仅用于1拖4模式
+        // if (CAN1_USE_1to4)
+        // {
+        //     if (canID >= 0x01 && canID <= 0x04)
+        //     {
+        //         CANx_0x3FE_Exist[0] = true;
+        //     }
+        //     else if (canID >= 0x05 && canID <= 0x08)
+        //     {
+        //         CANx_0x4FE_Exist[0] = true;
+        //     }
+        // }
+        return;
+    }
+    else if (hcan == &hfdcan2)
+    {
+        DMMotorList[1][canID - DM_CAN_ID] = DMmotor;
+        // if (CAN2_USE_1to4)
+        // {
+        //     if (canID >= 0x01 && canID <= 0x04)
+        //     {
+        //         CANx_0x3FE_Exist[1] = true;
+        //     }
+        //     else if (canID >= 0x05 && canID <= 0x08)
+        //     {
+        //         CANx_0x4FE_Exist[1] = true;
+        //     }
+        // }
+        return;
+    }
+    else if (hcan == &hfdcan3)
+    {
+        DMMotorList[2][canID - DM_CAN_ID] = DMmotor;
+        // if (CAN3_USE_1to4)
+        // {
+        //     if (canID >= 0x01 && canID <= 0x04)
+        //     {
+        //         CANx_0x3FE_Exist[2] = true;
+        //     }
+        //     else if (canID >= 0x05 && canID <= 0x08)
+        //     {
+        //         CANx_0x4FE_Exist[2] = true;
+        //     }
+        // }
+        return;
     }
 }
 
@@ -171,57 +199,45 @@ void DMMotorHandler::SendControlData()
         {
             if (DMMotorList[i][j] != nullptr)
             {
-                // SetOutput(DMMotorList[i][j]);
-                // DMMotorList[i][j]->SetOutput();
-                if(DMMotorList[i][j]->CAN_ID >= 0x01 && DMMotorList[i][j]->CAN_ID <= 0x04){
-                    int index = (DMMotorList[i][j]->CAN_ID) * 2;
-                    can1_send_data_0[index - 2] = DMMotorList[i][j]->currentSet >> 8;
-                    can1_send_data_0[index - 1] = DMMotorList[i][j]->currentSet;
-                }
-                if(DMMotorList[i][j]->CAN_ID >= 0x05 && DMMotorList[i][j]->CAN_ID <= 0x08){
-                    int index = (DMMotorList[i][j]->CAN_ID) * 2;
-                    can2_send_data_0[index - 2] = DMMotorList[i][j]->currentSet >> 8;
-                    can2_send_data_0[index - 1] = DMMotorList[i][j]->currentSet;
-                }
+                DMMotorList[i][j]->SetOutput();
             }
         }
     }
-    if (CAN1_0x3FE_Exist)
-        CAN_Transmit(&hfdcan1, 0x3FE, can1_send_data_0, 8); // 向CAN1发送数据，电机控制报文0x200
-    if (CAN1_0x4FE_Exist)
-        CAN_Transmit(&hfdcan1, 0x4FE, can1_send_data_1, 8); // 向CAN1发送数据，电机控制报文0x1FF
-    if (CAN2_0x3FE_Exist)
-        CAN_Transmit(&hfdcan2, 0x3FE, can2_send_data_0, 8); // 向CAN2发送数据，电机控制报文0x200
-    if (CAN2_0x4FE_Exist)
-        CAN_Transmit(&hfdcan2, 0x4FE, can2_send_data_1, 8); // 向CAN2发送数据，电机控制报文0x2FF
 }
-
 
 void DMMotorHandler::UpdateFeedback(FDCAN_HandleTypeDef *hcan, uint8_t *rx_data, int index)
 {
     if (hcan == &hfdcan1)
     {
-            if(DMMotorList[0][index] != nullptr){
-                DMMotorList[0][index]->ReceiveData(rx_data);
-            }
+        if (DMMotorList[0][index] != nullptr)
+        {
+            DMMotorList[0][index]->ReceiveData(rx_data);
+        }
     }
     else if (hcan == &hfdcan2)
     {
-        
-            if(DMMotorList[1][index] != nullptr){
-                DMMotorList[1][index]->ReceiveData(rx_data);
-            }
+        if (DMMotorList[1][index] != nullptr)
+        {
+            DMMotorList[1][index]->ReceiveData(rx_data);
+        }
+    }
+    else if (hcan == &hfdcan3)
+    {
+        if (DMMotorList[2][index] != nullptr)
+        {
+            DMMotorList[2][index]->ReceiveData(rx_data);
+        }
     }
 }
-    
+
 /**
  * @brief 保存电机零点，发送一次保存零点帧
  * @param motor 电机指针
  */
 void DMMotorHandler::SaveZeroPosition(DMMotor *motor)
 {
-    uint32_t CAN_ID = motor->CAN_ID;
-    switch (motor->ControlMode)
+    uint32_t CAN_ID = motor->canId;
+    switch (motor->controlMode)
     {
     case DMMotor::RELAX_MODE:
         break;
@@ -232,6 +248,9 @@ void DMMotorHandler::SaveZeroPosition(DMMotor *motor)
         break;
     case DMMotor::SPD_MODE:
         CAN_ID += 0x200;
+        break;
+    case DMMotor::MUTI_MODE:
+        CAN_ID = 0x300;
         break;
     default:
         break;
@@ -246,8 +265,8 @@ void DMMotorHandler::SaveZeroPosition(DMMotor *motor)
  */
 void DMMotorHandler::ClearError(DMMotor *motor)
 {
-    uint32_t CAN_ID = motor->CAN_ID;
-    switch (motor->ControlMode)
+    uint32_t CAN_ID = motor->canId;
+    switch (motor->controlMode)
     {
     case DMMotor::RELAX_MODE:
         break;
@@ -258,6 +277,9 @@ void DMMotorHandler::ClearError(DMMotor *motor)
         break;
     case DMMotor::SPD_MODE:
         CAN_ID += 0x200;
+        break;
+    case DMMotor::MUTI_MODE:
+        CAN_ID = 0x300;
         break;
     default:
         break;

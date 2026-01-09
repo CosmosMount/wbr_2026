@@ -57,11 +57,11 @@ public:
     };
 
     /**
-     * @struct MotorFeedBack
+     * @struct MotorFeedBackTypeDef
      * @brief 电机反馈数据的结构体，包括电机的各种物理量反馈。
      * 结构体中包含了电机的电流、速度、位置等信息，以及电机的温度等状态反馈。
      */
-    struct MotorFeedBack
+    struct MotorFeedBackTypeDef
     {
         int16_t last_ecd;      ///< 上次电机编码器的读数
         uint16_t ecd;          ///< 当前电机编码器的读数
@@ -81,12 +81,11 @@ public:
         LK8016_TYPE
     };
 
-    MotorType motorType; ///< 电机类型
-
-    MotorControlModeType controlMode; ///< 当前电机控制模式
-    MotorFeedBack motorFeedback;      ///< 电机的反馈数据
-    uint16_t canId;                   ///< 电机的CAN通信ID
-    FDCAN_HandleTypeDef *hcan;          ///< 指向电机使用的CAN接口的指针
+    MotorType motorType;                    ///< 电机类型
+    MotorControlModeType controlMode;       ///< 当前电机控制模式
+    MotorFeedBackTypeDef motorFeedback;     ///< 电机的反馈数据
+    uint16_t canId;                         ///< 电机的CAN通信ID
+    FDCAN_HandleTypeDef *hcan;              ///< 指向电机使用的CAN接口的指针
 
     PID speedPid = PID(0.1f, 0.0f, 0.0f, 25000.0f, 3.0f, PID_POSITION);    ///< 速度环PID控制器
     PID positionPid = PID(0.1f, 0.0f, 0.0f, 25000.0f, 3.0f, PID_POSITION); ///< 位置环PID控制器

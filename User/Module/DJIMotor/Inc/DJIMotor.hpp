@@ -1,7 +1,3 @@
-//
-// Created by cosmosmount on 2025/8/30.
-//
-
 #ifndef RM26_DJIMOTOR_HPP
 #define RM26_DJIMOTOR_HPP
 
@@ -100,11 +96,11 @@ public:
     };
 
     /**
-     * @struct MotorFeedBack
+     * @struct MotorFeedBackTypeDef
      * @brief 电机反馈数据的结构体，包括电机的各种物理量反馈。
      * 结构体中包含了电机的电流、速度、位置等信息，以及电机的温度等状态反馈。
      */
-    struct MotorFeedBack
+    struct MotorFeedBackTypeDef
     {
         int16_t last_ecd;      ///< 上次电机编码器的读数
         uint16_t ecd;          ///< 当前电机编码器的读数
@@ -117,9 +113,9 @@ public:
         float temperatureFdb;  ///< 电机温度反馈
     };
 
-    MotorStateTypedef MotorState;
+    MotorStateTypedef motorState;
     MotorControlModeType controlMode; ///< 当前电机控制模式
-    MotorFeedBack motorFeedback;      ///< 处理后的电机的反馈数据
+    MotorFeedBackTypeDef motorFeedback;      ///< 处理后的电机的反馈数据
     uint16_t canId;                   ///< 电机的CAN通信ID
     FDCAN_HandleTypeDef *hcan;          ///< 指向电机使用的CAN接口的指针
 
@@ -171,7 +167,7 @@ public:
         motorFeedback.lastPositionFdb = 0;
         motorFeedback.temperatureFdb = 0;
 
-        MotorState = MOTOR_OFFLINE;
+        motorState = MOTOR_OFFLINE;
     }
 };
 

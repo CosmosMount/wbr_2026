@@ -1,7 +1,6 @@
 #ifndef DMMOTOR_HPP
 #define DMMOTOR_HPP
 
-#include "PID.hpp"
 #include "bsp_can.hpp"
 #include "pid.hpp"
 
@@ -10,32 +9,6 @@
 
 #define KD_MIN 0.0
 #define KD_MAX 500.0
-
-// /**
-// ************************************************************************
-// * @brief:      	float_to_uint: Function to convert a float to an unsigned integer
-// * @param[in]:   x_float:	Float value to be converted
-// * @param[in]:   x_min:		Minimum range value
-// * @param[in]:   x_max:		Maximum range value
-// * @param[in]:   bits: 		Bit width of the target unsigned integer
-// * @retval:     	Unsigned integer result
-// * @details:    	Maps the given float x linearly within the specified range [x_min, x_max] to an unsigned integer of the specified bit width.
-// ************************************************************************
-// **/
-// int float_to_uint(float x_float, float x_min, float x_max, int bits);
-
-// /**
-// ************************************************************************
-// * @brief:      	uint_to_float: Function to convert an unsigned integer to a float
-// * @param[in]:   x_int: Unsigned integer to be converted
-// * @param[in]:   x_min: Minimum range value
-// * @param[in]:   x_max: Maximum range value
-// * @param[in]:   bits:  Bit width of the unsigned integer
-// * @retval:     	Float result
-// * @details:    	Maps the given unsigned integer x_int linearly within the specified range [x_min, x_max] to a float.
-// ************************************************************************
-// **/
-// float uint_to_float(int x_int, float x_min, float x_max, int bits);
 
 class DMMotor
 {
@@ -54,8 +27,6 @@ public:
     static const uint8_t SaveZeroPosition_Frame[8]; // 保存零点帧
     static const uint8_t ClearError_Frame[8];       // 清除错误帧
 
-    
-
     enum MotorStateTypeDef
     {
         MOTOR_OFFLINE = 0, ///< 电机离线
@@ -63,23 +34,25 @@ public:
     };
 
     /**
-     * @enum MotorControlModeTypeDef
+     * @enum cotorControlModeTypeDef
      * @brief 描述电机的不同控制模式。
+     * @note 如果电机使用的固件比较老，可能不支持实时改变控制模式，除了通过电机失能实现的Relax模式外，其他模式都需要通过上位机切换控制模式并重新上电。
      */
-    enum MotorControlModeTypeDef
+    enum cotorControlModeTypeDef
     {
-        RELAX_MODE = 0,   ///< 电机松开模式
+        RELAX_MODE = 0,   ///< 电机松开模式，这里指的是电机失能
         MIT_MODE = 1,     ///< 达秒电机MIT模式
         POS_SPD_MODE = 2, ///< 位置速度模式，速度给定是梯形加速度运行下最高速度的，即为匀速段的速度值。
         SPD_MODE = 3,     ///< 速度模式
+        MUTI_MODE = 4,    ///< 1拖4模式，类似大疆电机的多电机控制模式，需要更换电机固件才能使用
     };
 
     enum MotorErrorTypeDef
     {
-        ERR_DISABLE = 0,         ///< 电机失能
-        ERR_ENABLE = 1,          ///< 电机使能
-        ERR_OVERVOLTAGE = 8,     ///< 电机过压
-        ERR_UNDERVOLTAGE = 9,    ///< 电机欠压
+        ERR_DISABLE = 0x0,         ///< 电机失能
+        ERR_ENABLE = 0x1,          ///< 电机使能
+        ERR_OVERVOLTAGE = 0x8,     ///< 电机过压
+        ERR_UNDERVOLTAGE = 0x9,    ///< 电机欠压
         ERR_OVERCURRENT = 0xA,   ///< 电机过电流
         ERR_MOS_OVERTEMP = 0xB,  ///< M驱动上 MOS 过温
         ERR_COIL_OVERTEMP = 0xC, ///< 电机线圈过温
@@ -87,55 +60,35 @@ public:
         ERR_OVERLOAD = 0xE,      ///< 过载
     };
 
-    typedef struct 
-    {
-        uint8_t ID;            ///< 电机反馈ID
-        MotorErrorTypeDef ERR; ///< 电机状态码, 0：失能，1：使能，8：超压，9欠压，A：过电流，B：MOS过温，C：电机线圈过温，D：通讯丢失，E：过载
-        int16_t currentFdb;    ///< 电机电流反馈
-        float SpeedFdb;        ///< 电机当前速度反馈
-        float lastSpeedFdb;    ///< 上次记录的电机速度
-        float PositionFdb;     ///< 电机当前位置反馈
-        float lastPositionFdb; ///< 上次记录的电机位置
-        float TorqueFdb;       ///< 电机当前扭矩反馈
-        float TemMOS;          ///< M驱动上 MOS 的平均温度，单位℃
-        float TemRotor;        ///< 表示电机内部线圈的平均温度，单位℃
-    } motor_measure_t;
-    
-
     /**
-     * @struct MotorFeedBack
+     * @struct MotorFeedBackTypeDef
      * @brief 电机反馈数据的结构体，包括电机的各种物理量反馈。
-     * 结构体中包含了电机的电流、速度、位置等信息，以及电机的温度等状态反馈。
+     * 结构体中包含了电机的力矩、速度、位置等信息，以及电机的温度等状态反馈。
      */
     struct MotorFeedBackTypeDef
     {
         uint8_t ID;            ///< 电机反馈ID
         MotorErrorTypeDef ERR; ///< 电机状态码, 0：失能，1：使能，8：超压，9欠压，A：过电流，B：MOS过温，C：电机线圈过温，D：通讯丢失，E：过载
-        int16_t currentFdb;    ///< 电机电流反馈
-        uint16_t ecd;          ///< 当前电机编码器的读数
-        int16_t speed_rpm;     ///< 电机的转速，单位rpm
-        float SpeedFdb;        ///< 电机当前速度反馈
-        float lastSpeedFdb;    ///< 上次记录的电机速度
-        float PositionFdb;     ///< 电机当前位置反馈
-        float lastPositionFdb; ///< 上次记录的电机位置
-        float TorqueFdb;       ///< 电机当前扭矩反馈
-        float TemMOS;          ///< M驱动上 MOS 的平均温度，单位℃
-        float TemRotor;        ///< 表示电机内部线圈的平均温度，单位℃
+        float speedFdb;        ///< 电机当前速度反馈
+        float positionFdb;     ///< 电机当前位置反馈
+        float torqueFdb;       ///< 电机当前扭矩反馈
+        float temMOS;          ///< M驱动上 MOS 的平均温度，单位℃
+        float temRotor;        ///< 表示电机内部线圈的平均温度，单位℃
     };
 
-    MotorControlModeTypeDef ControlMode; ///< 当前电机控制模式
-    MotorFeedBackTypeDef MotorFeedback;  ///< 电机的反馈数据
-    MotorStateTypeDef MotorState;        ///< 电机的状态
-    FDCAN_HandleTypeDef *hcan;             ///< 电机所在的CAN口
-    uint32_t CAN_ID;                     ///< 电机的ID
+    cotorControlModeTypeDef controlMode; ///< 当前电机控制模式
+    MotorFeedBackTypeDef motorFeedback;  ///< 电机的反馈数据
+    MotorStateTypeDef motorState;        ///< 电机的状态
+    FDCAN_HandleTypeDef *hcan;           ///< 电机所在的CAN口
+    uint32_t canId;                     ///< 电机的ID
 
     // 用于检测电机是否在线，需要在DMMotorHandler中和aliveCheck函数中处理
     uint32_t AliveFlag;
     uint32_t Pre_Flag;
 
-    float SpeedSet;    ///< 设定的目标速度
-    float PositionSet; ///< 设定的目标位置，范围[-Π, Π]
-    float TorqueSet;   ///< 设定的目标扭矩
+    float speedSet;    ///< 设定的目标速度
+    float positionSet; ///< 设定的目标位置，范围[-Π, Π]
+    float torqueSet;   ///< 设定的目标扭矩
 
     int16_t currentSet;  ///< 设定的电流输出
     uint16_t maxCurrent; ///< 最大电流限制
@@ -143,41 +96,38 @@ public:
     PID speedPid = PID(0.1f, 0.0f, 0.0f, 16384.0f, 3.0f, PID_POSITION);    ///< 速度环PID控制器
     PID positionPid = PID(0.1f, 0.0f, 0.0f, 16384.0f, 3.0f, PID_POSITION); ///< 位置环PID控制器
 
-
     DMMotor()
     {
-        ControlMode = RELAX_MODE;
-        MotorState = MOTOR_OFFLINE;
+        controlMode = RELAX_MODE;
+        motorState = MOTOR_OFFLINE;
 
-        SpeedSet = 0.0f;
-        PositionSet = 0.0f;
-        TorqueSet = 0.0f;
+        speedSet = 0.0f;
+        positionSet = 0.0f;
+        torqueSet = 0.0f;
 
-        PositionSet = 0;
         currentSet = 0;
 
         maxCurrent = 0;
 
-        MotorFeedback.SpeedFdb = 0;
-        MotorFeedback.lastSpeedFdb = 0;
-        MotorFeedback.PositionFdb = 0;
-        MotorFeedback.lastPositionFdb = 0;
-        MotorFeedback.TemMOS = 0;
-        MotorFeedback.TemRotor = 0;
+        motorFeedback.speedFdb = 0;
+        motorFeedback.positionFdb = 0;
+        motorFeedback.torqueFdb = 0;
+        motorFeedback.temMOS = 0;
+        motorFeedback.temRotor = 0;
 
         // pid初始化
         speedPid.mode = PID_POSITION;
         speedPid.kp = 0.1;
         speedPid.ki = 0.0;
         speedPid.kd = 0.0;
-        speedPid.maxOut = 25000;
+        speedPid.maxOut = 25;
         speedPid.maxIOut = 3;
 
         positionPid.mode = PID_POSITION;
         positionPid.kp = 0.1;
         positionPid.ki = 0.0;
         positionPid.kd = 0.0;
-        positionPid.maxOut = 25000;
+        positionPid.maxOut = 25;
         positionPid.maxIOut = 3;
     }
 
@@ -191,10 +141,5 @@ public:
     virtual MotorStateTypeDef AliveCheck() = 0;    // 检测电机是否在线，需要在主循环中调用
     virtual void SetOutput() = 0;                  // 设置电机输出
     virtual void ReceiveData(uint8_t *buffer) = 0; // 接收电机数据
-    /**
-     * @brief 更新电机传感器数据
-     * 该虚函数用于更新电机的传感器数据，包括电机的速度、位置、电流等信息，会在handler中通过多态调用。
-     */
-    // virtual void UpdateSensorData(uint8_t *buffer_ptr) = 0;
 };
 #endif // MOTOR_HPP
