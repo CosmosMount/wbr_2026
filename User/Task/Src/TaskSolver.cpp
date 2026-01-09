@@ -1,3 +1,5 @@
+#include "DJIMotor.hpp"
+#include "DMMotor.hpp"
 #include "GM6020.hpp"
 #include "fast_math_functions.h"
 #include "main.h"
@@ -6,10 +8,10 @@
 #include "bsp_can.hpp"
 #include "bsp_dwt.hpp"
 
-#include "LK9025.hpp"
-#include "LK8016.hpp"
+#include "M3508.hpp"
+#include "DM8009P.hpp"
+#include "DMMotorHandler.hpp"
 #include "DJIMotorHandler.hpp"
-#include "LKMotorHandler.hpp"
 
 #include "math.hpp"
 #include "odometry.hpp"
@@ -31,7 +33,6 @@ extern FDCAN_HandleTypeDef hfdcan3;
 TX_THREAD SolverThread;
 uint8_t SolverThreadStack[4096] = {0};
 
-LKMotorHandler *LKmotorhandler = LKMotorHandler::Instance();
 
 #ifdef DEBUG
 struct solver_debug_t
@@ -64,6 +65,10 @@ struct solver_debug_t
     float ljoint1_pos;
     float rjoint4_pos;
     float rjoint1_pos;
+    float lwheel_pos;
+    float rwheel_pos;
+    float lalpha;
+    float ralpha;
 };
 struct force_debug_t
 {
@@ -89,41 +94,58 @@ __attribute__((section(".RAM_D3"))) force_debug_t force_debug;
 {
     UNUSED(initial_input);
 
-    LK9025 RWheel;
-    LK9025 LWheel;
+    M3508 RWheel;
+    M3508 LWheel;
 
-    LK8016 RJoint4;
-    LK8016 RJoint1;
+    DM8009P RJoint4;
+    DM8009P RJoint1;
+    DM8009P LJoint4;
+    DM8009P LJoint1;
 
-    LK8016 LJoint4;
-    LK8016 LJoint1;
-
-    LKMotorHandler::Instance()->registerMotor(&LJoint4, &hfdcan1, 0x141);
-    LJoint4.currentSet = 0;
-    LJoint4.offset = LJOINT4_OFFSET;
-    LKMotorHandler::Instance()->registerMotor(&LJoint1, &hfdcan1, 0x142);
-    LJoint1.currentSet = 0;
-    LJoint1.offset = LJOINT1_OFFSET;
-    LKMotorHandler::Instance()->registerMotor(&RJoint4, &hfdcan1, 0x143);
-    RJoint4.currentSet = 0;
-    RJoint4.offset = RJOINT4_OFFSET;
-    LKMotorHandler::Instance()->registerMotor(&RJoint1, &hfdcan1, 0x144);
-    RJoint1.currentSet = 0;
-    RJoint1.offset = RJOINT1_OFFSET;
-    LKMotorHandler::Instance()->registerMotor(&LWheel, &hfdcan3, 0x141);
+    DJIMotorHandler::Instance()->registerMotor(&LWheel, &hfdcan2, 0x203);
     LWheel.currentSet = 0;
-    LKMotorHandler::Instance()->registerMotor(&RWheel, &hfdcan3, 0x142);
+    LWheel.gearBox = GearBox_XRoll;
+    DJIMotorHandler::Instance()->registerMotor(&RWheel, &hfdcan2, 0x204);
     RWheel.currentSet = 0;
+    RWheel.gearBox = GearBox_XRoll;
 
-    constexpr float Tk_LK9025 = 195.3125f; // 2000 / (0.32f * 32.0f) 0.32：扭矩常数，32.0：电流实际最大值，2000.0：电流输入最大值
-    constexpr float Tk_LK8016 = 43.4028f;  // 2000 / (0.24f * 32.0f * 6.0f) 0.24：扭矩常数，6：减速比，32.0：电流实际最大值，2000.0：电流数值范围
+    tx_thread_sleep(2000);
+
+    DMMotorHandler::Instance()->registerMotor(&LJoint4, &hfdcan1, 0x01);
+    LJoint4.controlMode = DMMotor::MIT_MODE;
+    LJoint4.torqueSet = 0;
+    DMMotorHandler::Instance()->EnableMotor(&LJoint4);
+
+    tx_thread_sleep(1000);
+
+    DMMotorHandler::Instance()->registerMotor(&LJoint1, &hfdcan1, 0x02);
+    LJoint1.controlMode = DMMotor::MIT_MODE;
+    LJoint1.torqueSet = 0;
+    DMMotorHandler::Instance()->EnableMotor(&LJoint1);
+
+    tx_thread_sleep(1000);
+
+    DMMotorHandler::Instance()->registerMotor(&RJoint4, &hfdcan1, 0x04);
+    RJoint4.controlMode = DMMotor::MIT_MODE;
+    RJoint4.torqueSet = 0;
+    DMMotorHandler::Instance()->EnableMotor(&RJoint4);
+
+    tx_thread_sleep(1000);
+
+    DMMotorHandler::Instance()->registerMotor(&RJoint1, &hfdcan1, 0x03);
+    RJoint1.controlMode = DMMotor::MIT_MODE;
+    RJoint1.torqueSet = 0;
+    DMMotorHandler::Instance()->EnableMotor(&RJoint1);
+
+    tx_thread_sleep(1000);
+    
+    constexpr float Tk_M3508 = 2598.9848f; // 16384 / (0.02*286/17)Nm/A * 20A
 
     om_suber_t *ins_suber = om_subscribe(om_find_topic("ins", UINT32_MAX));
     msg_ins_t ins{};
     om_suber_t *pendulumctrl_suber = om_subscribe(om_find_topic("pendulumctrl", UINT32_MAX));
     msg_ctrl_t pendulumctrl{};
     
-
     om_topic_t *solverfdb_topic = om_config_topic(nullptr, "ca", "solverfdb", sizeof(msg_solver_t));
     msg_solver_t solverfdb{};
     om_topic_t *odom_pub = om_config_topic(nullptr, "ca", "odom", sizeof(msg_odometry_t));
@@ -154,7 +176,8 @@ __attribute__((section(".RAM_D3"))) force_debug_t force_debug;
     float prev_llen_dot = 0.0f;
     float prev_rlen_dot = 0.0f;
 
-    float thread_start_time;
+    uint32_t dm_msg_tick = 0;
+    float thread_start_time = 0.0f;
 
     for (;;)
     {
@@ -164,17 +187,17 @@ __attribute__((section(".RAM_D3"))) force_debug_t force_debug;
         om_suber_export(pendulumctrl_suber, &pendulumctrl, false);
 
         /* 将反馈值转化到模型对应角度，传入VMC */
-        Lsolver.Resolve(PI-LJoint1.motorFeedback.positionFdb, -LJoint4.motorFeedback.positionFdb);
-        Rsolver.Resolve(PI+RJoint1.motorFeedback.positionFdb, RJoint4.motorFeedback.positionFdb);
+        Lsolver.Resolve(PI+LJoint1.motorFeedback.positionFdb, LJoint4.motorFeedback.positionFdb);
+        Rsolver.Resolve(PI-RJoint1.motorFeedback.positionFdb, -RJoint4.motorFeedback.positionFdb);
 
         /* VMC逆运动学解算 */
         solverfdb.llen = Lsolver.GetPendulumLen();
         solverfdb.rlen = Rsolver.GetPendulumLen();
 
-        Lqdot[0] = -LJoint1.motorFeedback.speedFdb;
-        Lqdot[1] = -LJoint4.motorFeedback.speedFdb;
-        Rqdot[0] = RJoint1.motorFeedback.speedFdb;
-        Rqdot[1] = RJoint4.motorFeedback.speedFdb;
+        Lqdot[0] = LJoint1.motorFeedback.speedFdb;
+        Lqdot[1] = LJoint4.motorFeedback.speedFdb;
+        Rqdot[0] = -RJoint1.motorFeedback.speedFdb;
+        Rqdot[1] = -RJoint4.motorFeedback.speedFdb;
 
         Lsolver.VMCVelCal(Lqdot, Lxdot);
         Rsolver.VMCVelCal(Rqdot, Rxdot);
@@ -186,7 +209,7 @@ __attribute__((section(".RAM_D3"))) force_debug_t force_debug;
         solverfdb.lphi_dot = Lxdot[1];
         solverfdb.rphi_dot = Rxdot[1];
 
-        float vel = 0.5f * (LWheel.motorFeedback.speedFdb - RWheel.motorFeedback.speedFdb) * WHEEL_RADIUS;
+        float vel = 0.5f * (LWheel.motorFeedback.speedFdb-RWheel.motorFeedback.speedFdb) * WHEEL_RADIUS;
         odom_data = odom.Update(ins.quaternion, ins.accel, vel, ins.yaw);
 
         solverfdb.lalpha = solverfdb.lphi-0.5f*Pi+ins.pitch*DegreeToRad;
@@ -195,10 +218,10 @@ __attribute__((section(".RAM_D3"))) force_debug_t force_debug;
         solverfdb.ralpha_dot = solverfdb.rphi_dot+ins.gyro_p;
 
         /* VMC逆动力学解算 */
-        LTpfdb[0] = -LJoint1.motorFeedback.torqueFdb;
-        LTpfdb[1] = -LJoint4.motorFeedback.torqueFdb;
-        RTpfdb[0] = RJoint1.motorFeedback.torqueFdb;
-        RTpfdb[1] = RJoint4.motorFeedback.torqueFdb;
+        LTpfdb[0] = LJoint1.motorFeedback.torqueFdb;
+        LTpfdb[1] = LJoint4.motorFeedback.torqueFdb;
+        RTpfdb[0] = -RJoint1.motorFeedback.torqueFdb;
+        RTpfdb[1] = -RJoint4.motorFeedback.torqueFdb;
 
         Lsolver.VMCRevCal(TlRev, LTpfdb);
         Rsolver.VMCRevCal(TrRev, RTpfdb);
@@ -220,13 +243,13 @@ __attribute__((section(".RAM_D3"))) force_debug_t force_debug;
         Lsolver.VMCCal(pendulumctrl.Tl, LTp);
         Rsolver.VMCCal(pendulumctrl.Tr, RTp);
 
-        LJoint1.currentSet = -Numeric::FloatConstrain(LTp[0], -MAX_HIP_TOR, MAX_HIP_TOR) * Tk_LK8016;
-        LJoint4.currentSet = -Numeric::FloatConstrain(LTp[1], -MAX_HIP_TOR, MAX_HIP_TOR) * Tk_LK8016;
-        RJoint1.currentSet = Numeric::FloatConstrain(RTp[0], -MAX_HIP_TOR, MAX_HIP_TOR) * Tk_LK8016;
-        RJoint4.currentSet = Numeric::FloatConstrain(RTp[1], -MAX_HIP_TOR, MAX_HIP_TOR) * Tk_LK8016;
+        LJoint1.torqueSet = Numeric::FloatConstrain(LTp[0], -MAX_HIP_TOR, MAX_HIP_TOR);
+        LJoint4.torqueSet = Numeric::FloatConstrain(LTp[1], -MAX_HIP_TOR, MAX_HIP_TOR);
+        RJoint1.torqueSet = -Numeric::FloatConstrain(RTp[0], -MAX_HIP_TOR, MAX_HIP_TOR);
+        RJoint4.torqueSet = -Numeric::FloatConstrain(RTp[1], -MAX_HIP_TOR, MAX_HIP_TOR);
 
-        LWheel.currentSet = Numeric::FloatConstrain(pendulumctrl.Twl, -MAX_WHEEL_TOR, MAX_WHEEL_TOR) * Tk_LK9025;
-        RWheel.currentSet = -Numeric::FloatConstrain(pendulumctrl.Twr, -MAX_WHEEL_TOR, MAX_WHEEL_TOR) * Tk_LK9025;
+        LWheel.currentSet = -Numeric::FloatConstrain(pendulumctrl.Twl, -MAX_WHEEL_TOR, MAX_WHEEL_TOR) * Tk_M3508;
+        RWheel.currentSet = Numeric::FloatConstrain(pendulumctrl.Twr, -MAX_WHEEL_TOR, MAX_WHEEL_TOR) * Tk_M3508;
 
     #ifdef DEBUG
         solver_debug.llength = solverfdb.llen;
@@ -250,8 +273,8 @@ __attribute__((section(".RAM_D3"))) force_debug_t force_debug;
         
         solver_debug.rwheel_tor_ref = -pendulumctrl.Twr;
         solver_debug.lwheel_tor_ref = pendulumctrl.Twl;
-        solver_debug.rwheel_tor_fdb = RWheel.motorFeedback.torqueFdb;
-        solver_debug.lwheel_tor_fdb = LWheel.motorFeedback.torqueFdb;
+        solver_debug.rwheel_tor_fdb = -RWheel.motorFeedback.currentFdb / Tk_M3508;
+        solver_debug.lwheel_tor_fdb = LWheel.motorFeedback.currentFdb / Tk_M3508;
 
         solver_debug.ljoint4_pos = LJoint4.motorFeedback.positionFdb;
         solver_debug.ljoint1_pos = LJoint1.motorFeedback.positionFdb;
@@ -262,6 +285,9 @@ __attribute__((section(".RAM_D3"))) force_debug_t force_debug;
         solver_debug.lphi4dot = Lqdot[1];
         solver_debug.rphi1dot = Rqdot[0];
         solver_debug.rphi4dot = Rqdot[1];
+
+        solver_debug.lalpha = solverfdb.lalpha;
+        solver_debug.ralpha = solverfdb.ralpha;
 
         // solver_debug = solverfdb;
         force_debug.Flreal = TlRev[0];
@@ -277,14 +303,17 @@ __attribute__((section(".RAM_D3"))) force_debug_t force_debug;
         force_debug.Trjoint4 = RJoint4.motorFeedback.torqueFdb;
         force_debug.Trjoint1 = RJoint1.motorFeedback.torqueFdb;
         force_debug.N = solverfdb.N;
+
+        solver_debug.lwheel_pos = LWheel.motorFeedback.positionFdb;
+        solver_debug.rwheel_pos = RWheel.motorFeedback.positionFdb;
     #endif
 
         if (!cmd.move)
         {
-            LJoint4.currentSet = 0;
-            LJoint1.currentSet = 0;
-            RJoint4.currentSet = 0;
-            RJoint1.currentSet = 0;
+            LJoint4.torqueSet = 0;
+            LJoint1.torqueSet = 0;
+            RJoint4.torqueSet = 0;
+            RJoint1.torqueSet = 0;
 
             LWheel.currentSet = 0;
             RWheel.currentSet = 0;
@@ -292,15 +321,28 @@ __attribute__((section(".RAM_D3"))) force_debug_t force_debug;
             odom.Reset();
         }
 
-        // LJoint4.currentSet = 0;
-        // LJoint1.currentSet = 0;
-        // RJoint4.currentSet = 0;
-        // RJoint1.currentSet = 0;
+        // LJoint4.torqueSet = 0;
+        // LJoint1.torqueSet = 0;
+        // RJoint4.torqueSet = 0;
+        // RJoint1.torqueSet = 0;
 
         // LWheel.currentSet = 0;
         // RWheel.currentSet = 0;
+
+        if (dm_msg_tick % 2 == 0)
+        {
+            LJoint1.SetOutput();
+            LJoint4.SetOutput();
+        }
+        else 
+        {
+            RJoint1.SetOutput();
+            RJoint4.SetOutput();
+        }
+
+        dm_msg_tick ++;
         
-        LKMotorHandler::Instance()->sendControlData();
+        DJIMotorHandler::Instance()->sendControlData();
         tx_thread_sleep(MIN(1, 1-(tx_time_get()-thread_start_time)));
     }
 }

@@ -111,7 +111,7 @@ extern "C" void ServiceBooster()
         IMUTempThreadFun, 0x1234, IMUTempThreadStack, sizeof(IMUTempThreadStack),
         4, 4, TX_NO_TIME_SLICE, TX_AUTO_START);
 
-    tx_thread_create(&RefereeThread, TX_NAME("RefereeThread"),
-        RefereeThreadFun, 0x1234, RefereeThreadStack, sizeof(RefereeThreadStack),
-        8, 8, TX_NO_TIME_SLICE, TX_AUTO_START);
+    // tx_thread_create(&RefereeThread, TX_NAME("RefereeThread"),
+    //     RefereeThreadFun, 0x1234, RefereeThreadStack, sizeof(RefereeThreadStack),
+    //     8, 8, TX_NO_TIME_SLICE, TX_AUTO_START);
 }

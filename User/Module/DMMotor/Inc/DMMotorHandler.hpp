@@ -39,9 +39,9 @@ public:
     DMMotorHandler();
     ~DMMotorHandler();
 
-    void RegisterMotor(DMMotor *DMmotor, FDCAN_HandleTypeDef *hcan, uint32_t canID); // 使用指针作为参数
+    void registerMotor(DMMotor *DMmotor, FDCAN_HandleTypeDef *hcan, uint32_t canID); // 使用指针作为参数
 
-    void SendControlData();
+    void sendControlData();
 
     void UpdateFeedback(FDCAN_HandleTypeDef *hcan, uint8_t *rx_data, int index); // 更新电机反馈值
 

@@ -122,7 +122,7 @@ void DMMotorHandler::DisableMotor(DMMotor *motor)
  * @param CAN 电机所在的CAN口
  * @param canID 电机的ID
  */
-void DMMotorHandler::RegisterMotor(DMMotor *DMmotor, FDCAN_HandleTypeDef *hcan, uint32_t canID)
+void DMMotorHandler::registerMotor(DMMotor *DMmotor, FDCAN_HandleTypeDef *hcan, uint32_t canID)
 {
     if (canID >= DM_CAN_ID + MAX_DMMOTOR_NUM)
     {
@@ -191,7 +191,7 @@ void DMMotorHandler::RegisterMotor(DMMotor *DMmotor, FDCAN_HandleTypeDef *hcan, 
  * @brief 遍历所有电机，发送控制数据
  * @note 需要在主循环中调用
  */
-void DMMotorHandler::SendControlData()
+void DMMotorHandler::sendControlData()
 {
     for (int i = 0; i < MAX_CAN_NUM; i++)
     {
