@@ -1,12 +1,11 @@
 #pragma once
 
-#define SJTU_MODEL
 #define CHASSIS_ONLY
 
 #define TOF_DATA_SIZE 9
 
-#define LQR_MIN_LEN_CTRL       0.15f
-#define LQR_MAX_LEN_CTRL       0.35f
+#define LQR_MIN_LEN_CTRL       0.10f
+#define LQR_MAX_LEN_CTRL       0.30f
 #define LQR_LEN_RESOLUTION     0.01f
 
 /* 腿长，单位m */
@@ -14,11 +13,6 @@
 #define VMC_L2 0.250f
 #define VMC_MotorDistance 0.0f
 #define VMC_HalfMotorDistance (VMC_MotorDistance / 2.0f)
-
-#define LJOINT4_OFFSET 0x11FF
-#define LJOINT1_OFFSET 0x25FF
-#define RJOINT4_OFFSET 0xC6C3
-#define RJOINT1_OFFSET 0x8419
 
 #define WHEEL_RADIUS 0.075f
 #define WHEEL_MASS 1.41f
@@ -29,7 +23,7 @@
 #define LEG_NORMAL_STEP 0.001f
 #define LEG_JUMP_STEP 0.007f
 
-#define LEG_NORMAL_LEN 0.18f
+#define LEG_NORMAL_LEN 0.21f
 #define LEG_JUMP_START_LEN 0.370f
 #define LEG_JUMP_AIR_LEN 0.140f
 

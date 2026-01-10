@@ -139,7 +139,7 @@ __attribute__((section(".RAM_D3"))) force_debug_t force_debug;
 
     tx_thread_sleep(1000);
     
-    constexpr float Tk_M3508 = 2598.9848f; // 16384 / (0.02*286/17)Nm/A * 20A
+    constexpr float Tk_M3508 = 1400.0f;//2598.9848f; // 16384 / (0.02*286/17)Nm/A * 20A
 
     om_suber_t *ins_suber = om_subscribe(om_find_topic("ins", UINT32_MAX));
     msg_ins_t ins{};
@@ -209,7 +209,7 @@ __attribute__((section(".RAM_D3"))) force_debug_t force_debug;
         solverfdb.lphi_dot = Lxdot[1];
         solverfdb.rphi_dot = Rxdot[1];
 
-        float vel = 0.5f * (LWheel.motorFeedback.speedFdb-RWheel.motorFeedback.speedFdb) * WHEEL_RADIUS;
+        float vel = 0.5f * (-LWheel.motorFeedback.speedFdb+RWheel.motorFeedback.speedFdb) * WHEEL_RADIUS;
         odom_data = odom.Update(ins.quaternion, ins.accel, vel, ins.yaw);
 
         solverfdb.lalpha = solverfdb.lphi-0.5f*Pi+ins.pitch*DegreeToRad;
@@ -268,12 +268,12 @@ __attribute__((section(".RAM_D3"))) force_debug_t force_debug;
 
         solver_debug.ljoint1_tor = LTp[0];
         solver_debug.ljoint4_tor = LTp[1];
-        solver_debug.rjoint1_tor = RTp[0];
-        solver_debug.rjoint4_tor = RTp[1];
+        solver_debug.rjoint1_tor = -RTp[0];
+        solver_debug.rjoint4_tor = -RTp[1];
         
-        solver_debug.rwheel_tor_ref = -pendulumctrl.Twr;
-        solver_debug.lwheel_tor_ref = pendulumctrl.Twl;
-        solver_debug.rwheel_tor_fdb = -RWheel.motorFeedback.currentFdb / Tk_M3508;
+        solver_debug.rwheel_tor_ref = pendulumctrl.Twr;
+        solver_debug.lwheel_tor_ref = -pendulumctrl.Twl;
+        solver_debug.rwheel_tor_fdb = RWheel.motorFeedback.currentFdb / Tk_M3508;
         solver_debug.lwheel_tor_fdb = LWheel.motorFeedback.currentFdb / Tk_M3508;
 
         solver_debug.ljoint4_pos = LJoint4.motorFeedback.positionFdb;
@@ -298,8 +298,8 @@ __attribute__((section(".RAM_D3"))) force_debug_t force_debug;
         force_debug.Pr = Pr;
         force_debug.Nl = Nl;
         force_debug.Nr = Nr;
-        force_debug.Tljoint4 = -LJoint4.motorFeedback.torqueFdb;
-        force_debug.Tljoint1 = -LJoint1.motorFeedback.torqueFdb;
+        force_debug.Tljoint4 = LJoint4.motorFeedback.torqueFdb;
+        force_debug.Tljoint1 = LJoint1.motorFeedback.torqueFdb;
         force_debug.Trjoint4 = RJoint4.motorFeedback.torqueFdb;
         force_debug.Trjoint1 = RJoint1.motorFeedback.torqueFdb;
         force_debug.N = solverfdb.N;
