@@ -24,7 +24,8 @@ struct pendulum_debug_t
     float xref;
     float v;
     float vref;
-    float l;
+    float llen;
+    float rlen;
     float l_ref;
     float pitch;
     float pitch_dot;
@@ -92,9 +93,9 @@ float debug_alpha_dot = 0.0f;
     msg_cmd_t cmd{};
 
 #ifdef DEBUG
-    lenpd_tuning.kp = 800.0f;
+    lenpd_tuning.kp = 2000.0f;
     lenpd_tuning.ki = 0.0f;
-    lenpd_tuning.kd = -24.0f;
+    lenpd_tuning.kd = -60.0f;
     phi0pd_tuning.kp = 20.0f;
     phi0pd_tuning.ki = 0.0f;
     phi0pd_tuning.kd = 10.0f;
@@ -167,14 +168,14 @@ float debug_alpha_dot = 0.0f;
                 refX[1] = cmd.v;
                 refX[2] = ins.total_yaw*DegreeToRad+cmd.dyaw*0.001f;
                 refX[3] = cmd.w+cmd.dyaw;
-                refX[4] = 0.0f;
+                refX[4] = 0.075f;
                 refX[5] = 0.0f;
-                refX[6] = 0.0f;
+                refX[6] = 0.075f;
                 refX[7] = 0.0f;
                 refX[8] = 0.0f;
                 refX[9] = 0.0f;
 
-                lqr_controller.refreshLQRK(solver_fdb.llen, solver_fdb.rlen,((solver_fdb.N<20.0f)||cmd.inair));
+                lqr_controller.refreshLQRK(solver_fdb.llen, solver_fdb.rlen,false/*((solver_fdb.N<20.0f)||cmd.inair)*/ );
                 lqr_controller.LQRCal(Tout);
                 pendulum_ctrl.Twl = Tout[0];
                 pendulum_ctrl.Twr = Tout[1];
@@ -185,16 +186,18 @@ float debug_alpha_dot = 0.0f;
 
     #ifdef DEBUG
         debug_ins = ins;
-        // debug_remoter = remoter;
         pendulum_debug.alphal = observedX[4];
         pendulum_debug.alphal_dot = observedX[5];
+        pendulum_debug.alphar = observedX[6];
+        pendulum_debug.alphar_dot = observedX[7];
         pendulum_debug.pitch = ins.pitch*DegreeToRad;
         pendulum_debug.pitch_dot = ins.gyro_p;
         pendulum_debug.T = Tout[0];
         pendulum_debug.Tp = Tout[1];
         pendulum_debug.Fl = pendulum_ctrl.Tl[0];
         pendulum_debug.Fr = pendulum_ctrl.Tr[0];
-        // pendulum_debug.l = lenfdb;
+        pendulum_debug.llen = solver_fdb.llen;
+        pendulum_debug.rlen = solver_fdb.rlen;
         pendulum_debug.l_ref = cmd.len;
         pendulum_debug.x = odom.x;
         pendulum_debug.xref = refX[0];

@@ -188,7 +188,7 @@ __attribute__((section(".RAM_D3"))) msg_remoter_t debug_remoter;
                 {
                     cmd.dyaw = yaw_updater.UpdateVal(-remoter.right_x);
                     cmd.v = v_updater.UpdateVal(remoter.left_y*2.0f);
-                    cmd.roll = 0.0f;//remoter.right_x*0.1f;
+                    cmd.roll = 0.0f;//remoter.left_x*0.1f;//
                     cmd.len = LEG_NORMAL_LEN;
                     cmd.w = 0.0f;
                     cmd.inair = false;
