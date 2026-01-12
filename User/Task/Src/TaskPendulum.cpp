@@ -7,6 +7,7 @@
 #include "config_chassis.hpp"
 #include "vmc.hpp"
 #include "om.h"
+#include <cstdlib>
 
 TX_THREAD PendulumThread;
 uint8_t PendulumThreadStack[4096] = {0};
@@ -77,8 +78,6 @@ float debug_alpha_dot = 0.0f;
     float refX[10] = {0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f};
     lqr_controller.InitMatX(&refX[0], &observedX[0]);
 
-    float thread_start_time;
-
     /* One Message Initialization */
     om_topic_t *pendulumctrl_topic =om_config_topic(nullptr, "ca", "pendulumctrl", sizeof(msg_ctrl_t));
     msg_ctrl_t pendulum_ctrl{};
@@ -95,7 +94,7 @@ float debug_alpha_dot = 0.0f;
 #ifdef DEBUG
     lenpd_tuning.kp = 2000.0f;
     lenpd_tuning.ki = 0.0f;
-    lenpd_tuning.kd = -60.0f;
+    lenpd_tuning.kd = -100.0f;
     phi0pd_tuning.kp = 20.0f;
     phi0pd_tuning.ki = 0.0f;
     phi0pd_tuning.kd = 10.0f;
@@ -106,7 +105,7 @@ float debug_alpha_dot = 0.0f;
 
     for (;;)
     {
-        thread_start_time = tx_time_get();
+        float thread_start_time = tx_time_get();
         om_suber_export(ins_suber, &ins, false);
         om_suber_export(solver_suber, &solver_fdb, false);
         om_suber_export(odom_suber, &odom, false);
@@ -150,19 +149,38 @@ float debug_alpha_dot = 0.0f;
             }
             else 
             {
-                roll_pd.ref = cmd.roll;
-                roll_pd.fdb = ins.roll*DegreeToRad;
-                roll_pd.UpdateResult(ins.gyro_r);
+                bool lneutral = Numeric::abs(solver_fdb.lalpha)<0.1f;
+                bool rneutral = Numeric::abs(solver_fdb.ralpha)<0.1f;
+                bool initialized = solver_fdb.llen >= 0.17f && solver_fdb.rlen >= 0.17f;
 
-                lleg_len_pd.ref = cmd.len+0.03f+roll_pd.result;
-                lleg_len_pd.fdb = solver_fdb.llen;
-                lleg_len_pd.UpdateResult(solver_fdb.llen_dot);
-                pendulum_ctrl.Tl[0] = lleg_len_pd.result;//0.0f;//
+                if (initialized)
+                {
+                    roll_pd.ref = cmd.roll;
+                    roll_pd.fdb = ins.roll*DegreeToRad;
+                    roll_pd.UpdateResult(ins.gyro_r);
 
-                rleg_len_pd.ref = cmd.len+0.03f-roll_pd.result;
-                rleg_len_pd.fdb = solver_fdb.rlen;
-                rleg_len_pd.UpdateResult(solver_fdb.rlen_dot);
-                pendulum_ctrl.Tr[0] = rleg_len_pd.result;//0.0f;//
+                    lleg_len_pd.ref = cmd.len+0.03f+roll_pd.result;
+                    lleg_len_pd.fdb = solver_fdb.llen;
+                    lleg_len_pd.UpdateResult(solver_fdb.llen_dot);
+                    pendulum_ctrl.Tl[0] = lleg_len_pd.result;//0.0f;//
+
+                    rleg_len_pd.ref = cmd.len+0.03f-roll_pd.result;
+                    rleg_len_pd.fdb = solver_fdb.rlen;
+                    rleg_len_pd.UpdateResult(solver_fdb.rlen_dot);
+                    pendulum_ctrl.Tr[0] = rleg_len_pd.result;//0.0f;//
+                }
+                else 
+                {
+                    lleg_len_pd.ref = 0.18f;
+                    lleg_len_pd.fdb = solver_fdb.llen;
+                    lleg_len_pd.UpdateResult(solver_fdb.llen_dot);
+                    pendulum_ctrl.Tl[0] = lleg_len_pd.result;//0.0f;//
+
+                    rleg_len_pd.ref = 0.18f;
+                    rleg_len_pd.fdb = solver_fdb.rlen;
+                    rleg_len_pd.UpdateResult(solver_fdb.rlen_dot);
+                    pendulum_ctrl.Tr[0] = rleg_len_pd.result;//0.0f;//
+                }
                 
                 refX[0] = cmd.x;
                 refX[1] = cmd.v;
@@ -175,7 +193,7 @@ float debug_alpha_dot = 0.0f;
                 refX[8] = 0.0f;
                 refX[9] = 0.0f;
 
-                lqr_controller.refreshLQRK(solver_fdb.llen, solver_fdb.rlen,false/*((solver_fdb.N<20.0f)||cmd.inair)*/ );
+                lqr_controller.refreshLQRK(solver_fdb.llen, solver_fdb.rlen,((lneutral&&rneutral&&solver_fdb.N<20.0f)||cmd.inair||!initialized));
                 lqr_controller.LQRCal(Tout);
                 pendulum_ctrl.Twl = Tout[0];
                 pendulum_ctrl.Twr = Tout[1];
