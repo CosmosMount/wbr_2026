@@ -3,8 +3,9 @@ clear; clc;
 
 % --- 1. 结构几何参数 ---
 L1 = 0.22; 
-L2 = 0.25; 
-d_jac = 0.05; 
+L2 = 0.25;
+d_L = 0.05;
+d_L2 = 0.05; 
 VMC_MotorDistance = 0.0; % 基座重合
 VMC_HalfMotorDistance = VMC_MotorDistance / 2;
 
@@ -14,7 +15,7 @@ phi1_vec = linspace(1.8, 2.6, n_points);
 phi4_vec = linspace(0.5, 1.3, n_points); 
 [PHI1, PHI4] = meshgrid(phi1_vec, phi4_vec);
 
-Fs_list = [250, 300, 450]; 
+Fs_list = [250, 340, 430]; 
 phi0_target = 90 * pi/180;
 phi0_margin = 5 * pi/180; 
 
@@ -30,38 +31,45 @@ for col = 1:3
 
     for i = 1:size(PHI1, 1)
         for j = 1:size(PHI1, 2)
-            p1 = PHI1(i,j); p4 = PHI4(i,j);
+            phi1 = PHI1(i,j); phi4 = PHI4(i,j);
             
             % VMC 角度解算
-            xdb = VMC_MotorDistance + L1 * (cos(p4) - cos(p1));
-            ydb = L1 * (sin(p4) - sin(p1));
+            xdb = VMC_MotorDistance + L1 * (cos(phi4) - cos(phi1));
+            ydb = L1 * (sin(phi4) - sin(phi1));
             A0 = 2 * L2 * xdb; B0 = 2 * L2 * ydb; C0 = xdb^2 + ydb^2;
             delta = A0^2 + B0^2 - C0^2;
             if delta < 1e-4, continue; end
 
             phi2 = 2.0 * atan2((B0 + sqrt(delta)), (A0 + C0));
-            cB = [L1 * cos(p1) - VMC_HalfMotorDistance; L1 * sin(p1)];
+            cB = [L1 * cos(phi1) - VMC_HalfMotorDistance; L1 * sin(phi1)];
             cC = [cB(1) + L2 * cos(phi2); cB(2) + L2 * sin(phi2)];
             phi0 = atan2(cC(2), cC(1));
+            L = norm(cC);
 
             % 垂直姿态过滤
             if abs(phi0 - phi0_target) > phi0_margin, continue; end
 
             % 雅可比力矩计算 (使用你提供的公式)
-            cD = [L1 * cos(p4) + VMC_HalfMotorDistance; L1 * sin(p4)];
+            cD = [L1 * cos(phi4) + VMC_HalfMotorDistance; L1 * sin(phi4)];
             phi3 = pi + atan2((cD(2) - cC(2)), (cD(1) - cC(1)));
             denom = sin(phi2 - phi3);
             if abs(denom) < 0.05, continue; end
 
-            J11 = L1 * sin(p1 - phi2) * sin(phi3) / denom;
-            J12 = (d_jac / L2) * sin(phi3 - p4) * sin(phi2) / denom;
-            J21 = -L1 * sin(p1 - phi2) * cos(phi3) / denom;
-            J22 = (d_jac / L2) * sin(phi3 - p4) * cos(phi2) / denom;
+            J11 = L1 * sin(phi1 - phi2) * sin(phi3) / denom;
+            J12 = (d_L2 / L2) * sin(phi3 - phi4) * sin(phi2) / denom;
+            J21 = -L1 * sin(phi1 - phi2) * cos(phi3) / denom;
+            J22 = (d_L2 / L2) * sin(phi3 - phi4) * cos(phi2) / denom;
+            
+            denom2 = d_L*L1/(L*sin(phi2-phi3));
+            K11 = sin(phi3)*sin(phi1-phi2)*denom2;
+            K12 = sin(phi2)*sin(phi3-phi4)*denom2;
+            K21 = -cos(phi3)*sin(phi1-phi2)*denom2;
+            K22 = cos(phi2)*sin(phi3-phi4)*denom2;
             
             % F_virtual 平行于 L2: Fx = Fs*cos(phi2), Fy = Fs*sin(phi2)
-            Fx = -Fs * cos(phi2); Fy = Fs * sin(phi2);
-            t1 = J11 * Fx + J21 * Fy;
-            t4 = J12 * Fx + J22 * Fy;
+            Fx = Fs * cos(phi1); Fy = Fs * sin(phi1);
+            t1 = J11 * Fx + J21 * Fy - K11 * Fx - K21 * Fy;
+            t4 = J12 * Fx + J22 * Fy - K12 * Fx - K22 * Fy;
 
             PHI0_filtered(end+1) = phi0 * 180/pi;
             T1_filtered(end+1) = t1;
