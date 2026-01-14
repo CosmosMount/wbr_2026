@@ -6,6 +6,7 @@
 TX_THREAD RemoterThread;
 uint8_t RemoterThreadStack[1024] = {0};
 TX_SEMAPHORE RemoterGot;
+TX_SEMAPHORE RemoterThreadSem;
 
 // 数组在 D1 RAM
 __attribute__((section(".RAM_D1"))) uint8_t dr16_rx[DR16_DATA_SIZE];
@@ -76,6 +77,7 @@ inline dr16_data_t& Dr16_Data()
         msg_remoter.last_ctrl_sw = msg_remoter.ctrl_sw;
         msg_remoter.last_jump_sw = msg_remoter.jump_sw;
         memcpy(&msg_remoter.last_key, &msg_remoter.key, sizeof(msg_remoter.key));
+        tx_semaphore_put(&RemoterThreadSem);
         tx_thread_sleep(1);
     }
 }

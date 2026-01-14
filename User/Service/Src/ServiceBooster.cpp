@@ -12,6 +12,7 @@ uint8_t alive_thread_stack[512];
 
 extern TX_THREAD RemoterThread;
 extern TX_SEMAPHORE RemoterGot;
+extern TX_SEMAPHORE RemoterThreadSem;
 extern uint8_t RemoterThreadStack[1024];
 extern void RemoterThreadFun(ULONG initial_input);
 
@@ -50,8 +51,8 @@ UCHAR Msg_PoolBuf[4096] = {0};
     while(1)
     {
         /* Increment thread counter. */
-        // bool imu_alive = tx_semaphore_get(&IMUThreadSem, TX_NO_WAIT) == TX_SUCCESS;
-        // bool remoter_alive = tx_semaphore_get(&RemoterGot, TX_NO_WAIT) == TX_SUCCESS;
+        bool imu_alive = tx_semaphore_get(&IMUThreadSem, TX_NO_WAIT) == TX_SUCCESS;
+        bool remoter_alive = tx_semaphore_get(&RemoterThreadSem, 100) == TX_SUCCESS;
         bool referee_alive = tx_semaphore_get(&RefereeThreadSem, TX_NO_WAIT) == TX_SUCCESS;
         bool function_alive = tx_semaphore_get(&FunctionThreadSem, TX_NO_WAIT) == TX_SUCCESS;
         bool solver_alive = tx_semaphore_get(&SolverThreadSem, TX_NO_WAIT) == TX_SUCCESS;
@@ -59,7 +60,22 @@ UCHAR Msg_PoolBuf[4096] = {0};
         bool ui_alive = tx_semaphore_get(&UIThreadSem, TX_NO_WAIT) == TX_SUCCESS;
         if (referee_alive && function_alive && solver_alive && pendulum_alive && ui_alive)
         {
-            LED_blink();
+            if (imu_alive && remoter_alive)
+            {
+                LED_blink(LED_COLOR::LED_GREEN);
+            }
+            else if (imu_alive)
+            {
+                LED_blink(LED_COLOR::LED_BLUE);
+            }
+            else if (remoter_alive)
+            {
+                LED_blink(LED_COLOR::LED_WHITE);
+            }
+        }
+        else 
+        {
+            LED_blink(LED_COLOR::LED_RED);
         }
         tx_thread_sleep(500);
     }
@@ -107,4 +123,5 @@ extern "C" void ServiceBooster()
     tx_semaphore_create(&RemoterGot, TX_NAME("RemoterGot"), 0);
     tx_semaphore_create(&IMUThreadSem, TX_NAME("IMUThreadSem"), 0);
     tx_semaphore_create(&RefereeThreadSem, TX_NAME("RefereeThreadSem"), 0);
+    tx_semaphore_create(&RemoterThreadSem, TX_NAME("RemoterThreadSem"), 0);
 }

@@ -70,6 +70,8 @@ TX_SEMAPHORE IMUThreadSem;
         }
 
         tx_semaphore_put(&IMUThreadSem);
+        tx_semaphore_put(&IMUThreadSem);
+        tx_semaphore_put(&IMUThreadSem);
 
         memcpy(msg_ins.quaternion, qekf.q, sizeof(qekf.q));
         msg_ins.yaw = qekf.yaw;
