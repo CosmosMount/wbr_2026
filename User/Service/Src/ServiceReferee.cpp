@@ -7,6 +7,7 @@
 #include <cstdint>
 
 TX_THREAD RefereeThread;
+TX_SEMAPHORE RefereeThreadSem;
 uint8_t RefereeThreadStack[2048] = {0};
 
 RefereeRingBuffer referee_fifo;
@@ -34,7 +35,7 @@ RefereeRingBuffer referee_fifo;
         RobotHurt_t           RobotHurt;
         ShootData_t           ShootData;
         RfidStatus_t          RfidStatus;
-        DartClientCmd_t      DartClientCmd;
+        DartClientCmd_t       DartClientCmd;
         RoboInteractData_t    RoboInteractData;
 
         // 每次尽可能多地处理 FIFO 中的数据
@@ -60,7 +61,7 @@ RefereeRingBuffer referee_fifo;
                     // 检查 CRC8
                     if (Verify_CRC8_Check_Sum(buffer, 5))
                     {
-                        data_len = (buffer[2] | (buffer[3] << 8)); // data_len 字段
+                        data_len = (buffer[1] | (buffer[2] << 8)); // data_len 字段
                         // 限制最大长度防止溢出
                         if(data_len > 200) 
                         { 
@@ -166,5 +167,8 @@ RefereeRingBuffer referee_fifo;
                 break;
             }
         }
+
+        tx_semaphore_put(&RefereeThreadSem);
+        tx_thread_sleep(1);
     }
 }

@@ -19,10 +19,15 @@ extern void UIThreadFun(ULONG initial_input);
 
 extern TX_SEMAPHORE TOFGot;
 
+extern TX_SEMAPHORE FunctionThreadSem;
+extern TX_SEMAPHORE SolverThreadSem;
+extern TX_SEMAPHORE PendulumThreadSem;
+extern TX_SEMAPHORE UIThreadSem;
+
 #define TX_NAME(s) const_cast<CHAR*>(s)
 extern "C" void TaskBooster(void)
 {
-
+    /* Create Task Threads */
     tx_thread_create(&PendulumThread, TX_NAME("PendulumThread"), PendulumThreadFun, 0x1234,
                      PendulumThreadStack, sizeof(PendulumThreadStack),
                      6, 6, TX_NO_TIME_SLICE, TX_AUTO_START);
@@ -39,5 +44,10 @@ extern "C" void TaskBooster(void)
                      UIThreadStack, sizeof(UIThreadStack),
                      8, 8, TX_NO_TIME_SLICE, TX_AUTO_START);
 
+    /* Create Semaphores */
     tx_semaphore_create(&TOFGot, TX_NAME("TOFGot"), 0);
+    tx_semaphore_create(&FunctionThreadSem, TX_NAME("FunctionThreadSem"), 0);
+    tx_semaphore_create(&PendulumThreadSem, TX_NAME("PendulumThreadSem"), 0);
+    tx_semaphore_create(&SolverThreadSem, TX_NAME("SolverThreadSem"), 0);
+    tx_semaphore_create(&UIThreadSem, TX_NAME("UIThreadSem"), 0);
 }

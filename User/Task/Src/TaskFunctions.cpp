@@ -15,6 +15,7 @@
 TX_THREAD FunctionThread;
 uint8_t FunctionThreadStack[2048] = {0};
 TX_SEMAPHORE TOFGot;
+TX_SEMAPHORE FunctionThreadSem;
 
 extern uint8_t xyAndRefAngleMsg[8];
 extern uint8_t StateAnduiMsg[8];
@@ -283,6 +284,7 @@ __attribute__((section(".RAM_D3"))) msg_remoter_t debug_remoter;
         debug_remoter = remoter;
     #endif
         /* Thread periodic delay */
+        tx_semaphore_put(&FunctionThreadSem);
         tx_thread_sleep(MIN(1, 1-(tx_time_get()-thread_start_time)));
     }
 }

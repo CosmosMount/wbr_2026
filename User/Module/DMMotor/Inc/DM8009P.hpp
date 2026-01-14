@@ -14,6 +14,8 @@ private:
 
     float T_MIN; ///< 扭矩最小值
     float T_MAX; ///< 扭矩最大值
+
+    float GearRatio = 1.0f; ///< 电机减速比，不带减速箱为1
 public:
     float LowerPosLimit; // 电机位置下限
     float UpperPosLimit; // 电机位置上限

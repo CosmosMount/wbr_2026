@@ -1,4 +1,5 @@
 #include "DMMotorHandler.hpp"
+#include "tx_api.h"
 
 /**
  * @brief 构造函数，将所有值初始化
@@ -39,23 +40,24 @@ void DMMotorHandler::EnableMotor_Block(DMMotor *motor)
         CAN_ID += 0x200;
         break;
     case DMMotor::MUTI_MODE:
-        // CAN_ID = 0x200; // 1拖4模式下，忘记了，等会查看
-        break;
+        // 1拖4模式不需要使能，也无法失能
+        return;
     default:
         break;
     }
 
-    uint16_t timeout = 0; // 超时计数，防止死循环。该函数不应该在高于1kHz的频率下调用
+    uint16_t timeout = 0; // 超时计数，如果超过1s视为使能失败
     do
     {
         timeout++;
-        CAN_Transmit(motor->hcan, CAN_ID, (uint8_t *)DMMotor::Enable_Frame, 8);
         if (timeout > 1000)
         {
-            // printf("Enable DM Motor Timeout\n");
+            motor->Enable_Failed = true;
             break;
         }
-    } while (motor->motorState != DMMotor::MOTOR_OFFLINE && motor->motorFeedback.ERR != DMMotor::ERR_ENABLE);
+        CAN_Transmit(motor->hcan, CAN_ID, (uint8_t *)DMMotor::Enable_Frame, 8);
+        tx_thread_sleep(1);
+    } while (motor->motorFeedback.ERR != DMMotor::ERR_ENABLE);
 };
 
 /**
@@ -83,8 +85,6 @@ void DMMotorHandler::EnableMotor(DMMotor *motor)
     default:
         break;
     }
-
-    CAN_Transmit(motor->hcan, CAN_ID, (uint8_t *)DMMotor::Enable_Frame, 8);
 };
 
 /**

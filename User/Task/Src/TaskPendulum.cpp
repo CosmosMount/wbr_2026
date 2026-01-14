@@ -5,11 +5,13 @@
 #include "slope.hpp"
 #include "magicmsgs.hpp"
 #include "config_chassis.hpp"
+#include "tx_api.h"
 #include "vmc.hpp"
 #include "om.h"
 #include <cstdlib>
 
 TX_THREAD PendulumThread;
+TX_SEMAPHORE PendulumThreadSem;
 uint8_t PendulumThreadStack[4096] = {0};
 
 extern TX_SEMAPHORE IMUThreadSem;
@@ -231,6 +233,7 @@ float debug_alpha_dot = 0.0f;
     #endif
         
         om_publish(pendulumctrl_topic, &pendulum_ctrl, sizeof(msg_ctrl_t), true, false);
+        tx_semaphore_put(&PendulumThreadSem);
         tx_thread_sleep(MIN(1, 1-(tx_time_get()-thread_start_time)));
     }
 }

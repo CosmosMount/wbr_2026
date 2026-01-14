@@ -31,6 +31,7 @@ extern FDCAN_HandleTypeDef hfdcan2;
 extern FDCAN_HandleTypeDef hfdcan3;
 
 TX_THREAD SolverThread;
+TX_SEMAPHORE SolverThreadSem;
 uint8_t SolverThreadStack[4096] = {0};
 
 
@@ -109,35 +110,25 @@ __attribute__((section(".RAM_D3"))) force_debug_t force_debug;
     RWheel.currentSet = 0;
     RWheel.gearBox = GearBox_XRoll;
 
-    tx_thread_sleep(2000);
-
     DMMotorHandler::Instance()->registerMotor(&LJoint4, &hfdcan1, 0x01);
     LJoint4.controlMode = DMMotor::MIT_MODE;
     LJoint4.torqueSet = 0;
-    DMMotorHandler::Instance()->EnableMotor(&LJoint4);
-
-    tx_thread_sleep(1000);
+    DMMotorHandler::Instance()->EnableMotor_Block(&LJoint4);
 
     DMMotorHandler::Instance()->registerMotor(&LJoint1, &hfdcan1, 0x02);
     LJoint1.controlMode = DMMotor::MIT_MODE;
     LJoint1.torqueSet = 0;
-    DMMotorHandler::Instance()->EnableMotor(&LJoint1);
-
-    tx_thread_sleep(1000);
+    DMMotorHandler::Instance()->EnableMotor_Block(&LJoint1);
 
     DMMotorHandler::Instance()->registerMotor(&RJoint4, &hfdcan1, 0x04);
     RJoint4.controlMode = DMMotor::MIT_MODE;
     RJoint4.torqueSet = 0;
-    DMMotorHandler::Instance()->EnableMotor(&RJoint4);
-
-    tx_thread_sleep(1000);
+    DMMotorHandler::Instance()->EnableMotor_Block(&RJoint4);
 
     DMMotorHandler::Instance()->registerMotor(&RJoint1, &hfdcan1, 0x03);
     RJoint1.controlMode = DMMotor::MIT_MODE;
     RJoint1.torqueSet = 0;
-    DMMotorHandler::Instance()->EnableMotor(&RJoint1);
-
-    tx_thread_sleep(1000);
+    DMMotorHandler::Instance()->EnableMotor_Block(&RJoint1);
     
     constexpr float Tk_M3508 = 1400.0f;//2598.9848f; // 16384 / (0.02*286/17)Nm/A * 20A
 
@@ -343,6 +334,7 @@ __attribute__((section(".RAM_D3"))) force_debug_t force_debug;
         dm_msg_tick ++;
         
         DJIMotorHandler::Instance()->sendControlData();
+        tx_semaphore_put(&SolverThreadSem);
         tx_thread_sleep(MIN(1, 1-(tx_time_get()-thread_start_time)));
     }
 }

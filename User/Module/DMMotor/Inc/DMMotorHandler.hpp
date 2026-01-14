@@ -2,9 +2,10 @@
 #define DMMOTORHANDLER_HPP
 
 #include "main.h"
+#include "tx_api.h"
 #include "bsp_can.hpp"
 #include "DMMotor.hpp"
-#include "Math.hpp"
+#include "math.hpp"
 #include "pid.hpp"
 
 constexpr int MAX_CAN_NUM = 3;     // 最大CAN口数量
@@ -64,4 +65,4 @@ public:
     }
 };
 
-#endif // GMMOTORHANDLER_HPP
+#endif // DMMOTORHANDLER_HPP

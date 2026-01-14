@@ -6,6 +6,7 @@
 #include <cstdint>
 
 TX_THREAD UIThread;
+TX_SEMAPHORE UIThreadSem;
 uint8_t UIThreadStack[2048] = {0};
 
 [[noreturn]] void UIThreadFun(ULONG initial_input)
@@ -33,6 +34,7 @@ uint8_t UIThreadStack[2048] = {0};
     {
         ui.MoveP2To(LINE_SUPERCAP, 800+DWT_GetTimeline_ms(), 100);
         ui.Update();
+        tx_semaphore_put(&UIThreadSem);
         tx_thread_sleep(100);
     }
 }

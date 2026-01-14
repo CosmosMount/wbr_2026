@@ -384,7 +384,7 @@ enum RefereeID
 
 struct RefereeRingBuffer 
 {
-    uint8_t _buffer[256];
+    uint8_t _buffer[256] = {0};
     volatile uint16_t head = 0; // 写入位置
     volatile uint16_t tail = 0; // 读取位置
     
@@ -399,7 +399,8 @@ struct RefereeRingBuffer
     
     bool pop(uint8_t& byte) 
     {
-        if(head == tail) return false;
+        if(head == tail) 
+            return false;
         byte = _buffer[tail];
         tail = (tail + 1) % 256;
         return true;

@@ -21,6 +21,9 @@ private:
 
     float T_MIN; ///< 扭矩最小值
     float T_MAX; ///< 扭矩最大值
+
+    float GearRatio = 1.0f; ///< 电机减速比，不带减速箱为1
+    
 public:
     static const uint8_t Enable_Frame[8];           // 使能帧，DM电机需要初始化时发送该帧才能控制
     static const uint8_t Disable_Frame[8];          // 失能帧
@@ -85,6 +88,7 @@ public:
     // 用于检测电机是否在线，需要在DMMotorHandler中和aliveCheck函数中处理
     uint32_t AliveFlag;
     uint32_t Pre_Flag;
+    bool Enable_Failed = false;
 
     float speedSet;    ///< 设定的目标速度
     float positionSet; ///< 设定的目标位置，范围[-Π, Π]
