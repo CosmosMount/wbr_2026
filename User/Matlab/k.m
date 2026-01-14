@@ -7,8 +7,8 @@ R_l = 0.42/2;                               % 两个驱动轮之间距离/2     
 l_c = 0.037;                                % 机体质心到腿部关节中心点距离  （单位：m）
 m_w = 1.405; m_l = 0.7682; m_b = 10.0;      % 驱动轮质量 腿部质量 机体质量  （单位：kg）
 I_w = m_w*R_w^2 ;                           % 驱动轮转动惯量               （单位：kg m^2）
-I_b = m_b*(0.45^2+0.14^2)/12.0;             %m_b*(0.40^2+0.13^2)/12.0;     % 机体转动惯量(自然坐标系法向)  （单位：kg m^2）
-I_z = m_b*(0.45^2+0.25^2)/12.0;             %m_b*(0.40^2+0.325^2)/12.0;    % 机器人z轴转动惯量
+I_b = m_b*(0.45^2+0.14^2)/12.0;             % m_b*(0.40^2+0.13^2)/12.0;     机体转动惯量(自然坐标系法向)  （单位：kg m^2）
+I_z = m_b*(0.45^2+0.25^2)/12.0;             % m_b*(0.40^2+0.325^2)/12.0;    机器人z轴转动惯量
 
 Leg_data_l =   [0.10, 0.00320, 0.09680, 0.110;
                 0.11, 0.01102, 0.09898, 0.114;
@@ -44,13 +44,14 @@ leg = 0.10:0.01:0.31;
 %         s  ds yaw dyaw alphal dalphal alphar dalphar theta dtheta
 % Q = diag([10 1 100 100 900 7 900 7 15000 80]);
 % Q = diag([80 80 80 80 400 1 400 1 4000 40]);
-Q = diag([60 80 60 60 200 0.5 200 0.5 2000 20]);
+% Q = diag([60 80 60 60 200 10 200 10 2000 20]);
+Q = diag([80 80 60 60 1000 20 1000 20 2000 10]);
 % 其中：
-% s       : 自然坐标系下机器人水平方向移动距离，单位：m，ds为其导数
-% phi     ：机器人水平方向移动时yaw偏航角度，dphi为其导数
-% theta_ll：左腿摆杆与竖直方向（自然坐标系z轴）夹角，dtheta_ll为其导数
-% theta_lr：右腿摆杆与竖直方向（自然坐标系z轴）夹角，dtheta_lr为其导数
-% theta_b ：机体与自然坐标系水平夹角，dtheta_b为其导数
+% s        : 自然坐标系下机器人水平方向移动距离，单位：m，ds为其导数
+% phi      ：机器人水平方向移动时yaw偏航角度，dphi为其导数
+% theta_ll ：左腿摆杆与竖直方向（自然坐标系z轴）夹角，dtheta_ll为其导数
+% theta_lr ：右腿摆杆与竖直方向（自然坐标系z轴）夹角，dtheta_lr为其导数
+% theta_b  ：机体与自然坐标系水平夹角，dtheta_b为其导数
 
 %R矩阵
 %    T_wl    T_wr     T_bl     T_br
@@ -102,18 +103,13 @@ for i = 1:num_L
     end
 end
 
-%%%为了使用from workspace模块，创建时间序列
-% time = (1:729)'; %创建时间向量，每个时间点间隔1
-% K_time_series = timeseries(K_matrices, time); %转换为时间序列
-% save('K_time_series.mat', 'K_time_series');
-
-%通过多项式拟合得出每个K矩阵的6个拟合系数
+% 通过多项式拟合得出每个K矩阵的6个拟合系数
 poly_coeffs_save = zeros(4, 10, 6);
 
 for i = 1:4
     for j = 1:10
         y = squeeze(K_matrices(i, j, :));
-        %最小二乘法
+        % 最小二乘法
         [L_grid, R_grid] = meshgrid(L_vals, R_vals);
         L_grid = L_grid(:);
         R_grid = R_grid(:);
@@ -127,7 +123,7 @@ end
 
 syms L_length R_length
 K = sym(zeros(4, 10));
-%输出当前QR矩阵
+% 输出当前QR矩阵
 fprintf('\t/*Q = [%.2f, %.2f, %.2f, %.2f, %.2f, %.2f, %.2f, %.2f, %.2f, %.2f] R = [%.2f, %.2f, %.2f, %.2f]*/\n', ...
           Q(1,1), Q(2,2), Q(3,3), Q(4,4), Q(5,5), Q(6,6),Q(7,7),Q(8,8),Q(9,9),Q(10,10),R(1,1),R(2,2),R(3,3),R(4,4));
 fprintf('\t/* a1 + a2*L_len + a3*R_len + a4*L_len^2 + a5*L_len*R_len + a6*R_len^2 */\n');
@@ -143,7 +139,7 @@ for i = 1:4
         
         K(i,j) = p00 + p10*L_length + p01*R_length + p20*L_length^2 + p11*L_length*R_length + p02*R_length^2;
 
-        % %输出与左右腿长相关的数组
+        % 输出与左右腿长相关的数组
         % fprintf('\tK(%.f,%.f) = %8.6f + %8.6f*L_len + %8.6f*R_len + %8.6f*L_len^2 + %8.6f*L_len*R_len + %8.6f*R_len^2; \n', ...
         %           i, j, p00, p10, p01, p20, p11, p02);
         fprintf('\t{ %8.6f , %8.6f, %8.6f, %8.6f, %8.6f, %8.6f}, \n', ...

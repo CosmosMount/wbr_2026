@@ -66,8 +66,8 @@ float debug_alpha_dot = 0.0f;
     UNUSED(initial_input);
 
     /* Legs Params Initialization */
-    PID rleg_len_pd(5000.0f, 0.0f, -8000.0f, 200.0f, 0.0f, PID_DVEL);
-    PID lleg_len_pd(5000.0f, 0.0f, -8000.0f, 200.0f, 0.0f, PID_DVEL);
+    PID rleg_len_pd(2000.0f, 0.0f, -1000.0f, 200.0f, 0.0f, PID_DVEL);
+    PID lleg_len_pd(2000.0f, 0.0f, -1000.0f, 200.0f, 0.0f, PID_DVEL);
 
     /* Roll Params Initialization */
     PID roll_pd(0.7f, 0.0f, 0.01f, 3.0f, 0.0f);
@@ -96,7 +96,7 @@ float debug_alpha_dot = 0.0f;
 #ifdef DEBUG
     lenpd_tuning.kp = 2000.0f;
     lenpd_tuning.ki = 0.0f;
-    lenpd_tuning.kd = -100.0f;
+    lenpd_tuning.kd = -1000.0f;
     phi0pd_tuning.kp = 20.0f;
     phi0pd_tuning.ki = 0.0f;
     phi0pd_tuning.kd = 10.0f;

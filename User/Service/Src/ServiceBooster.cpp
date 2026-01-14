@@ -74,7 +74,7 @@ UCHAR Msg_PoolBuf[4096] = {0};
         {
             LED_blink(LED_COLOR::LED_RED);
         }
-        tx_thread_sleep(100);
+        tx_thread_sleep(500);
     }
 }
 
