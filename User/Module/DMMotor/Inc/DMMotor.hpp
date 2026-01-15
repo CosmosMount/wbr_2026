@@ -63,6 +63,12 @@ public:
         ERR_OVERLOAD = 0xE,      ///< 过载
     };
 
+    enum MotorCANTypeDef
+    {
+        DM_CAN = 0,
+        DM_FDCAN
+    };
+
     /**
      * @struct MotorFeedBackTypeDef
      * @brief 电机反馈数据的结构体，包括电机的各种物理量反馈。
@@ -82,6 +88,7 @@ public:
     cotorControlModeTypeDef controlMode; ///< 当前电机控制模式
     MotorFeedBackTypeDef motorFeedback;  ///< 电机的反馈数据
     MotorStateTypeDef motorState;        ///< 电机的状态
+    MotorCANTypeDef canType;          ///< 电机的CAN类型
     FDCAN_HandleTypeDef *hcan;           ///< 电机所在的CAN口
     uint32_t canId;                     ///< 电机的ID
 

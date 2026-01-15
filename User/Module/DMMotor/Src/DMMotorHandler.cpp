@@ -1,5 +1,4 @@
 #include "DMMotorHandler.hpp"
-#include "tx_api.h"
 
 /**
  * @brief 构造函数，将所有值初始化
@@ -55,7 +54,15 @@ void DMMotorHandler::EnableMotor_Block(DMMotor *motor)
             motor->Enable_Failed = true;
             break;
         }
-        CAN_Transmit(motor->hcan, CAN_ID, (uint8_t *)DMMotor::Enable_Frame, 8);
+        switch (motor->canType)
+        {
+        case DMMotor::DM_CAN:
+            CAN_Transmit(motor->hcan, CAN_ID, (uint8_t *)DMMotor::Enable_Frame, 8);
+            break;
+        case DMMotor::DM_FDCAN:
+            FDCAN_Transmit(motor->hcan, CAN_ID, (uint8_t *)DMMotor::Enable_Frame, 8);
+            break;
+        }
         tx_thread_sleep(1);
     } while (motor->motorFeedback.ERR != DMMotor::ERR_ENABLE);
 };
@@ -83,6 +90,16 @@ void DMMotorHandler::EnableMotor(DMMotor *motor)
         // 1拖4模式不需要使能，也无法失能
         return;
     default:
+        break;
+    }
+
+    switch (motor->canType)
+    {
+    case DMMotor::DM_CAN:
+        CAN_Transmit(motor->hcan, CAN_ID, (uint8_t *)DMMotor::Enable_Frame, 8);
+        break;
+    case DMMotor::DM_FDCAN:
+        FDCAN_Transmit(motor->hcan, CAN_ID, (uint8_t *)DMMotor::Enable_Frame, 8);
         break;
     }
 };
@@ -113,7 +130,15 @@ void DMMotorHandler::DisableMotor(DMMotor *motor)
         break;
     }
 
-    CAN_Transmit(motor->hcan, CAN_ID, (uint8_t *)DMMotor::Disable_Frame, 8);
+    switch (motor->canType)
+    {
+    case DMMotor::DM_CAN:
+        CAN_Transmit(motor->hcan, CAN_ID, (uint8_t *)DMMotor::Disable_Frame, 8);
+        break;
+    case DMMotor::DM_FDCAN:
+        FDCAN_Transmit(motor->hcan, CAN_ID, (uint8_t *)DMMotor::Disable_Frame, 8);
+        break;
+    }
 };
 
 /**

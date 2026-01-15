@@ -207,7 +207,7 @@ namespace BMI088
         WriteReg(BMI088_CS_GYRO, GYRO_SOFTRESET_ADDR, &pTxData, 1);
         tx_thread_sleep(100); //< 延时100ms,重启需要时间
 
-        pTxData = GYRO_RANGE_2000_DEG_S;
+        pTxData = GYRO_RANGE_1000_DEG_S;
         WriteReg(BMI088_CS_GYRO, GYRO_RANGE_ADDR, &pTxData, 1);
         tx_thread_sleep(5); //< 延时5ms
 
@@ -259,9 +259,9 @@ namespace BMI088
         gyro[2] = ((int16_t)buf[5] << 8) + (int16_t)buf[4];
 
         //< 为了减少摩擦轮抖动带来的影响，加入333Hz滤波滤除
-        data->x = (float)gyro[0] * IMU_GYRO_2000_SEN - Gyro_offset[0]; // comment when calibration;//sensor_filter[3].Update((float)gyro[0] * IMU_GYRO_1000_SEN);
-        data->y = (float)gyro[1] * IMU_GYRO_2000_SEN - Gyro_offset[1]; // ;//sensor_filter[4].Update((float)gyro[1] * IMU_GYRO_1000_SEN);
-        data->z = (float)gyro[2] * IMU_GYRO_2000_SEN - Gyro_offset[2]; //sensor_filter[5].Update((float)gyro[2] * IMU_GYRO_1000_SEN);
+        data->x = (float)gyro[0] * IMU_GYRO_1000_SEN - Gyro_offset[0]; // comment when calibration;//sensor_filter[3].Update((float)gyro[0] * IMU_GYRO_1000_SEN);
+        data->y = (float)gyro[1] * IMU_GYRO_1000_SEN - Gyro_offset[1]; // ;//sensor_filter[4].Update((float)gyro[1] * IMU_GYRO_1000_SEN);
+        data->z = (float)gyro[2] * IMU_GYRO_1000_SEN - Gyro_offset[2]; //sensor_filter[5].Update((float)gyro[2] * IMU_GYRO_1000_SEN);
     }
 
 

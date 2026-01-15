@@ -44,7 +44,6 @@ TX_SEMAPHORE IMUThreadSem;
     {
         tx_thread_sleep(100);
     }
-    // tx_thread_sleep(2000);
     imu_handler->self_test.INIT_ERR = false;
 
     imu_handler->Calibrate();          //< 标定陀螺仪
@@ -122,7 +121,6 @@ uint8_t IMUTempThreadStack[1024] = {0};
 
     for (;;) 
     {
-
         imu_handler->ReadAccTemperature(&imu_handler->acc_data.temperature);
         imu_handler->TemperatureControl(imu_handler->TargetTemp);
         tx_thread_sleep(125);

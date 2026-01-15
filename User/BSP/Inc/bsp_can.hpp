@@ -29,6 +29,16 @@ void CAN_Init(void);
 void CAN_Transmit(FDCAN_HandleTypeDef *hcan, uint32_t Id, uint8_t *msg, uint16_t len);
 
 /**
+ * @brief 发送FDCAN数据。
+ * @param hcan 指向FDCAN句柄的指针，用于配置FDCAN传输。
+ * @param StdId FDCAN消息的标准标识符
+ * @param msg 发送的数据
+ * @param len 数据长度
+ * @note 该函数用于发送CAN数据，目前只支持标准帧
+ */
+void FDCAN_Transmit(FDCAN_HandleTypeDef *hfdcan, uint32_t Id, uint8_t *msg, uint16_t len);
+
+/**
  * @brief 从CAN接收数据。目前没有使用，而是直接在回调里处理。
  */
 void CAN_Receive();

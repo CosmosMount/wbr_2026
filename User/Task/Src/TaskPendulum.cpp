@@ -79,6 +79,7 @@ float debug_alpha_dot = 0.0f;
     float observedX[10] = {0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f};
     float refX[10] = {0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f};
     lqr_controller.InitMatX(&refX[0], &observedX[0]);
+    bool initialized = false;
 
     /* One Message Initialization */
     om_topic_t *pendulumctrl_topic =om_config_topic(nullptr, "ca", "pendulumctrl", sizeof(msg_ctrl_t));
@@ -115,13 +116,13 @@ float debug_alpha_dot = 0.0f;
 
         if (tx_semaphore_get(&IMUThreadSem, TX_WAIT_FOREVER) == TX_SUCCESS)
         {
-            observedX[0] = odom.x;//0.0f;//
-            observedX[1] = odom.v;//0.0f;//
-            observedX[2] = ins.total_yaw*DegreeToRad;//0.0f;//
-            observedX[3] = ins.gyro_y;//0.0f;//
-            observedX[4] = solver_fdb.lalpha;//0.0f;//
+            observedX[0] = odom.x;
+            observedX[1] = odom.v;
+            observedX[2] = ins.total_yaw*DegreeToRad;
+            observedX[3] = ins.gyro_y;
+            observedX[4] = solver_fdb.lalpha;
             observedX[5] = solver_fdb.lalpha_dot;
-            observedX[6] = solver_fdb.ralpha;//0.0f;//
+            observedX[6] = solver_fdb.ralpha;
             observedX[7] = solver_fdb.ralpha_dot;
             observedX[8] = ins.pitch*DegreeToRad;
             observedX[9] = ins.gyro_p;
@@ -153,7 +154,9 @@ float debug_alpha_dot = 0.0f;
             {
                 bool lneutral = Numeric::abs(solver_fdb.lalpha)<0.1f;
                 bool rneutral = Numeric::abs(solver_fdb.ralpha)<0.1f;
-                bool initialized = solver_fdb.llen >= 0.17f && solver_fdb.rlen >= 0.17f;
+                // bool initialized = solver_fdb.llen >= 0.17f && solver_fdb.rlen >= 0.17f;
+                bool wheeloff = true;//((lneutral&&rneutral&&solver_fdb.N<20.0f)||cmd.inair||!initialized);
+                bool hipoff = false;//(!lneutral&&!rneutral);
 
                 if (initialized)
                 {
@@ -164,24 +167,52 @@ float debug_alpha_dot = 0.0f;
                     lleg_len_pd.ref = cmd.len+0.03f+roll_pd.result;
                     lleg_len_pd.fdb = solver_fdb.llen;
                     lleg_len_pd.UpdateResult(solver_fdb.llen_dot);
-                    pendulum_ctrl.Tl[0] = lleg_len_pd.result;//0.0f;//
+                    pendulum_ctrl.Tl[0] = lleg_len_pd.result;
 
                     rleg_len_pd.ref = cmd.len+0.03f-roll_pd.result;
                     rleg_len_pd.fdb = solver_fdb.rlen;
                     rleg_len_pd.UpdateResult(solver_fdb.rlen_dot);
-                    pendulum_ctrl.Tr[0] = rleg_len_pd.result;//0.0f;//
+                    pendulum_ctrl.Tr[0] = rleg_len_pd.result;
                 }
                 else 
                 {
-                    lleg_len_pd.ref = 0.18f;
-                    lleg_len_pd.fdb = solver_fdb.llen;
-                    lleg_len_pd.UpdateResult(solver_fdb.llen_dot);
-                    pendulum_ctrl.Tl[0] = lleg_len_pd.result;//0.0f;//
+                    // lleg_len_pd.ref = 0.18f;
+                    // lleg_len_pd.fdb = solver_fdb.llen;
+                    // lleg_len_pd.UpdateResult(solver_fdb.llen_dot);
+                    // pendulum_ctrl.Tl[0] = lleg_len_pd.result;
 
-                    rleg_len_pd.ref = 0.18f;
-                    rleg_len_pd.fdb = solver_fdb.rlen;
-                    rleg_len_pd.UpdateResult(solver_fdb.rlen_dot);
-                    pendulum_ctrl.Tr[0] = rleg_len_pd.result;//0.0f;//
+                    // rleg_len_pd.ref = 0.18f;
+                    // rleg_len_pd.fdb = solver_fdb.rlen;
+                    // rleg_len_pd.UpdateResult(solver_fdb.rlen_dot);
+                    // pendulum_ctrl.Tr[0] = rleg_len_pd.result;
+                    if (!rneutral)
+                    {
+                        lleg_len_pd.ref = 0.10f;
+                        lleg_len_pd.fdb = solver_fdb.llen;
+                        lleg_len_pd.UpdateResult(solver_fdb.llen_dot);
+                        pendulum_ctrl.Tl[0] = lleg_len_pd.result;
+                        rleg_len_pd.ref = 0.10f;
+                        rleg_len_pd.fdb = solver_fdb.rlen;
+                        rleg_len_pd.UpdateResult(solver_fdb.rlen_dot);
+                        pendulum_ctrl.Tr[0] = rleg_len_pd.result;
+                    }
+                    else
+                    {
+                        lleg_len_pd.ref = 0.18f;
+                        lleg_len_pd.fdb = solver_fdb.llen;
+                        lleg_len_pd.UpdateResult(solver_fdb.llen_dot);
+                        pendulum_ctrl.Tl[0] = lleg_len_pd.result;
+
+                        rleg_len_pd.ref = 0.18f;
+                        rleg_len_pd.fdb = solver_fdb.rlen;
+                        rleg_len_pd.UpdateResult(solver_fdb.rlen_dot);
+                        pendulum_ctrl.Tr[0] = rleg_len_pd.result;
+
+                        if (solver_fdb.llen >= 0.17f&&solver_fdb.rlen >= 0.17f)
+                        {
+                            initialized = true;
+                        }
+                    }
                 }
                 
                 refX[0] = cmd.x;
@@ -195,12 +226,36 @@ float debug_alpha_dot = 0.0f;
                 refX[8] = 0.0f;
                 refX[9] = 0.0f;
 
-                lqr_controller.refreshLQRK(solver_fdb.llen, solver_fdb.rlen,((lneutral&&rneutral&&solver_fdb.N<20.0f)||cmd.inair||!initialized));
+                lqr_controller.refreshLQRK(solver_fdb.llen, solver_fdb.rlen);
                 lqr_controller.LQRCal(Tout);
-                pendulum_ctrl.Twl = Tout[0];
-                pendulum_ctrl.Twr = Tout[1];
-                pendulum_ctrl.Tl[1] = Tout[2];//0.0f;//
-                pendulum_ctrl.Tr[1] = Tout[3];//0.0f;//
+
+                if (wheeloff)
+                {
+                    Tout[0] = 0.0f;
+                    Tout[1] = 0.0f;
+                }
+                else 
+                {
+                    pendulum_ctrl.Twl = Tout[0];
+                    pendulum_ctrl.Twr = Tout[1];
+                }
+                
+                if (hipoff)
+                {
+                    pendulum_ctrl.Tl[0] = 0.0f;
+                    pendulum_ctrl.Tr[0] = 0.0f;
+                    pendulum_ctrl.Tl[1] = 0.0f;
+                    pendulum_ctrl.Tr[1] = 0.0f;
+                }
+                else 
+                {
+                    pendulum_ctrl.Tl[1] = Tout[2];
+                    pendulum_ctrl.Tr[1] = Tout[3];
+                }
+
+                pendulum_ctrl.Tl[0] = 0.0f;
+                pendulum_ctrl.Tl[1] = 0.0f;
+
             }
         }
 

@@ -105,7 +105,16 @@ void DM8009P::SetOutput()
     }
     }
 
-    CAN_Transmit(this->hcan, CAN_ID, OutputData, 8);
+    switch (this->canType)
+    {
+    case DMMotor::DM_CAN:
+        CAN_Transmit(this->hcan, CAN_ID, OutputData, 8);
+        break;
+    case DMMotor::DM_FDCAN:
+        FDCAN_Transmit(this->hcan, CAN_ID, OutputData, 8);
+        break;
+    }
+    
 }
 
 void DM8009P::ReceiveData(uint8_t *buffer)

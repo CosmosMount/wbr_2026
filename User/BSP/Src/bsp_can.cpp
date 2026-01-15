@@ -18,7 +18,6 @@ uint8_t StateAnduiMsg[8] = {0};
 /**
  * @brief 初始化CAN滤波器配置。
  * 设置CAN硬件的滤波器，用于优化接收数据的处理。
- * 更多信息，请参考原文，链接：https://blog.csdn.net/weixin_54448108/article/details/128570593
  */
 void CAN_Init(void)
 {
@@ -33,7 +32,7 @@ void CAN_Init(void)
 
     HAL_FDCAN_ConfigFilter(&hfdcan1, &FDCAN_FilterConfig);
     HAL_FDCAN_ConfigGlobalFilter(&hfdcan1, FDCAN_REJECT, FDCAN_REJECT, FDCAN_FILTER_REMOTE, FDCAN_FILTER_REMOTE);
-    HAL_FDCAN_ActivateNotification(&hfdcan1, FDCAN_IT_RX_FIFO0_NEW_MESSAGE, 0);
+    HAL_FDCAN_ActivateNotification(&hfdcan1, FDCAN_IT_RX_FIFO1_NEW_MESSAGE, 0);
     HAL_FDCAN_Start(&hfdcan1);
 
     HAL_FDCAN_ConfigFilter(&hfdcan2, &FDCAN_FilterConfig);
@@ -56,6 +55,24 @@ void CAN_Transmit(FDCAN_HandleTypeDef *hfdcan, uint32_t Id, uint8_t *msg, uint16
     tx_header.ErrorStateIndicator = FDCAN_ESI_ACTIVE;
     tx_header.BitRateSwitch = FDCAN_BRS_OFF;
     tx_header.FDFormat = FDCAN_CLASSIC_CAN;
+    tx_header.TxEventFifoControl = FDCAN_NO_TX_EVENTS;
+    tx_header.MessageMarker = 0;
+
+    tx_header.Identifier = Id;
+    tx_header.DataLength = len;
+
+    HAL_FDCAN_AddMessageToTxFifoQ(hfdcan, &tx_header, msg); ///< 发送数据
+}
+
+void FDCAN_Transmit(FDCAN_HandleTypeDef *hfdcan, uint32_t Id, uint8_t *msg, uint16_t len)
+{
+    FDCAN_TxHeaderTypeDef tx_header; ///< 定义发送数据结构体
+
+    tx_header.IdType = FDCAN_STANDARD_ID;
+    tx_header.TxFrameType = FDCAN_DATA_FRAME;
+    tx_header.ErrorStateIndicator = FDCAN_ESI_ACTIVE;
+    tx_header.BitRateSwitch = FDCAN_BRS_ON;
+    tx_header.FDFormat = FDCAN_FD_CAN;
     tx_header.TxEventFifoControl = FDCAN_NO_TX_EVENTS;
     tx_header.MessageMarker = 0;
 
@@ -129,6 +146,21 @@ void HAL_FDCAN_RxFifo0Callback(FDCAN_HandleTypeDef *hfdcan, uint32_t RxFifo0ITs)
         else if (rx_header.Identifier == 0xB2)
         {
             memcpy(StateAnduiMsg, rx_data, 8);
+        }
+    }
+}
+
+void HAL_FDCAN_Rxfifo1Callback(FDCAN_HandleTypeDef *hfdcan, uint32_t RxFifo1ITs)
+{
+    FDCAN_RxHeaderTypeDef rx_header;
+    uint8_t rx_data[8];
+    HAL_FDCAN_GetRxMessage(hfdcan, FDCAN_RX_FIFO1, &rx_header, rx_data);
+
+    if (rx_header.Identifier >= 0x05 && rx_header.Identifier <= 0x08)//Master ID 数值范围，自己在上位机定义
+    {
+        if (hfdcan == &hfdcan1)
+        {
+            DMMotorHandler::Instance()->UpdateFeedback(hfdcan, rx_data, int(rx_header.Identifier - 0x05));
         }
     }
 }

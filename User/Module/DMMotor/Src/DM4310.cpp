@@ -117,7 +117,15 @@ void DM4310::SetOutput()
     }
     }
 
-    CAN_Transmit(this->hcan, CAN_ID, OutputData, 8);
+    switch (this->canType)
+    {
+    case DMMotor::DM_CAN:
+        CAN_Transmit(this->hcan, CAN_ID, OutputData, 8);
+        break;
+    case DMMotor::DM_FDCAN:
+        FDCAN_Transmit(this->hcan, CAN_ID, OutputData, 8);
+        break;
+    }
 }
 void DM4310::ReceiveData(uint8_t *buffer)
 {
