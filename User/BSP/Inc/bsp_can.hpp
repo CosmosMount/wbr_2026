@@ -4,6 +4,11 @@
 #include "main.h"
 #include "fdcan.h"
 
+#ifdef __cplusplus
+extern "C"
+{
+#endif
+
 typedef struct
 {
     FDCAN_HandleTypeDef *hcan;
@@ -42,5 +47,9 @@ void FDCAN_Transmit(FDCAN_HandleTypeDef *hfdcan, uint32_t Id, uint8_t *msg, uint
  * @brief 从CAN接收数据。目前没有使用，而是直接在回调里处理。
  */
 void CAN_Receive();
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif // BSP_CAN_HPP
