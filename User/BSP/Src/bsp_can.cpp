@@ -15,10 +15,34 @@ extern FDCAN_HandleTypeDef hfdcan3;
 uint8_t xyAndRefAngleMsg[8] = {0};
 uint8_t StateAnduiMsg[8] = {0};
 
-/**
- * @brief 初始化CAN滤波器配置。
- * 设置CAN硬件的滤波器，用于优化接收数据的处理。
- */
+void FDCAN_Init(void)
+{
+    FDCAN_FilterTypeDef FDCAN_FilterConfig;
+
+    FDCAN_FilterConfig.IdType = FDCAN_STANDARD_ID;
+    FDCAN_FilterConfig.FilterIndex = 0;
+    FDCAN_FilterConfig.FilterType = FDCAN_FILTER_MASK;
+    FDCAN_FilterConfig.FilterID1 = 0x00000000;
+    FDCAN_FilterConfig.FilterID2 = 0x00000000;
+    FDCAN_FilterConfig.FilterConfig = FDCAN_FILTER_TO_RXFIFO1;
+
+    HAL_FDCAN_ConfigFilter(&hfdcan1, &FDCAN_FilterConfig);
+    HAL_FDCAN_ConfigGlobalFilter(&hfdcan1, FDCAN_REJECT, FDCAN_REJECT, FDCAN_FILTER_REMOTE, FDCAN_FILTER_REMOTE);
+    HAL_FDCAN_ActivateNotification(&hfdcan1, FDCAN_IT_RX_FIFO1_NEW_MESSAGE, 0);
+    HAL_FDCAN_ConfigFifoWatermark(&hfdcan1, FDCAN_CFG_RX_FIFO1, 1);
+    HAL_FDCAN_EnableTxDelayCompensation(&hfdcan1);
+    HAL_FDCAN_ConfigTxDelayCompensation(&hfdcan1,13,13);
+    HAL_FDCAN_Start(&hfdcan1);
+
+    HAL_FDCAN_ConfigFilter(&hfdcan3, &FDCAN_FilterConfig);
+    HAL_FDCAN_ConfigGlobalFilter(&hfdcan3, FDCAN_REJECT, FDCAN_REJECT, FDCAN_FILTER_REMOTE, FDCAN_FILTER_REMOTE);
+    HAL_FDCAN_ActivateNotification(&hfdcan3, FDCAN_IT_RX_FIFO1_NEW_MESSAGE, 0);
+    HAL_FDCAN_ConfigFifoWatermark(&hfdcan3, FDCAN_CFG_RX_FIFO1, 1);
+    HAL_FDCAN_EnableTxDelayCompensation(&hfdcan3);
+    HAL_FDCAN_ConfigTxDelayCompensation(&hfdcan3,13,13);
+    HAL_FDCAN_Start(&hfdcan3);
+}
+
 void CAN_Init(void)
 {
     FDCAN_FilterTypeDef FDCAN_FilterConfig;
@@ -28,27 +52,12 @@ void CAN_Init(void)
     FDCAN_FilterConfig.FilterType = FDCAN_FILTER_MASK;
     FDCAN_FilterConfig.FilterID1 = 0x00000000;
     FDCAN_FilterConfig.FilterID2 = 0x00000000;
-
-    FDCAN_FilterConfig.FilterConfig = FDCAN_FILTER_TO_RXFIFO1;
-    HAL_FDCAN_ConfigFilter(&hfdcan1, &FDCAN_FilterConfig);
-    HAL_FDCAN_ConfigGlobalFilter(&hfdcan1, FDCAN_REJECT, FDCAN_REJECT, FDCAN_FILTER_REMOTE, FDCAN_FILTER_REMOTE);
-    HAL_FDCAN_ActivateNotification(&hfdcan1, FDCAN_IT_RX_FIFO1_NEW_MESSAGE, 0);
-    HAL_FDCAN_ConfigFifoWatermark(&hfdcan1, FDCAN_CFG_RX_FIFO1, 1);
-    HAL_FDCAN_EnableTxDelayCompensation(&hfdcan1);
-    HAL_FDCAN_ConfigTxDelayCompensation(&hfdcan1,13,13);
-    HAL_FDCAN_Start(&hfdcan1);
-
     FDCAN_FilterConfig.FilterConfig = FDCAN_FILTER_TO_RXFIFO0;
 
     HAL_FDCAN_ConfigFilter(&hfdcan2, &FDCAN_FilterConfig);
     HAL_FDCAN_ConfigGlobalFilter(&hfdcan2, FDCAN_REJECT, FDCAN_REJECT, FDCAN_FILTER_REMOTE, FDCAN_FILTER_REMOTE);
     HAL_FDCAN_ActivateNotification(&hfdcan2, FDCAN_IT_RX_FIFO0_NEW_MESSAGE, 0);
     HAL_FDCAN_Start(&hfdcan2);
-
-    HAL_FDCAN_ConfigFilter(&hfdcan3, &FDCAN_FilterConfig);
-    HAL_FDCAN_ConfigGlobalFilter(&hfdcan3, FDCAN_REJECT, FDCAN_REJECT, FDCAN_FILTER_REMOTE, FDCAN_FILTER_REMOTE);
-    HAL_FDCAN_ActivateNotification(&hfdcan3, FDCAN_IT_RX_FIFO0_NEW_MESSAGE, 0);
-    HAL_FDCAN_Start(&hfdcan3);
 }
 
 void CAN_Transmit(FDCAN_HandleTypeDef *hfdcan, uint32_t Id, uint8_t *msg, uint16_t len)

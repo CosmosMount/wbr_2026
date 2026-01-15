@@ -122,8 +122,6 @@ __attribute__((section(".RAM_D3"))) force_debug_t force_debug;
     LJoint1.torqueSet = 0;
     DMMotorHandler::Instance()->EnableMotor(&LJoint1);
 
-    tx_thread_sleep(1);
-
     DMMotorHandler::Instance()->registerMotor(&RJoint4, &hfdcan1, 0x04);
     RJoint4.controlMode = DMMotor::MIT_MODE;
     RJoint4.canType = DMMotor::DM_FDCAN;
@@ -326,16 +324,12 @@ __attribute__((section(".RAM_D3"))) force_debug_t force_debug;
         // LWheel.currentSet = 0;
         // RWheel.currentSet = 0;
 
-        if (dm_msg_tick % 2 == 0)
-        {
-            LJoint1.SetOutput();
-            LJoint4.SetOutput();
-        }
-        else 
-        {
-            RJoint1.SetOutput();
-            RJoint4.SetOutput();
-        }
+
+        LJoint1.SetOutput();
+        LJoint4.SetOutput();
+        RJoint1.SetOutput();
+        RJoint4.SetOutput();
+
 
         dm_msg_tick ++;
         

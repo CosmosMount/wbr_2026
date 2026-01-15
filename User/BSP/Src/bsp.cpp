@@ -10,4 +10,5 @@ void bsp_Init() {
     USART_Init();
     DWT_Init(192);
     CAN_Init();
+    FDCAN_Init();
 }

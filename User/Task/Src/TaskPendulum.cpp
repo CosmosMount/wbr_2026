@@ -173,30 +173,11 @@ float debug_alpha_dot = 0.0f;
                     rleg_len_pd.fdb = solver_fdb.rlen;
                     rleg_len_pd.UpdateResult(solver_fdb.rlen_dot);
                     pendulum_ctrl.Tr[0] = rleg_len_pd.result;
+
                 }
                 else 
                 {
-                    // lleg_len_pd.ref = 0.18f;
-                    // lleg_len_pd.fdb = solver_fdb.llen;
-                    // lleg_len_pd.UpdateResult(solver_fdb.llen_dot);
-                    // pendulum_ctrl.Tl[0] = lleg_len_pd.result;
-
-                    // rleg_len_pd.ref = 0.18f;
-                    // rleg_len_pd.fdb = solver_fdb.rlen;
-                    // rleg_len_pd.UpdateResult(solver_fdb.rlen_dot);
-                    // pendulum_ctrl.Tr[0] = rleg_len_pd.result;
-                    if (!rneutral)
-                    {
-                        lleg_len_pd.ref = 0.10f;
-                        lleg_len_pd.fdb = solver_fdb.llen;
-                        lleg_len_pd.UpdateResult(solver_fdb.llen_dot);
-                        pendulum_ctrl.Tl[0] = lleg_len_pd.result;
-                        rleg_len_pd.ref = 0.10f;
-                        rleg_len_pd.fdb = solver_fdb.rlen;
-                        rleg_len_pd.UpdateResult(solver_fdb.rlen_dot);
-                        pendulum_ctrl.Tr[0] = rleg_len_pd.result;
-                    }
-                    else
+                    if (rneutral && lneutral)
                     {
                         lleg_len_pd.ref = 0.18f;
                         lleg_len_pd.fdb = solver_fdb.llen;
@@ -212,6 +193,18 @@ float debug_alpha_dot = 0.0f;
                         {
                             initialized = true;
                         }
+                        
+                    }
+                    else
+                    {
+                        lleg_len_pd.ref = 0.10f;
+                        lleg_len_pd.fdb = solver_fdb.llen;
+                        lleg_len_pd.UpdateResult(solver_fdb.llen_dot);
+                        pendulum_ctrl.Tl[0] = lleg_len_pd.result;
+                        rleg_len_pd.ref = 0.10f;
+                        rleg_len_pd.fdb = solver_fdb.rlen;
+                        rleg_len_pd.UpdateResult(solver_fdb.rlen_dot);
+                        pendulum_ctrl.Tr[0] = rleg_len_pd.result;
                     }
                 }
                 
@@ -252,9 +245,6 @@ float debug_alpha_dot = 0.0f;
                     pendulum_ctrl.Tl[1] = Tout[2];
                     pendulum_ctrl.Tr[1] = Tout[3];
                 }
-
-                pendulum_ctrl.Tl[0] = 0.0f;
-                pendulum_ctrl.Tl[1] = 0.0f;
 
             }
         }

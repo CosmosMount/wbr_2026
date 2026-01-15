@@ -19,9 +19,14 @@ typedef struct
 /**
  * @brief 初始化CAN滤波器配置。
  * 设置CAN硬件的滤波器，用于优化接收数据的处理。
- * 更多信息，请参考原文，链接：https://blog.csdn.net/weixin_54448108/article/details/128570593
  */
 void CAN_Init(void);
+
+/**
+ * @brief 初始化FDCAN滤波器配置。
+ * 设置FDCAN硬件的滤波器，用于优化接收数据的处理。
+ */
+void FDCAN_Init(void);
 
 /**
  * @brief 发送CAN数据。
