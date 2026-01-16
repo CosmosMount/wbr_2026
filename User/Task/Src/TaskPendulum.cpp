@@ -44,6 +44,7 @@ struct pendulum_debug_t
     float yawref;
     float yaw_dot;
     float yaw_out;
+    bool neutral;
 };
 
 struct pid_tuning_t {
@@ -52,7 +53,7 @@ struct pid_tuning_t {
     float kd;
 };
 
-msg_ins_t debug_ins; //__attribute__((section(".RAM_D3"))) 
+msg_ins_t debug_ins; 
 pendulum_debug_t pendulum_debug;
 pid_tuning_t lenpd_tuning;
 pid_tuning_t phi0pd_tuning;
@@ -79,7 +80,7 @@ float debug_alpha_dot = 0.0f;
     float observedX[10] = {0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f};
     float refX[10] = {0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f};
     lqr_controller.InitMatX(&refX[0], &observedX[0]);
-    bool initialized = false;
+    bool neutral = false;
 
     /* One Message Initialization */
     om_topic_t *pendulumctrl_topic =om_config_topic(nullptr, "ca", "pendulumctrl", sizeof(msg_ctrl_t));
@@ -152,14 +153,16 @@ float debug_alpha_dot = 0.0f;
             }
             else 
             {
-                bool lneutral = Numeric::abs(solver_fdb.lalpha)<0.1f;
-                bool rneutral = Numeric::abs(solver_fdb.ralpha)<0.1f;
-                // bool initialized = solver_fdb.llen >= 0.17f && solver_fdb.rlen >= 0.17f;
-                bool wheeloff = true;//((lneutral&&rneutral&&solver_fdb.N<20.0f)||cmd.inair||!initialized);
+                bool lneutral = Numeric::abs(solver_fdb.lalpha)<0.2f;
+                bool rneutral = Numeric::abs(solver_fdb.ralpha)<0.2f;
+                // bool neutral = solver_fdb.llen >= 0.17f && solver_fdb.rlen >= 0.17f;
+                bool wheeloff = true;//((lneutral&&rneutral&&solver_fdb.N<20.0f)||cmd.inair||!neutral);
                 bool hipoff = false;//(!lneutral&&!rneutral);
 
-                if (initialized)
+                if (neutral)
                 {
+                    wheeloff = false;
+
                     roll_pd.ref = cmd.roll;
                     roll_pd.fdb = ins.roll*DegreeToRad;
                     roll_pd.UpdateResult(ins.gyro_r);
@@ -174,6 +177,10 @@ float debug_alpha_dot = 0.0f;
                     rleg_len_pd.UpdateResult(solver_fdb.rlen_dot);
                     pendulum_ctrl.Tr[0] = rleg_len_pd.result;
 
+                    if (!rneutral || !lneutral)
+                    {
+                        neutral = false;
+                    }
                 }
                 else 
                 {
@@ -191,12 +198,13 @@ float debug_alpha_dot = 0.0f;
 
                         if (solver_fdb.llen >= 0.17f&&solver_fdb.rlen >= 0.17f)
                         {
-                            initialized = true;
+                            neutral = true;
                         }
                         
                     }
                     else
                     {
+                        wheeloff = true;
                         lleg_len_pd.ref = 0.10f;
                         lleg_len_pd.fdb = solver_fdb.llen;
                         lleg_len_pd.UpdateResult(solver_fdb.llen_dot);
@@ -273,6 +281,7 @@ float debug_alpha_dot = 0.0f;
         pendulum_debug.yaw = ins.total_yaw*DegreeToRad;
         pendulum_debug.yawref = refX[2];
         pendulum_debug.yaw_dot = ins.gyro_r;
+        pendulum_debug.neutral = neutral;
         lleg_len_pd.Tuning(lenpd_tuning.kp, lenpd_tuning.ki, lenpd_tuning.kd);
         rleg_len_pd.Tuning(lenpd_tuning.kp, lenpd_tuning.ki, lenpd_tuning.kd);
     #endif
