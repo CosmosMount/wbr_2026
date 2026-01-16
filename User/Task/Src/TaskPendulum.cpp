@@ -32,8 +32,10 @@ struct pendulum_debug_t
     float l_ref;
     float pitch;
     float pitch_dot;
-    float T;
-    float Tp;
+    float Twl;
+    float Twr;
+    float Tpl;
+    float Tpr;
     float Fl;
     float Fr;
     float delta_phi;
@@ -44,7 +46,8 @@ struct pendulum_debug_t
     float yawref;
     float yaw_dot;
     float yaw_out;
-    bool neutral;
+    bool lneutral;
+    bool rneutral;
 };
 
 struct pid_tuning_t {
@@ -80,7 +83,8 @@ float debug_alpha_dot = 0.0f;
     float observedX[10] = {0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f};
     float refX[10] = {0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f};
     lqr_controller.InitMatX(&refX[0], &observedX[0]);
-    bool neutral = false;
+    float llenref = 0.12f;
+    float rlenref = 0.12f;
 
     /* One Message Initialization */
     om_topic_t *pendulumctrl_topic =om_config_topic(nullptr, "ca", "pendulumctrl", sizeof(msg_ctrl_t));
@@ -153,76 +157,57 @@ float debug_alpha_dot = 0.0f;
             }
             else 
             {
-                bool lneutral = Numeric::abs(solver_fdb.lalpha)<0.2f;
-                bool rneutral = Numeric::abs(solver_fdb.ralpha)<0.2f;
-                // bool neutral = solver_fdb.llen >= 0.17f && solver_fdb.rlen >= 0.17f;
-                bool wheeloff = true;//((lneutral&&rneutral&&solver_fdb.N<20.0f)||cmd.inair||!neutral);
-                bool hipoff = false;//(!lneutral&&!rneutral);
+                roll_pd.ref = cmd.roll;
+                roll_pd.fdb = ins.roll*DegreeToRad;
+                roll_pd.UpdateResult(ins.gyro_r);
 
-                if (neutral)
+                if (solver_fdb.lneutral && solver_fdb.rneutral)
                 {
-                    wheeloff = false;
-
-                    roll_pd.ref = cmd.roll;
-                    roll_pd.fdb = ins.roll*DegreeToRad;
-                    roll_pd.UpdateResult(ins.gyro_r);
-
-                    lleg_len_pd.ref = cmd.len+0.03f+roll_pd.result;
-                    lleg_len_pd.fdb = solver_fdb.llen;
-                    lleg_len_pd.UpdateResult(solver_fdb.llen_dot);
-                    pendulum_ctrl.Tl[0] = lleg_len_pd.result;
-
-                    rleg_len_pd.ref = cmd.len+0.03f-roll_pd.result;
-                    rleg_len_pd.fdb = solver_fdb.rlen;
-                    rleg_len_pd.UpdateResult(solver_fdb.rlen_dot);
-                    pendulum_ctrl.Tr[0] = rleg_len_pd.result;
-
-                    if (!rneutral || !lneutral)
-                    {
-                        neutral = false;
-                    }
+                    refX[0] = cmd.x;
+                    refX[1] = cmd.v;
+                    llenref = cmd.len+0.03f+roll_pd.result;
+                    rlenref = cmd.len+0.03f-roll_pd.result;
                 }
                 else 
                 {
-                    if (rneutral && lneutral)
+                    refX[0] = odom.x;
+                    refX[1] = odom.v;
+
+                    if (!solver_fdb.lneutral)
                     {
-                        lleg_len_pd.ref = 0.18f;
-                        lleg_len_pd.fdb = solver_fdb.llen;
-                        lleg_len_pd.UpdateResult(solver_fdb.llen_dot);
-                        pendulum_ctrl.Tl[0] = lleg_len_pd.result;
-
-                        rleg_len_pd.ref = 0.18f;
-                        rleg_len_pd.fdb = solver_fdb.rlen;
-                        rleg_len_pd.UpdateResult(solver_fdb.rlen_dot);
-                        pendulum_ctrl.Tr[0] = rleg_len_pd.result;
-
-                        if (solver_fdb.llen >= 0.17f&&solver_fdb.rlen >= 0.17f)
-                        {
-                            neutral = true;
-                        }
-                        
+                        llenref = 0.12f;
                     }
-                    else
+                    else 
                     {
-                        wheeloff = true;
-                        lleg_len_pd.ref = 0.10f;
-                        lleg_len_pd.fdb = solver_fdb.llen;
-                        lleg_len_pd.UpdateResult(solver_fdb.llen_dot);
-                        pendulum_ctrl.Tl[0] = lleg_len_pd.result;
-                        rleg_len_pd.ref = 0.10f;
-                        rleg_len_pd.fdb = solver_fdb.rlen;
-                        rleg_len_pd.UpdateResult(solver_fdb.rlen_dot);
-                        pendulum_ctrl.Tr[0] = rleg_len_pd.result;
+                        llenref = solver_fdb.llen;
+                    }
+
+                    if (!solver_fdb.rneutral)
+                    {
+                        rlenref = 0.12f;
+                    }
+                    else 
+                    {
+                        rlenref = solver_fdb.rlen;
                     }
                 }
+
+                lleg_len_pd.ref = llenref;
+                lleg_len_pd.fdb = solver_fdb.llen;
+                lleg_len_pd.UpdateResult(solver_fdb.llen_dot);
+                pendulum_ctrl.Tl[0] = lleg_len_pd.result;
+
+                rleg_len_pd.ref = rlenref;
+                rleg_len_pd.fdb = solver_fdb.rlen;
+                rleg_len_pd.UpdateResult(solver_fdb.rlen_dot);
+                pendulum_ctrl.Tr[0] = rleg_len_pd.result;
                 
-                refX[0] = cmd.x;
-                refX[1] = cmd.v;
+                
                 refX[2] = ins.total_yaw*DegreeToRad+cmd.dyaw*0.001f;
                 refX[3] = cmd.w+cmd.dyaw;
-                refX[4] = 0.075f;
+                refX[4] = 0.14f;
                 refX[5] = 0.0f;
-                refX[6] = 0.075f;
+                refX[6] = 0.14f;
                 refX[7] = 0.0f;
                 refX[8] = 0.0f;
                 refX[9] = 0.0f;
@@ -230,29 +215,10 @@ float debug_alpha_dot = 0.0f;
                 lqr_controller.refreshLQRK(solver_fdb.llen, solver_fdb.rlen);
                 lqr_controller.LQRCal(Tout);
 
-                if (wheeloff)
-                {
-                    Tout[0] = 0.0f;
-                    Tout[1] = 0.0f;
-                }
-                else 
-                {
-                    pendulum_ctrl.Twl = Tout[0];
-                    pendulum_ctrl.Twr = Tout[1];
-                }
-                
-                if (hipoff)
-                {
-                    pendulum_ctrl.Tl[0] = 0.0f;
-                    pendulum_ctrl.Tr[0] = 0.0f;
-                    pendulum_ctrl.Tl[1] = 0.0f;
-                    pendulum_ctrl.Tr[1] = 0.0f;
-                }
-                else 
-                {
-                    pendulum_ctrl.Tl[1] = Tout[2];
-                    pendulum_ctrl.Tr[1] = Tout[3];
-                }
+                pendulum_ctrl.Twl = Tout[0];
+                pendulum_ctrl.Twr = Tout[1];
+                pendulum_ctrl.Tl[1] = Tout[2];
+                pendulum_ctrl.Tr[1] = Tout[3];
 
             }
         }
@@ -265,8 +231,10 @@ float debug_alpha_dot = 0.0f;
         pendulum_debug.alphar_dot = observedX[7];
         pendulum_debug.pitch = ins.pitch*DegreeToRad;
         pendulum_debug.pitch_dot = ins.gyro_p;
-        pendulum_debug.T = Tout[0];
-        pendulum_debug.Tp = Tout[1];
+        pendulum_debug.Twl = Tout[0];
+        pendulum_debug.Twr = Tout[1];
+        pendulum_debug.Tpl = Tout[2];
+        pendulum_debug.Tpr = Tout[3];
         pendulum_debug.Fl = pendulum_ctrl.Tl[0];
         pendulum_debug.Fr = pendulum_ctrl.Tr[0];
         pendulum_debug.llen = solver_fdb.llen;
@@ -281,7 +249,8 @@ float debug_alpha_dot = 0.0f;
         pendulum_debug.yaw = ins.total_yaw*DegreeToRad;
         pendulum_debug.yawref = refX[2];
         pendulum_debug.yaw_dot = ins.gyro_r;
-        pendulum_debug.neutral = neutral;
+        pendulum_debug.lneutral = solver_fdb.lneutral;
+        pendulum_debug.rneutral = solver_fdb.rneutral;
         lleg_len_pd.Tuning(lenpd_tuning.kp, lenpd_tuning.ki, lenpd_tuning.kd);
         rleg_len_pd.Tuning(lenpd_tuning.kp, lenpd_tuning.ki, lenpd_tuning.kd);
     #endif

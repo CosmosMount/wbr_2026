@@ -116,6 +116,9 @@ struct msg_solver_t
     float ralpha_dot;
     
     float N;
+
+    bool lneutral;
+    bool rneutral;
 };
 
 struct msg_ctrl_t
