@@ -1,4 +1,5 @@
 #include "DMMotorHandler.hpp"
+#include "DMMotor.hpp"
 
 /**
  * @brief 构造函数，将所有值初始化
@@ -333,7 +334,7 @@ void DMMotorHandler::ClearError(DMMotor *motor)
  * @brief 检查所有电机是否在线
  * @note 需要在主循环中调用
  */
-void DMMotorHandler::AllMotorAliveCheck()
+bool DMMotorHandler::AllMotorAlive()
 {
     for (uint8_t i = 0; i < MAX_CAN_NUM; i++)
     {
@@ -341,8 +342,12 @@ void DMMotorHandler::AllMotorAliveCheck()
         {
             if (DMMotorList[i][j] != nullptr)
             {
-                DMMotorList[i][j]->AliveCheck();
+                if (DMMotorList[i][j]->AliveCheck() == DMMotor::MOTOR_OFFLINE || DMMotorList[i][j]->motorFeedback.ERR != DMMotor::ERR_ENABLE)
+                {
+                    return false;
+                }
             }
         }
     }
+    return true;
 }

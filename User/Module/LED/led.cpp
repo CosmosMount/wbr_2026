@@ -12,13 +12,14 @@ void LED_ALL_OFF()
 
 void LED_blink(enum LED_COLOR color)
 {
-    static uint8_t flash_count;
-    if (++flash_count % 2 == 0)
+    static uint32_t flash_count;
+    flash_count ++;
+
+    if (flash_count <= 250)
     {
         WS2812_Ctrl(0, 0, 0); // 关闭LED灯
-        flash_count = 0;
     }
-    else
+    else if (flash_count <= 500)
     {
         switch (color)
         {
@@ -35,5 +36,10 @@ void LED_blink(enum LED_COLOR color)
                 WS2812_Ctrl(7,7,7); // 白色LED灯闪烁
                 break;
         }
+    }
+
+    if (flash_count >= 500)
+    {
+        flash_count = 0;
     }
 }

@@ -180,7 +180,7 @@ enum BMI088_SENSOR
 #define BMI088_GYRO_PRE_CALI_OFFSET_Z -0.000647540528f
 
 /* pre calibrate parameter to go here */
-#define BMI088_ACCEL_PRE_CALI_OFFSET_X 0.0038458286072392397
+#define BMI088_ACCEL_PRE_CALI_OFFSET_X 0.0038458286072392397f
 #define BMI088_ACCEL_PRE_CALI_OFFSET_Y 0.00647039594993548f
 #define BMI088_ACCEL_PRE_CALI_OFFSET_Z 0.014968990490337293f
 #define BMI088_ACCEL_PRE_CALI_G_NORM 9.805f
@@ -236,7 +236,7 @@ enum BMI088_SENSOR
 
 
     private:
-        float Gyro_offset[3]; // 陀螺仪零飘
+        float Gyro_offset[3] = {BMI088_GYRO_PRE_CALI_OFFSET_X, BMI088_GYRO_PRE_CALI_OFFSET_Y, BMI088_GYRO_PRE_CALI_OFFSET_Z}; // 陀螺仪零飘
         float Acc_coef = IMU_ACCEL_3G_SEN;       // 加速度计灵敏度，标定完后要乘以9.805/gNorm
         float gNorm = 9.805f;          // 重力加速度模长
         IIRFilter sensor_filter[6] = {

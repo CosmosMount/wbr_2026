@@ -115,25 +115,25 @@ __attribute__((section(".RAM_D3"))) force_debug_t force_debug;
     LJoint4.controlMode = DMMotor::MIT_MODE;
     LJoint4.canType = DMMotor::DM_FDCAN;
     LJoint4.torqueSet = 0;
-    DMMotorHandler::Instance()->EnableMotor(&LJoint4);
+    DMMotorHandler::Instance()->EnableMotor_Block(&LJoint4);
 
     DMMotorHandler::Instance()->registerMotor(&LJoint1, &hfdcan1, 0x02);
     LJoint1.controlMode = DMMotor::MIT_MODE;
     LJoint1.canType = DMMotor::DM_FDCAN;
     LJoint1.torqueSet = 0;
-    DMMotorHandler::Instance()->EnableMotor(&LJoint1);
+    DMMotorHandler::Instance()->EnableMotor_Block(&LJoint1);
 
     DMMotorHandler::Instance()->registerMotor(&RJoint4, &hfdcan1, 0x04);
     RJoint4.controlMode = DMMotor::MIT_MODE;
     RJoint4.canType = DMMotor::DM_FDCAN;
     RJoint4.torqueSet = 0;
-    DMMotorHandler::Instance()->EnableMotor(&RJoint4);
+    DMMotorHandler::Instance()->EnableMotor_Block(&RJoint4);
 
     DMMotorHandler::Instance()->registerMotor(&RJoint1, &hfdcan1, 0x03);
     RJoint1.controlMode = DMMotor::MIT_MODE;
     RJoint1.canType = DMMotor::DM_FDCAN;
     RJoint1.torqueSet = 0;
-    DMMotorHandler::Instance()->EnableMotor(&RJoint1);
+    DMMotorHandler::Instance()->EnableMotor_Block(&RJoint1);
     
     constexpr float Tk_M3508 = 1400.0f;//2598.9848f; // 16384 / (0.02*286/17)Nm/A * 20A
 
