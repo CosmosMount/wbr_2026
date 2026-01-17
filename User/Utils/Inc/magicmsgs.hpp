@@ -142,6 +142,7 @@ struct msg_cmd_t
     float v;
     float w;
     float len;
+    float yaw;
     float dyaw;
     float roll;
     bool move;

@@ -61,8 +61,7 @@ pendulum_debug_t pendulum_debug;
 pid_tuning_t lenpd_tuning;
 pid_tuning_t phi0pd_tuning;
 pid_tuning_t yawpd_tuning;
-float last_alpha = 0.0f;
-float debug_alpha_dot = 0.0f;
+float alpha_comp_tuning = 0.17f;
 #endif
 
 [[noreturn]] void PendulumThreadFun(ULONG initial_input)
@@ -203,11 +202,11 @@ float debug_alpha_dot = 0.0f;
                 pendulum_ctrl.Tr[0] = rleg_len_pd.result;
                 
                 
-                refX[2] = ins.total_yaw*DegreeToRad+cmd.dyaw*0.001f;
+                refX[2] = cmd.yaw;
                 refX[3] = cmd.w+cmd.dyaw;
-                refX[4] = 0.14f;
+                refX[4] = alpha_comp_tuning+0.28f*(0.21f-solver_fdb.llen);
                 refX[5] = 0.0f;
-                refX[6] = 0.14f;
+                refX[6] = alpha_comp_tuning+0.28f*(0.21f-solver_fdb.rlen);
                 refX[7] = 0.0f;
                 refX[8] = 0.0f;
                 refX[9] = 0.0f;

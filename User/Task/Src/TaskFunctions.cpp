@@ -43,6 +43,8 @@ __attribute__((section(".RAM_D3"))) msg_remoter_t debug_remoter;
 #endif
     float x_maintain;
     bool maintained_x = false;
+    float yaw_maintain;
+    bool maintained_yaw = false;
 
     /* Slope Updaters */
     SLOPE yaw_updater(0.0f, 0.01f);
@@ -187,10 +189,11 @@ __attribute__((section(".RAM_D3"))) msg_remoter_t debug_remoter;
                 cmd.move = true;
                 if (remoter.jump_sw == None)
                 {
-                    cmd.dyaw = yaw_updater.UpdateVal(-remoter.right_x);
+                    cmd.dyaw = yaw_updater.UpdateVal(-remoter.right_x*2.0f);
                     cmd.v = v_updater.UpdateVal(remoter.left_y*2.0f);
                     cmd.roll = 0.0f;//remoter.left_x*0.1f;//
-                    cmd.len = LEG_NORMAL_LEN;
+                    cmd.len += remoter.right_y*0.001f;
+                    cmd.len = FloatConstrain(cmd.len, MIN_LEG_LEN, MAX_LEG_LEN);
                     cmd.w = 0.0f;
                     cmd.inair = false;
                 }
@@ -270,6 +273,21 @@ __attribute__((section(".RAM_D3"))) msg_remoter_t debug_remoter;
             {   
                 maintained_x = false;
                 cmd.x = odom.x+cmd.v*0.001f;
+            }
+
+            if (fabs(cmd.dyaw)<0.002f && remoter.ctrl_sw != Spin)
+            {
+                if (!maintained_yaw)
+                {
+                    yaw_maintain = ins.total_yaw*DegreeToRad;
+                    maintained_yaw = true;
+                }
+                cmd.yaw = yaw_maintain;
+            }
+            else
+            {
+                maintained_yaw = false;
+                cmd.yaw = ins.total_yaw*DegreeToRad+cmd.dyaw*0.001f;
             }
         #endif           
         }
