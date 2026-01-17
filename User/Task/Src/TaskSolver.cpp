@@ -134,8 +134,14 @@ __attribute__((section(".RAM_D3"))) force_debug_t force_debug;
     RJoint1.canType = DMMotor::DM_FDCAN;
     RJoint1.torqueSet = 0;
     DMMotorHandler::Instance()->EnableMotor_Block(&RJoint1);
+
+    /* If need to save zero points */
+    // DMMotorHandler::Instance()->SaveZeroPosition(&LJoint4);
+    // DMMotorHandler::Instance()->SaveZeroPosition(&LJoint1);
+    // DMMotorHandler::Instance()->SaveZeroPosition(&RJoint4);
+    // DMMotorHandler::Instance()->SaveZeroPosition(&RJoint1);
     
-    constexpr float Tk_M3508 = 1400.0f;//2598.9848f; // 16384 / (0.02*286/17)Nm/A * 20A
+    constexpr float Tk_M3508 = 1400.0f;
 
     om_suber_t *ins_suber = om_subscribe(om_find_topic("ins", UINT32_MAX));
     msg_ins_t ins{};
@@ -284,6 +290,11 @@ __attribute__((section(".RAM_D3"))) force_debug_t force_debug;
             initialized = false;
             solverfdb.lneutral = false;
             solverfdb.rneutral = false;
+        }
+
+        if (cmd.gostair)
+        {
+            initialized = false;
         }
 
         if (!cmd.move || !solverfdb.lneutral || !solverfdb.rneutral || solverfdb.llen<0.20f || solverfdb.rlen<0.20f)

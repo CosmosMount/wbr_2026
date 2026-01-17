@@ -8,7 +8,6 @@
 #include "tx_api.h"
 #include "vmc.hpp"
 #include "om.h"
-#include <cstdlib>
 
 TX_THREAD PendulumThread;
 TX_SEMAPHORE PendulumThreadSem;
@@ -160,7 +159,7 @@ float alpha_comp_tuning = 0.17f;
                 roll_pd.fdb = ins.roll*DegreeToRad;
                 roll_pd.UpdateResult(ins.gyro_r);
 
-                if (solver_fdb.lneutral && solver_fdb.rneutral)
+                if ((solver_fdb.lneutral && solver_fdb.rneutral)||cmd.gostair)
                 {
                     refX[0] = cmd.x;
                     refX[1] = cmd.v;
@@ -174,7 +173,7 @@ float alpha_comp_tuning = 0.17f;
 
                     if (!solver_fdb.lneutral)
                     {
-                        llenref = 0.12f;
+                        llenref = 0.10f;
                     }
                     else 
                     {
@@ -183,7 +182,7 @@ float alpha_comp_tuning = 0.17f;
 
                     if (!solver_fdb.rneutral)
                     {
-                        rlenref = 0.12f;
+                        rlenref = 0.10f;
                     }
                     else 
                     {
@@ -218,7 +217,20 @@ float alpha_comp_tuning = 0.17f;
                 pendulum_ctrl.Twr = Tout[1];
                 pendulum_ctrl.Tl[1] = Tout[2];
                 pendulum_ctrl.Tr[1] = Tout[3];
+                
+                if ((solver_fdb.N < 20.0f||cmd.inair)&&(solver_fdb.lneutral&&solver_fdb.rneutral))
+                {
+                    pendulum_ctrl.Twl = 0.0f;
+                    pendulum_ctrl.Twr = 0.0f;
+                }
 
+                if (cmd.gostair)
+                {
+                    pendulum_ctrl.Twl = 0.0f;
+                    pendulum_ctrl.Twr = 0.0f;
+                    pendulum_ctrl.Tl[1] = 0.0f;
+                    pendulum_ctrl.Tr[1] = 0.0f;
+                }
             }
         }
 

@@ -2,6 +2,9 @@
 
 #define CHASSIS_ONLY
 
+// #define JUMP_UP
+#define STAIR_UP
+
 #define TOF_DATA_SIZE 9
 
 #define MIN_LEG_LEN       0.10f

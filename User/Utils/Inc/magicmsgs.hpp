@@ -1,6 +1,5 @@
 #pragma once
 
-#include <cstdint>
 typedef enum {
     Relax = 2,
     Spin = 1,
@@ -146,6 +145,7 @@ struct msg_cmd_t
     float dyaw;
     float roll;
     bool move;
+    bool gostair;
     bool inair;
     bool ifflip;
 };

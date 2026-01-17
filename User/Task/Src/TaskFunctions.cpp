@@ -9,7 +9,6 @@
 #include "tx_api.h"
 #include "vmc.hpp"
 #include "om.h"
-#include <cstring>
 #include "usart.h"
 
 TX_THREAD FunctionThread;
@@ -196,9 +195,11 @@ __attribute__((section(".RAM_D3"))) msg_remoter_t debug_remoter;
                     cmd.len = FloatConstrain(cmd.len, MIN_LEG_LEN, MAX_LEG_LEN);
                     cmd.w = 0.0f;
                     cmd.inair = false;
+                    cmd.gostair = false;
                 }
                 else
                 {
+                #ifdef JUMP_UP
                     static uint16_t delay_timer;
                     cmd.dyaw = 0.0f;
                     cmd.w = 0.0f;
@@ -250,6 +251,13 @@ __attribute__((section(".RAM_D3"))) msg_remoter_t debug_remoter;
                             }
                         }
                     }
+                #endif
+                #ifdef STAIR_UP
+                    if (remoter.jump_sw == Prepared)
+                    {
+                        cmd.gostair = true;
+                    }
+                #endif
                 }
             }
             else if (remoter.ctrl_sw == Spin)
