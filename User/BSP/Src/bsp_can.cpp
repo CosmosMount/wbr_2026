@@ -29,7 +29,6 @@ void FDCAN_Init(void)
     HAL_FDCAN_ConfigFilter(&hfdcan1, &FDCAN_FilterConfig);
     HAL_FDCAN_ConfigGlobalFilter(&hfdcan1, FDCAN_REJECT, FDCAN_REJECT, FDCAN_FILTER_REMOTE, FDCAN_FILTER_REMOTE);
     HAL_FDCAN_ActivateNotification(&hfdcan1, FDCAN_IT_RX_FIFO1_NEW_MESSAGE, 0);
-    HAL_FDCAN_ConfigFifoWatermark(&hfdcan1, FDCAN_CFG_RX_FIFO1, 1);
     HAL_FDCAN_EnableTxDelayCompensation(&hfdcan1);
     HAL_FDCAN_ConfigTxDelayCompensation(&hfdcan1,13,13);
     HAL_FDCAN_Start(&hfdcan1);
@@ -37,7 +36,6 @@ void FDCAN_Init(void)
     HAL_FDCAN_ConfigFilter(&hfdcan3, &FDCAN_FilterConfig);
     HAL_FDCAN_ConfigGlobalFilter(&hfdcan3, FDCAN_REJECT, FDCAN_REJECT, FDCAN_FILTER_REMOTE, FDCAN_FILTER_REMOTE);
     HAL_FDCAN_ActivateNotification(&hfdcan3, FDCAN_IT_RX_FIFO1_NEW_MESSAGE, 0);
-    HAL_FDCAN_ConfigFifoWatermark(&hfdcan3, FDCAN_CFG_RX_FIFO1, 1);
     HAL_FDCAN_EnableTxDelayCompensation(&hfdcan3);
     HAL_FDCAN_ConfigTxDelayCompensation(&hfdcan3,13,13);
     HAL_FDCAN_Start(&hfdcan3);
