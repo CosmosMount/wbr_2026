@@ -65,7 +65,9 @@ __attribute__((section(".RAM_D3"))) msg_remoter_t debug_remoter;
     msg_odometry_t odom{};
 
     /* Jump Stage */
+#ifdef JUMP_UP
     jump_stage_e jump_stage = DONT_JUMP;
+#endif
 
     for (;;)
     {

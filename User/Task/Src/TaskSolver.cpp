@@ -224,18 +224,18 @@ __attribute__((section(".RAM_D3"))) force_debug_t force_debug;
 
         if (!initialized)
         {
-            if (Numeric::abs(solverfdb.lalpha) < 0.2f)
+            if (Numeric::abs(solverfdb.lalpha) < 0.25f)
                 lneutral_count++;
             else
                 lneutral_count = 0;
 
-            if (Numeric::abs(solverfdb.ralpha) < 0.2f)
+            if (Numeric::abs(solverfdb.ralpha) < 0.25f)
                 rneutral_count++;
             else
                 rneutral_count = 0;
 
-            solverfdb.lneutral = lneutral_count > 300;
-            solverfdb.rneutral = rneutral_count > 300;
+            solverfdb.lneutral = lneutral_count > 200;
+            solverfdb.rneutral = rneutral_count > 200;
 
             if (solverfdb.lneutral && solverfdb.rneutral)
             {
@@ -295,9 +295,11 @@ __attribute__((section(".RAM_D3"))) force_debug_t force_debug;
         if (cmd.gostair)
         {
             initialized = false;
+            solverfdb.lneutral = false;
+            solverfdb.rneutral = false;
         }
 
-        if (!cmd.move || !solverfdb.lneutral || !solverfdb.rneutral || solverfdb.llen<0.20f || solverfdb.rlen<0.20f)
+        if (!cmd.move)
         {
             odom.Reset();
         }

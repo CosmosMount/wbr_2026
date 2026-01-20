@@ -49,7 +49,8 @@ struct pendulum_debug_t
     bool rneutral;
 };
 
-struct pid_tuning_t {
+struct pid_tuning_t 
+{
     float kp;
     float ki;
     float kd;
@@ -60,7 +61,7 @@ pendulum_debug_t pendulum_debug;
 pid_tuning_t lenpd_tuning;
 pid_tuning_t phi0pd_tuning;
 pid_tuning_t yawpd_tuning;
-float alpha_comp_tuning = 0.17f;
+float alpha_comp_tuning = 0.09f;
 #endif
 
 [[noreturn]] void PendulumThreadFun(ULONG initial_input)
@@ -161,33 +162,13 @@ float alpha_comp_tuning = 0.17f;
 
                 if ((solver_fdb.lneutral && solver_fdb.rneutral)||cmd.gostair)
                 {
-                    refX[0] = cmd.x;
-                    refX[1] = cmd.v;
                     llenref = cmd.len+0.03f+roll_pd.result;
                     rlenref = cmd.len+0.03f-roll_pd.result;
                 }
                 else 
                 {
-                    refX[0] = odom.x;
-                    refX[1] = odom.v;
-
-                    if (!solver_fdb.lneutral)
-                    {
-                        llenref = 0.10f;
-                    }
-                    else 
-                    {
-                        llenref = solver_fdb.llen;
-                    }
-
-                    if (!solver_fdb.rneutral)
-                    {
-                        rlenref = 0.10f;
-                    }
-                    else 
-                    {
-                        rlenref = solver_fdb.rlen;
-                    }
+                    llenref = 0.21f;
+                    rlenref = 0.21f;
                 }
 
                 lleg_len_pd.ref = llenref;
@@ -200,12 +181,13 @@ float alpha_comp_tuning = 0.17f;
                 rleg_len_pd.UpdateResult(solver_fdb.rlen_dot);
                 pendulum_ctrl.Tr[0] = rleg_len_pd.result;
                 
-                
+                refX[0] = cmd.x;
+                refX[1] = cmd.v;
                 refX[2] = cmd.yaw;
                 refX[3] = cmd.w+cmd.dyaw;
-                refX[4] = alpha_comp_tuning+0.28f*(0.21f-solver_fdb.llen);
+                refX[4] = alpha_comp_tuning;//0.0f;//alpha_comp_tuning+0.28f*(0.21f-solver_fdb.llen);
                 refX[5] = 0.0f;
-                refX[6] = alpha_comp_tuning+0.28f*(0.21f-solver_fdb.rlen);
+                refX[6] = alpha_comp_tuning;//0.0f;//alpha_comp_tuning+0.28f*(0.21f-solver_fdb.rlen);
                 refX[7] = 0.0f;
                 refX[8] = 0.0f;
                 refX[9] = 0.0f;
@@ -257,6 +239,7 @@ float alpha_comp_tuning = 0.17f;
         pendulum_debug.vref = refX[1];
         pendulum_debug.delta_phi = solver_fdb.lphi - solver_fdb.rphi;
         pendulum_debug.llendot = solver_fdb.llen_dot;
+        pendulum_debug.rlendot = solver_fdb.rlen_dot;
         pendulum_debug.yaw = ins.total_yaw*DegreeToRad;
         pendulum_debug.yawref = refX[2];
         pendulum_debug.yaw_dot = ins.gyro_r;
