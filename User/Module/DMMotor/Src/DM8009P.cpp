@@ -52,11 +52,11 @@ void DM8009P::SetOutput()
         break;
     }
     case DMMotor::MIT_MODE:
-    {   
-        uint16_t pos_tmp = float_to_uint(0, this->Get_P_MIN(), this->Get_P_MAX(), 16);
-        uint16_t vel_tmp = float_to_uint(0, this->Get_V_MIN(), this->Get_V_MAX(), 12);
-        uint16_t kp_tmp = float_to_uint(0, KP_MIN, KP_MAX, 12);
-        uint16_t kd_tmp = float_to_uint(0, KD_MIN, KD_MAX, 12);
+    {
+        uint16_t pos_tmp = float_to_uint(this->positionSet, this->Get_P_MIN(), this->Get_P_MAX(), 16);
+        uint16_t vel_tmp = float_to_uint(this->speedSet, this->Get_V_MIN(), this->Get_V_MAX(), 12);
+        uint16_t kp_tmp = float_to_uint(this->KP, KP_MIN, KP_MAX, 12);
+        uint16_t kd_tmp = float_to_uint(this->KD, KD_MIN, KD_MAX, 12);
         uint16_t tor_tmp = float_to_uint(this->torqueSet, this->Get_T_MIN(), this->Get_T_MAX(), 12);
         OutputData[0] = (pos_tmp >> 8);
         OutputData[1] = pos_tmp;
