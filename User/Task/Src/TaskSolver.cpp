@@ -182,6 +182,7 @@ __attribute__((section(".RAM_D3"))) force_debug_t force_debug;
 
     uint32_t lneutral_count = 0;
     uint32_t rneutral_count = 0;
+
     bool initialized = false;
 
     for (;;)
@@ -222,7 +223,24 @@ __attribute__((section(".RAM_D3"))) force_debug_t force_debug;
         solverfdb.ralpha = solverfdb.rphi-0.5f*Pi+ins.pitch*DegreeToRad;
         solverfdb.ralpha_dot = solverfdb.rphi_dot+ins.gyro_p;
 
-        if (!initialized)
+        /* VMC逆动力学解算 */
+        LTpfdb[0] = LJoint1.motorFeedback.torqueFdb;
+        LTpfdb[1] = LJoint4.motorFeedback.torqueFdb;
+        RTpfdb[0] = -RJoint1.motorFeedback.torqueFdb;
+        RTpfdb[1] = -RJoint4.motorFeedback.torqueFdb;
+
+        Lsolver.VMCRevCal(TlRev, LTpfdb);
+        Rsolver.VMCRevCal(TrRev, RTpfdb);
+
+        float Pl = TlRev[0]*arm_cos_f32(solverfdb.lalpha)+TlRev[1]/solverfdb.llen*arm_sin_f32(solverfdb.lalpha);
+        float Pr = TrRev[0]*arm_cos_f32(solverfdb.ralpha)+TrRev[1]/solverfdb.rlen*arm_sin_f32(solverfdb.ralpha);
+        float ddlenl = solverfdb.llen_dot - prev_llen_dot;
+        float ddlenr = solverfdb.rlen_dot - prev_rlen_dot;
+        float Nl = Pl + WHEEL_MASS*(odom_data.a_z - ddlenl*arm_cos_f32(solverfdb.lalpha));
+        float Nr = Pr + WHEEL_MASS*(odom_data.a_z - ddlenr*arm_cos_f32(solverfdb.ralpha));
+        solverfdb.N = Nl + Nr;
+
+        if (solverfdb.flatted && !initialized)
         {
             if (Numeric::abs(solverfdb.lalpha) < 0.25f)
                 lneutral_count++;
@@ -243,23 +261,6 @@ __attribute__((section(".RAM_D3"))) force_debug_t force_debug;
             }
         } 
 
-        /* VMC逆动力学解算 */
-        LTpfdb[0] = LJoint1.motorFeedback.torqueFdb;
-        LTpfdb[1] = LJoint4.motorFeedback.torqueFdb;
-        RTpfdb[0] = -RJoint1.motorFeedback.torqueFdb;
-        RTpfdb[1] = -RJoint4.motorFeedback.torqueFdb;
-
-        Lsolver.VMCRevCal(TlRev, LTpfdb);
-        Rsolver.VMCRevCal(TrRev, RTpfdb);
-
-        float Pl = TlRev[0]*arm_cos_f32(solverfdb.lalpha)+TlRev[1]/solverfdb.llen*arm_sin_f32(solverfdb.lalpha);
-        float Pr = TrRev[0]*arm_cos_f32(solverfdb.ralpha)+TrRev[1]/solverfdb.rlen*arm_sin_f32(solverfdb.ralpha);
-        float ddlenl = solverfdb.llen_dot - prev_llen_dot;
-        float ddlenr = solverfdb.rlen_dot - prev_rlen_dot;
-        float Nl = Pl + WHEEL_MASS*(odom_data.a_z - ddlenl*arm_cos_f32(solverfdb.lalpha));
-        float Nr = Pr + WHEEL_MASS*(odom_data.a_z - ddlenr*arm_cos_f32(solverfdb.ralpha));
-        solverfdb.N = Nl + Nr;
-
         om_publish(solverfdb_topic, &solverfdb, sizeof(msg_solver_t), true, false);
         om_publish(odom_pub, &odom_data, sizeof(msg_odometry_t), true, false);
 
@@ -269,13 +270,34 @@ __attribute__((section(".RAM_D3"))) force_debug_t force_debug;
         Lsolver.VMCCal(pendulumctrl.Tl, LTp);
         Rsolver.VMCCal(pendulumctrl.Tr, RTp);
 
-        LJoint1.torqueSet = Numeric::FloatConstrain(LTp[0], -MAX_HIP_TOR, MAX_HIP_TOR);
-        LJoint4.torqueSet = Numeric::FloatConstrain(LTp[1], -MAX_HIP_TOR, MAX_HIP_TOR);
-        RJoint1.torqueSet = -Numeric::FloatConstrain(RTp[0], -MAX_HIP_TOR, MAX_HIP_TOR);
-        RJoint4.torqueSet = -Numeric::FloatConstrain(RTp[1], -MAX_HIP_TOR, MAX_HIP_TOR);
+        if (!solverfdb.flatted)
+        {
 
-        LWheel.currentSet = -Numeric::FloatConstrain(pendulumctrl.Twl, -MAX_WHEEL_TOR, MAX_WHEEL_TOR) * Tk_M3508;
-        RWheel.currentSet = Numeric::FloatConstrain(pendulumctrl.Twr, -MAX_WHEEL_TOR, MAX_WHEEL_TOR) * Tk_M3508;
+            LJoint1.torqueSet = Numeric::FloatConstrain(LTp[0], -MAX_HIP_TOR, MAX_HIP_TOR);
+            LJoint4.torqueSet = Numeric::FloatConstrain(LTp[1], -MAX_HIP_TOR, MAX_HIP_TOR);
+            RJoint1.torqueSet = -Numeric::FloatConstrain(RTp[0], -MAX_HIP_TOR, MAX_HIP_TOR);
+            RJoint4.torqueSet = -Numeric::FloatConstrain(RTp[1], -MAX_HIP_TOR, MAX_HIP_TOR);
+            LJoint1.torqueSet -= 2.0f;
+            LJoint4.torqueSet -= 2.0f;
+            RJoint1.torqueSet += 2.0f;
+            RJoint4.torqueSet += 2.0f;
+
+            if (Numeric::abs(solverfdb.lphi-2.9f) < 0.15f &&
+                Numeric::abs(solverfdb.rphi-2.9f) < 0.15f)
+            {
+                solverfdb.flatted = true;
+            }
+        }
+        else
+        {
+            LJoint1.torqueSet = Numeric::FloatConstrain(LTp[0], -MAX_HIP_TOR, MAX_HIP_TOR);
+            LJoint4.torqueSet = Numeric::FloatConstrain(LTp[1], -MAX_HIP_TOR, MAX_HIP_TOR);
+            RJoint1.torqueSet = -Numeric::FloatConstrain(RTp[0], -MAX_HIP_TOR, MAX_HIP_TOR);
+            RJoint4.torqueSet = -Numeric::FloatConstrain(RTp[1], -MAX_HIP_TOR, MAX_HIP_TOR);
+
+            LWheel.currentSet = -Numeric::FloatConstrain(pendulumctrl.Twl, -MAX_WHEEL_TOR, MAX_WHEEL_TOR) * Tk_M3508;
+            RWheel.currentSet = Numeric::FloatConstrain(pendulumctrl.Twr, -MAX_WHEEL_TOR, MAX_WHEEL_TOR) * Tk_M3508;
+        }
 
         if (!cmd.move)
         {
@@ -346,7 +368,6 @@ __attribute__((section(".RAM_D3"))) force_debug_t force_debug;
         solver_debug.lalpha = solverfdb.lalpha;
         solver_debug.ralpha = solverfdb.ralpha;
 
-        // solver_debug = solverfdb;
         force_debug.Flreal = TlRev[0];
         force_debug.Frreal = TrRev[0];
         force_debug.Tleal = TlRev[1];

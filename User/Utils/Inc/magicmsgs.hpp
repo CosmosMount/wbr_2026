@@ -118,6 +118,8 @@ struct msg_solver_t
 
     bool lneutral;
     bool rneutral;
+
+    bool flatted;
 };
 
 struct msg_ctrl_t
