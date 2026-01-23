@@ -15,8 +15,8 @@ DM8009P::DM8009P()
     motorFeedback.temRotor = 0.0f;
 
     // DM8009P 的最大最小位置、速度、扭矩值，需要再上位机中设置和确认
-    P_MAX = 12.5f;
-    P_MIN = -12.5f;
+    P_MAX = 12.56637f;
+    P_MIN = -12.56637f;
 
     V_MAX = 45.0f;
     V_MIN = -45.0f;
@@ -130,7 +130,6 @@ void DM8009P::ReceiveData(uint8_t *buffer)
 
     // 使用 uint_to_float 进行转换
     this->motorFeedback.positionFdb = LoopFloatConstrain(uint_to_float(p_int, this->Get_P_MIN(), this->Get_P_MAX(), 16), this->Get_P_MIN(), this->Get_P_MAX());
-    this->motorFeedback.positionFdb = LoopFloatConstrain(uint_to_float(p_int, this->Get_P_MIN(), this->Get_P_MAX(), 16), -Pi, Pi);
     this->motorFeedback.speedFdb = uint_to_float(v_int, this->Get_V_MIN(), this->Get_V_MAX(), 12)*GearRatio;
     this->motorFeedback.torqueFdb = uint_to_float(t_int, this->Get_T_MIN(), this->Get_T_MAX(), 12);
     // 温度信息
