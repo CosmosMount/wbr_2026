@@ -23,9 +23,9 @@ protected:
     float phi4_min = 0.0f;
 
     /*倒立摆长度*/
-    float PendulumLength = 0.0f;
+    float Len = 0.0f;
     /*倒立摆角度*/
-    float PendulumRadian = PI/2;
+    float Phi = PI/2;
     /*倒立摆坐标*/
     float CoorC[2]={0.0f,0.0f};
     /*第二象限节点坐标*/
@@ -78,32 +78,32 @@ public:
         this->U3 = PI+u3t;
 
         /*计算倒立摆长度*/
-        arm_atan2_f32(this->CoorC[1], this->CoorC[0], &this->PendulumRadian);
-        this->PendulumLength = sqrtf(this->CoorC[0] * this->CoorC[0] + this->CoorC[1] * this->CoorC[1]);
+        arm_atan2_f32(this->CoorC[1], this->CoorC[0], &this->Phi);
+        this->Len = sqrtf(this->CoorC[0] * this->CoorC[0] + this->CoorC[1] * this->CoorC[1]);
 
         /*计算J与J^T*R*M*/
         float sin32 = arm_sin_f32(this->U3 - this->U2);
         float sin12 = arm_sin_f32(this->phi1 - this->U2);
         float sin34 = arm_sin_f32(this->U3 - this->phi4);
-        float cos03 = arm_cos_f32(this->PendulumRadian - this->U3);
-        float cos02 = arm_cos_f32(this->PendulumRadian - this->U2);
-        float sin03 = arm_sin_f32(this->PendulumRadian - this->U3);
-        float sin02 = arm_sin_f32(this->PendulumRadian - this->U2);
+        float cos03 = arm_cos_f32(this->Phi - this->U3);
+        float cos02 = arm_cos_f32(this->Phi - this->U2);
+        float sin03 = arm_sin_f32(this->Phi - this->U3);
+        float sin02 = arm_sin_f32(this->Phi - this->U2);
 
         J_mat[0] = VMC_L1 * sin03 * sin12 / sin32;
         J_mat[1] = VMC_L1 * sin02 * sin34 / sin32;
-        J_mat[2] = VMC_L1 * cos03 * sin12 / (sin32 * PendulumLength);
-        J_mat[3] = VMC_L1 * cos02 * sin34 / (sin32 * PendulumLength);
+        J_mat[2] = VMC_L1 * cos03 * sin12 / (sin32 * Len);
+        J_mat[3] = VMC_L1 * cos02 * sin34 / (sin32 * Len);
 
         JT_mat[0] = VMC_L1 * sin03 * sin12 / sin32;
-        JT_mat[1] = VMC_L1 * cos03 * sin12 / (sin32 * PendulumLength);
+        JT_mat[1] = VMC_L1 * cos03 * sin12 / (sin32 * Len);
         JT_mat[2] = VMC_L1 * sin02 * sin34 / sin32;
-        JT_mat[3] = VMC_L1 * cos02 * sin34 / (sin32 * PendulumLength);
+        JT_mat[3] = VMC_L1 * cos02 * sin34 / (sin32 * Len);
 
         JT_inv_mat[0] = -cos02 / (sin12 * VMC_L1);
         JT_inv_mat[1] = cos03 / (sin34 * VMC_L1);
-        JT_inv_mat[2] = sin02 * PendulumLength / (sin12 * VMC_L1);
-        JT_inv_mat[3] = -sin03 * PendulumLength / (sin34 * VMC_L1);
+        JT_inv_mat[2] = sin02 * Len / (sin12 * VMC_L1);
+        JT_inv_mat[3] = -sin03 * Len / (sin34 * VMC_L1);
     }
 
     void VMCCal(float *F, float *T)
@@ -124,12 +124,12 @@ public:
         v_dot[1] = this->J_mat[2] * phi_dot[0] + this->J_mat[3] * phi_dot[1];
     }
 
-    inline float GetPendulumLen() {
-        return PendulumLength;
+    inline float GetLen() {
+        return Len;
     }
 
-    inline float GetPendulumRadian() {
-        return PendulumRadian;
+    inline float GetPhi() {
+        return Phi;
     }
 
     inline float GetPhi4() {
