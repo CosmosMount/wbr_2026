@@ -215,7 +215,7 @@ __attribute__((section(".RAM_D3"))) force_debug_t force_debug;
         solverfdb.lphi_dot = Lxdot[1];
         solverfdb.rphi_dot = Rxdot[1];
 
-        float vel = 0.5f * (-LWheel.motorFeedback.speedFdb+RWheel.motorFeedback.speedFdb) * WHEEL_RADIUS;
+        float vel = 0.5f*(-LWheel.motorFeedback.speedFdb+RWheel.motorFeedback.speedFdb) * WHEEL_RADIUS;
         odom_data = odom.Update(ins.quaternion, ins.accel, vel, ins.yaw);
 
         solverfdb.lalpha = solverfdb.lphi-0.5f*Pi+ins.pitch*DegreeToRad;
@@ -281,6 +281,14 @@ __attribute__((section(".RAM_D3"))) force_debug_t force_debug;
             LJoint4.torqueSet -= 2.0f;
             RJoint1.torqueSet += 2.0f;
             RJoint4.torqueSet += 2.0f;
+            // LJoint1.speedSet = -0.1f;
+            // LJoint4.speedSet = -0.1f;
+            // RJoint1.speedSet = 0.1f;
+            // RJoint4.speedSet = 0.1f;
+            // LJoint1.KD = 20.0f;
+            // LJoint4.KD = 20.0f;
+            // RJoint1.KD = 20.0f;
+            // RJoint4.KD = 20.0f;
 
             if (Numeric::abs(solverfdb.lphi-2.9f) < 0.15f &&
                 Numeric::abs(solverfdb.rphi-2.9f) < 0.15f)

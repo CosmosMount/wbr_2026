@@ -147,8 +147,8 @@ float alpha_comp_tuning = 0.09f;
             {
                 if (!solver_fdb.flatted)
                 {
-                    llenref = 0.21f;
-                    rlenref = 0.21f;
+                    llenref = 0.35f;
+                    rlenref = 0.35f;
                 }
                 else 
                 {
@@ -203,7 +203,7 @@ float alpha_comp_tuning = 0.09f;
                         pendulum_ctrl.Twr = 0.0f;
                     }
 
-                    if (cmd.gostair)
+                    if (solver_fdb.N<20.0f && cmd.gostair)
                     {
                         pendulum_ctrl.Twl = 0.0f;
                         pendulum_ctrl.Twr = 0.0f;

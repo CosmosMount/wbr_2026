@@ -4294,13 +4294,13 @@
 		</object>
 		<object name="ObjId0301" type="CPrjItemRS_VarInfo">
 			<member name="variable" type="CObject_ptr">ObjId0238</member>
-			<member name="visible" type="sint32">0</member>
+			<member name="visible" type="sint32">1</member>
 			<member name="y_block" type="sint32">3</member>
 			<member name="color" type="uint32">0x727272</member>
 		</object>
 		<object name="ObjId0302" type="CPrjItemRS_VarInfo">
 			<member name="variable" type="CObject_ptr">ObjId0240</member>
-			<member name="visible" type="sint32">0</member>
+			<member name="visible" type="sint32">1</member>
 			<member name="y_block" type="sint32">3</member>
 			<member name="color" type="uint32">0x478C00</member>
 		</object>
@@ -4757,7 +4757,7 @@
 			<member name="href" type="string"/>
 			<member name="graph_buffer" type="sint32">10000</member>
 			<member name="graph_type" type="sint32">0</member>
-			<member name="graph_x_units" type="sint32">2</member>
+			<member name="graph_x_units" type="sint32">3</member>
 			<member name="graph_x_label" type="string">Time</member>
 			<member name="graph_x_addunits" type="sint32">1</member>
 			<member name="graph_legend_loc" type="sint32">0</member>
@@ -4830,13 +4830,13 @@
 		</object>
 		<object name="ObjId0211" type="CPrjItemRS_VarInfo">
 			<member name="variable" type="CObject_ptr">ObjId0179</member>
-			<member name="visible" type="sint32">0</member>
+			<member name="visible" type="sint32">1</member>
 			<member name="y_block" type="sint32">2</member>
 			<member name="color" type="uint32">0x227DF3</member>
 		</object>
 		<object name="ObjId0212" type="CPrjItemRS_VarInfo">
 			<member name="variable" type="CObject_ptr">ObjId0184</member>
-			<member name="visible" type="sint32">0</member>
+			<member name="visible" type="sint32">1</member>
 			<member name="y_block" type="sint32">2</member>
 			<member name="color" type="uint32">0x912C66</member>
 		</object>
