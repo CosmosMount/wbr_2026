@@ -183,7 +183,12 @@ __attribute__((section(".RAM_D3"))) force_debug_t force_debug;
     uint32_t lneutral_count = 0;
     uint32_t rneutral_count = 0;
 
-    bool initialized = false;
+    float ljoint1_flat_init = 0.0f;
+    float ljoint4_flat_init = 0.0f;
+    float rjoint1_flat_init = 0.0f;
+    float rjoint4_flat_init = 0.0f;
+    bool flatten_initialized = false;
+    bool leg_initialized = false;
 
     for (;;)
     {
@@ -197,8 +202,8 @@ __attribute__((section(".RAM_D3"))) force_debug_t force_debug;
         Rsolver.Resolve(PI-RJoint1.motorFeedback.positionFdb, -RJoint4.motorFeedback.positionFdb);
 
         /* VMC逆运动学解算 */
-        solverfdb.llen = Lsolver.GetPendulumLen();
-        solverfdb.rlen = Rsolver.GetPendulumLen();
+        solverfdb.llen = Lsolver.GetLen();
+        solverfdb.rlen = Rsolver.GetLen();
 
         Lqdot[0] = LJoint1.motorFeedback.speedFdb;
         Lqdot[1] = LJoint4.motorFeedback.speedFdb;
@@ -210,17 +215,17 @@ __attribute__((section(".RAM_D3"))) force_debug_t force_debug;
 
         solverfdb.llen_dot = Lxdot[0];
         solverfdb.rlen_dot = Rxdot[0];
-        solverfdb.lphi = Lsolver.GetPendulumRadian();
-        solverfdb.rphi = Rsolver.GetPendulumRadian();
+        solverfdb.lphi = Lsolver.GetPhi();
+        solverfdb.rphi = Rsolver.GetPhi();
         solverfdb.lphi_dot = Lxdot[1];
         solverfdb.rphi_dot = Rxdot[1];
 
         float vel = 0.5f*(-LWheel.motorFeedback.speedFdb+RWheel.motorFeedback.speedFdb) * WHEEL_RADIUS;
         odom_data = odom.Update(ins.quaternion, ins.accel, vel, ins.yaw);
 
-        solverfdb.lalpha = solverfdb.lphi-0.5f*Pi+ins.pitch*DegreeToRad;
+        solverfdb.lalpha = Numeric::LoopFloatConstrain(solverfdb.lphi-0.5f*Pi+ins.pitch*DegreeToRad, -Pi, Pi);
         solverfdb.lalpha_dot = solverfdb.lphi_dot+ins.gyro_p;
-        solverfdb.ralpha = solverfdb.rphi-0.5f*Pi+ins.pitch*DegreeToRad;
+        solverfdb.ralpha = Numeric::LoopFloatConstrain(solverfdb.rphi-0.5f*Pi+ins.pitch*DegreeToRad, -Pi, Pi);
         solverfdb.ralpha_dot = solverfdb.rphi_dot+ins.gyro_p;
 
         /* VMC逆动力学解算 */
@@ -240,7 +245,7 @@ __attribute__((section(".RAM_D3"))) force_debug_t force_debug;
         float Nr = Pr + WHEEL_MASS*(odom_data.a_z - ddlenr*arm_cos_f32(solverfdb.ralpha));
         solverfdb.N = Nl + Nr;
 
-        if (solverfdb.flatted && !initialized)
+        if (solverfdb.flatted && !leg_initialized)
         {
             if (Numeric::abs(solverfdb.lalpha) < 0.25f)
                 lneutral_count++;
@@ -257,7 +262,7 @@ __attribute__((section(".RAM_D3"))) force_debug_t force_debug;
 
             if (solverfdb.lneutral && solverfdb.rneutral)
             {
-                initialized = true;
+                leg_initialized = true;
             }
         } 
 
@@ -272,23 +277,31 @@ __attribute__((section(".RAM_D3"))) force_debug_t force_debug;
 
         if (!solverfdb.flatted)
         {
-
-            LJoint1.torqueSet = Numeric::FloatConstrain(LTp[0], -MAX_HIP_TOR, MAX_HIP_TOR);
-            LJoint4.torqueSet = Numeric::FloatConstrain(LTp[1], -MAX_HIP_TOR, MAX_HIP_TOR);
-            RJoint1.torqueSet = -Numeric::FloatConstrain(RTp[0], -MAX_HIP_TOR, MAX_HIP_TOR);
-            RJoint4.torqueSet = -Numeric::FloatConstrain(RTp[1], -MAX_HIP_TOR, MAX_HIP_TOR);
-            LJoint1.torqueSet -= 2.0f;
-            LJoint4.torqueSet -= 2.0f;
-            RJoint1.torqueSet += 2.0f;
-            RJoint4.torqueSet += 2.0f;
-            // LJoint1.speedSet = -0.1f;
-            // LJoint4.speedSet = -0.1f;
-            // RJoint1.speedSet = 0.1f;
-            // RJoint4.speedSet = 0.1f;
-            // LJoint1.KD = 20.0f;
-            // LJoint4.KD = 20.0f;
-            // RJoint1.KD = 20.0f;
-            // RJoint4.KD = 20.0f;
+            LJoint4.torqueSet = 0; LJoint1.torqueSet = 0; RJoint4.torqueSet = 0; RJoint1.torqueSet = 0;
+            if (!flatten_initialized)
+            {
+                ljoint1_flat_init = LJoint1.motorFeedback.positionFdb;
+                ljoint4_flat_init = LJoint4.motorFeedback.positionFdb;
+                rjoint1_flat_init = RJoint1.motorFeedback.positionFdb;
+                rjoint4_flat_init = RJoint4.motorFeedback.positionFdb;
+                flatten_initialized = true;
+            }
+            LJoint1.positionSet = ljoint1_flat_init-JOINT_FLAT_DELTA;
+            LJoint4.positionSet = ljoint4_flat_init-JOINT_FLAT_DELTA;
+            RJoint1.positionSet = rjoint1_flat_init+JOINT_FLAT_DELTA;
+            RJoint4.positionSet = rjoint4_flat_init+JOINT_FLAT_DELTA;
+            LJoint1.speedSet = -0.1f;
+            LJoint4.speedSet = -0.1f;
+            RJoint1.speedSet = 0.1f;
+            RJoint4.speedSet = 0.1f;
+            LJoint1.KP = 1.0f;
+            LJoint4.KP = 1.0f;
+            RJoint1.KP = 1.0f;
+            RJoint4.KP = 1.0f;
+            LJoint1.KD = 1.0f;
+            LJoint4.KD = 1.0f;
+            RJoint1.KD = 1.0f;
+            RJoint4.KD = 1.0f;
 
             if (Numeric::abs(solverfdb.lphi-2.9f) < 0.15f &&
                 Numeric::abs(solverfdb.rphi-2.9f) < 0.15f)
@@ -298,6 +311,15 @@ __attribute__((section(".RAM_D3"))) force_debug_t force_debug;
         }
         else
         {
+            LJoint1.speedSet = 0; LJoint4.speedSet = 0; RJoint1.speedSet = 0; RJoint4.speedSet = 0;
+            LJoint1.positionSet = LJoint1.motorFeedback.positionFdb;
+            LJoint4.positionSet = LJoint4.motorFeedback.positionFdb;
+            RJoint1.positionSet = RJoint1.motorFeedback.positionFdb;
+            RJoint4.positionSet = RJoint4.motorFeedback.positionFdb;
+
+            LJoint1.KP = 0.0f; LJoint4.KP = 0.0f; RJoint1.KP = 0.0f; RJoint4.KP = 0.0f;
+            LJoint1.KD = 0.0f; LJoint4.KD = 0.0f; RJoint1.KD = 0.0f; RJoint4.KD = 0.0f;
+            
             LJoint1.torqueSet = Numeric::FloatConstrain(LTp[0], -MAX_HIP_TOR, MAX_HIP_TOR);
             LJoint4.torqueSet = Numeric::FloatConstrain(LTp[1], -MAX_HIP_TOR, MAX_HIP_TOR);
             RJoint1.torqueSet = -Numeric::FloatConstrain(RTp[0], -MAX_HIP_TOR, MAX_HIP_TOR);
@@ -309,22 +331,27 @@ __attribute__((section(".RAM_D3"))) force_debug_t force_debug;
 
         if (!cmd.move)
         {
-            LJoint4.torqueSet = 0;
-            LJoint1.torqueSet = 0;
-            RJoint4.torqueSet = 0;
-            RJoint1.torqueSet = 0;
+            LJoint4.torqueSet = 0; LJoint1.torqueSet = 0; RJoint4.torqueSet = 0; RJoint1.torqueSet = 0;
+            LJoint1.speedSet = 0; LJoint4.speedSet = 0; RJoint1.speedSet = 0; RJoint4.speedSet = 0;
+            LJoint1.positionSet = LJoint1.motorFeedback.positionFdb;
+            LJoint4.positionSet = LJoint4.motorFeedback.positionFdb;
+            RJoint1.positionSet = RJoint1.motorFeedback.positionFdb;
+            RJoint4.positionSet = RJoint4.motorFeedback.positionFdb;
+
+            LJoint1.KP = 0.0f; LJoint4.KP = 0.0f; RJoint1.KP = 0.0f; RJoint4.KP = 0.0f;
+            LJoint1.KD = 0.0f; LJoint4.KD = 0.0f; RJoint1.KD = 0.0f; RJoint4.KD = 0.0f;
 
             LWheel.currentSet = 0;
             RWheel.currentSet = 0;
 
-            initialized = false;
+            leg_initialized = false;
             solverfdb.lneutral = false;
             solverfdb.rneutral = false;
         }
 
         if (cmd.gostair)
         {
-            initialized = false;
+            leg_initialized = false;
             solverfdb.lneutral = false;
             solverfdb.rneutral = false;
         }

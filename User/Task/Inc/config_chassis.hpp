@@ -30,6 +30,8 @@
 #define LEG_JUMP_START_LEN 0.370f
 #define LEG_JUMP_AIR_LEN 0.140f
 
+#define JOINT_FLAT_DELTA 2.71f
+
 #ifndef DEBUG
 #define DEBUG
 #endif
