@@ -8,6 +8,7 @@
 #define TOF_DATA_SIZE 9
 
 #define MIN_LEG_LEN       0.10f
+#define MID_LEG_LEN       0.24f
 #define MAX_LEG_LEN       0.35f
 #define LQR_LEN_RESOLUTION     0.01f
 

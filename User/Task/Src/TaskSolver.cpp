@@ -245,6 +245,13 @@ __attribute__((section(".RAM_D3"))) force_debug_t force_debug;
         float Nr = Pr + WHEEL_MASS*(odom_data.a_z - ddlenr*arm_cos_f32(solverfdb.ralpha));
         solverfdb.N = Nl + Nr;
 
+        bool lflatted = (2.5f<=solverfdb.lphi && solverfdb.lphi <= 3.1f);
+        bool rflatted = (2.5f<=solverfdb.rphi && solverfdb.rphi <= 3.1f);
+        if (lflatted && rflatted)
+        {
+            solverfdb.flatted = true;
+        }
+
         if (solverfdb.flatted && !leg_initialized)
         {
             if (Numeric::abs(solverfdb.lalpha) < 0.25f)
@@ -286,27 +293,46 @@ __attribute__((section(".RAM_D3"))) force_debug_t force_debug;
                 rjoint4_flat_init = RJoint4.motorFeedback.positionFdb;
                 flatten_initialized = true;
             }
-            LJoint1.positionSet = ljoint1_flat_init-JOINT_FLAT_DELTA;
-            LJoint4.positionSet = ljoint4_flat_init-JOINT_FLAT_DELTA;
-            RJoint1.positionSet = rjoint1_flat_init+JOINT_FLAT_DELTA;
-            RJoint4.positionSet = rjoint4_flat_init+JOINT_FLAT_DELTA;
-            LJoint1.speedSet = -0.1f;
-            LJoint4.speedSet = -0.1f;
-            RJoint1.speedSet = 0.1f;
-            RJoint4.speedSet = 0.1f;
-            LJoint1.KP = 1.0f;
-            LJoint4.KP = 1.0f;
-            RJoint1.KP = 1.0f;
-            RJoint4.KP = 1.0f;
-            LJoint1.KD = 1.0f;
-            LJoint4.KD = 1.0f;
-            RJoint1.KD = 1.0f;
-            RJoint4.KD = 1.0f;
 
-            if (Numeric::abs(solverfdb.lphi-2.9f) < 0.15f &&
-                Numeric::abs(solverfdb.rphi-2.9f) < 0.15f)
+            if (!lflatted)
             {
-                solverfdb.flatted = true;
+                LJoint1.positionSet = ljoint1_flat_init-JOINT_FLAT_DELTA;
+                LJoint4.positionSet = ljoint4_flat_init-JOINT_FLAT_DELTA;
+                LJoint1.speedSet = -0.1f;
+                LJoint4.speedSet = -0.1f;
+                LJoint1.KP = 1.0f;
+                LJoint4.KP = 1.0f;
+                LJoint1.KD = 1.0f;
+                LJoint4.KD = 1.0f;
+            }
+            else 
+            {
+                LJoint1.speedSet = 0; LJoint4.speedSet = 0;
+                LJoint1.positionSet = LJoint1.motorFeedback.positionFdb;
+                LJoint4.positionSet = LJoint4.motorFeedback.positionFdb;
+                LJoint1.KP = 0.0f; LJoint4.KP = 0.0f;
+                LJoint1.KD = 0.0f; LJoint4.KD = 0.0f;
+            }
+            
+            if (!rflatted)
+            {
+                RJoint1.positionSet = rjoint1_flat_init+JOINT_FLAT_DELTA;
+                RJoint4.positionSet = rjoint4_flat_init+JOINT_FLAT_DELTA;
+                RJoint1.speedSet = 0.1f;
+                RJoint4.speedSet = 0.1f;
+                RJoint1.KP = 1.0f;
+                RJoint4.KP = 1.0f;
+                RJoint1.KD = 1.0f;
+                RJoint4.KD = 1.0f;
+            }
+            else 
+            {
+                RJoint1.speedSet = 0; RJoint4.speedSet = 0;
+                RJoint1.positionSet = RJoint1.motorFeedback.positionFdb;
+                RJoint4.positionSet = RJoint4.motorFeedback.positionFdb;
+                RJoint1.KP = 0.0f; RJoint4.KP = 0.0f;
+                RJoint1.KD = 0.0f; RJoint4.KD = 0.0f;
+            
             }
         }
         else
@@ -345,8 +371,11 @@ __attribute__((section(".RAM_D3"))) force_debug_t force_debug;
             RWheel.currentSet = 0;
 
             leg_initialized = false;
+            flatten_initialized = false;
+            solverfdb.flatted = false;
             solverfdb.lneutral = false;
             solverfdb.rneutral = false;
+            odom.Reset();
         }
 
         if (cmd.gostair)
@@ -354,11 +383,6 @@ __attribute__((section(".RAM_D3"))) force_debug_t force_debug;
             leg_initialized = false;
             solverfdb.lneutral = false;
             solverfdb.rneutral = false;
-        }
-
-        if (!cmd.move)
-        {
-            odom.Reset();
         }
 
         DMMotorHandler::Instance()->sendControlData();
