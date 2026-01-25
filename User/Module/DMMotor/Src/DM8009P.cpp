@@ -15,8 +15,8 @@ DM8009P::DM8009P()
     motorFeedback.temRotor = 0.0f;
 
     // DM8009P 的最大最小位置、速度、扭矩值，需要再上位机中设置和确认
-    P_MAX = 12.56637f;
-    P_MIN = -12.56637f;
+    P_MAX = 12.5664f;
+    P_MIN = -12.5664f;
 
     V_MAX = 45.0f;
     V_MIN = -45.0f;
