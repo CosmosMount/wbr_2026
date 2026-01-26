@@ -3,45 +3,41 @@
 #include "arm_math.h"
 #include "config_chassis.hpp"
 
-class cVMCSolver
+class VMCsolver
 {
 protected:
 
-    /*雅可比矩阵*/
+    /* Jacobian */
     float J_mat[4]={0};
     float JT_mat[4]={0};
     float JT_inv_mat[4]={0};
 
-    /*关节电机弧度*/
+    /* Joint1,4 Angles */
     float phi1 = 0.0f;
     float phi4 = 0.0f;
 
-    /*极限值*/
-    float phi1_max = PI;
-    float phi4_max = PI / 2;
-    float phi1_min = PI / 2;
-    float phi4_min = 0.0f;
-
-    /*倒立摆长度*/
-    float Len = 0.0f;
-    /*倒立摆角度*/
-    float Phi = PI/2;
-    /*倒立摆坐标*/
+    /* Inverted Pendulum Length */
+    float len = 0.0f;
+    /* Inverted Pendulum Angle */
+    float phi = PI/2;
+    /* Pendulum Angle */
+    float alpha = 0.0f;
+    /* C */
     float CoorC[2]={0.0f,0.0f};
-    /*第二象限节点坐标*/
+    /* Joint2 Coordinates */
     float CoorB[2]={0.0f,0.0f};
     float U2 = 0.0f;
-    /*第二象限节点坐标*/
+    /* Joint3 Coordinates */
     float CoorD[2]={0.0f,0.0f};
     float U3 = 0.0f;
 
 
 public:
 
-    void Resolve(float phi1_fdb, float phi4_fdb)
+    void Resolve(float _phi1, float _phi4)
     {
-        this->phi1 = phi1_fdb;
-        this->phi4 = phi4_fdb;       
+        this->phi1 = _phi1;
+        this->phi4 = _phi4;       
 
         float SIN1 = arm_sin_f32(this->phi1);
         float COS1 = arm_cos_f32(this->phi1);
@@ -78,32 +74,32 @@ public:
         this->U3 = PI+u3t;
 
         /*计算倒立摆长度*/
-        arm_atan2_f32(this->CoorC[1], this->CoorC[0], &this->Phi);
-        this->Len = sqrtf(this->CoorC[0] * this->CoorC[0] + this->CoorC[1] * this->CoorC[1]);
+        arm_atan2_f32(this->CoorC[1], this->CoorC[0], &this->phi);
+        this->len = sqrtf(this->CoorC[0] * this->CoorC[0] + this->CoorC[1] * this->CoorC[1]);
 
         /*计算J与J^T*R*M*/
         float sin32 = arm_sin_f32(this->U3 - this->U2);
         float sin12 = arm_sin_f32(this->phi1 - this->U2);
         float sin34 = arm_sin_f32(this->U3 - this->phi4);
-        float cos03 = arm_cos_f32(this->Phi - this->U3);
-        float cos02 = arm_cos_f32(this->Phi - this->U2);
-        float sin03 = arm_sin_f32(this->Phi - this->U3);
-        float sin02 = arm_sin_f32(this->Phi - this->U2);
+        float cos03 = arm_cos_f32(this->phi - this->U3);
+        float cos02 = arm_cos_f32(this->phi - this->U2);
+        float sin03 = arm_sin_f32(this->phi - this->U3);
+        float sin02 = arm_sin_f32(this->phi - this->U2);
 
         J_mat[0] = VMC_L1 * sin03 * sin12 / sin32;
         J_mat[1] = VMC_L1 * sin02 * sin34 / sin32;
-        J_mat[2] = VMC_L1 * cos03 * sin12 / (sin32 * Len);
-        J_mat[3] = VMC_L1 * cos02 * sin34 / (sin32 * Len);
+        J_mat[2] = VMC_L1 * cos03 * sin12 / (sin32 * len);
+        J_mat[3] = VMC_L1 * cos02 * sin34 / (sin32 * len);
 
         JT_mat[0] = VMC_L1 * sin03 * sin12 / sin32;
-        JT_mat[1] = VMC_L1 * cos03 * sin12 / (sin32 * Len);
+        JT_mat[1] = VMC_L1 * cos03 * sin12 / (sin32 * len);
         JT_mat[2] = VMC_L1 * sin02 * sin34 / sin32;
-        JT_mat[3] = VMC_L1 * cos02 * sin34 / (sin32 * Len);
+        JT_mat[3] = VMC_L1 * cos02 * sin34 / (sin32 * len);
 
         JT_inv_mat[0] = -cos02 / (sin12 * VMC_L1);
         JT_inv_mat[1] = cos03 / (sin34 * VMC_L1);
-        JT_inv_mat[2] = sin02 * Len / (sin12 * VMC_L1);
-        JT_inv_mat[3] = -sin03 * Len / (sin34 * VMC_L1);
+        JT_inv_mat[2] = sin02 * len / (sin12 * VMC_L1);
+        JT_inv_mat[3] = -sin03 * len / (sin34 * VMC_L1);
     }
 
     void VMCCal(float *F, float *T)
@@ -124,29 +120,11 @@ public:
         v_dot[1] = this->J_mat[2] * phi_dot[0] + this->J_mat[3] * phi_dot[1];
     }
 
-    inline float GetLen() {
-        return Len;
-    }
+    inline float GetLen() {    return len;    }
 
-    inline float GetPhi() {
-        return Phi;
-    }
+    inline float GetPhi() {    return phi;    }
 
-    inline float GetPhi4() {
-        return phi4;
-    }
+    inline float GetPhi4() {    return phi4;    }
 
-    inline float GetPhi1() {
-        return phi1;
-    }
-
-    inline void GetPendulumCoor(float* Coor) {
-        Coor[0]=this->CoorC[0];Coor[1]=this->CoorC[1];
-    }
-    inline void GetCoorB(float* Coor) {
-        Coor[0]=this->CoorB[0];Coor[1]=this->CoorB[1];
-    }
-    inline void GetCoorD(float*Coor) {
-        Coor[0]=this->CoorD[0];Coor[1]=this->CoorD[1];
-    }
+    inline float GetPhi1() {    return phi1;    }
 };

@@ -10,7 +10,6 @@ uint8_t AliveThreadStack[512] = {0};
 extern TX_SEMAPHORE IMUThreadSem;
 extern TX_SEMAPHORE RefereeThreadSem;
 extern TX_SEMAPHORE FunctionThreadSem;
-extern TX_SEMAPHORE SolverThreadSem;
 extern TX_SEMAPHORE PendulumThreadSem;
 extern TX_SEMAPHORE UIThreadSem;
 
@@ -23,12 +22,10 @@ extern TX_SEMAPHORE UIThreadSem;
         bool imu_alive = tx_semaphore_get(&IMUThreadSem, TX_NO_WAIT) == TX_SUCCESS;
         bool referee_alive = tx_semaphore_get(&RefereeThreadSem, TX_NO_WAIT) == TX_SUCCESS;
         bool function_alive = tx_semaphore_get(&FunctionThreadSem, TX_NO_WAIT) == TX_SUCCESS;
-        bool solver_alive = tx_semaphore_get(&SolverThreadSem, TX_NO_WAIT) == TX_SUCCESS;
         bool pendulum_alive = tx_semaphore_get(&PendulumThreadSem, TX_NO_WAIT) == TX_SUCCESS;
-        // bool ui_alive = tx_semaphore_get(&UIThreadSem, TX_NO_WAIT) == TX_SUCCESS;
         if (imu_alive)
         {
-            if (solver_alive && function_alive && referee_alive && pendulum_alive)
+            if (function_alive && referee_alive && pendulum_alive)
             {
                 if (DMMotorHandler::Instance()->AllMotorAlive())
                 {

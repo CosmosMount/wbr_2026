@@ -97,29 +97,11 @@ struct msg_ins_t {
     float accel[3];
 };
 
-struct msg_solver_t
+struct msg_pendulum_t
 {
-    float llen;
-    float llen_dot;
-    float rlen;
-    float rlen_dot;
-
-    float lphi;
-    float lphi_dot;
-    float rphi;
-    float rphi_dot;
-
-    float lalpha;
-    float lalpha_dot;
-    float ralpha;
-    float ralpha_dot;
-    
     float N;
-
-    bool lneutral;
-    bool rneutral;
-
-    bool flatted;
+    float x;
+    float v;
 };
 
 struct msg_ctrl_t

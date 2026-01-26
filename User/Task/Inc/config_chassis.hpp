@@ -84,6 +84,15 @@ typedef struct
     fly_ctrl_e fly_ctrl : 1;
 } chassis_mode_t;
 
+typedef enum
+{
+    RELAX = 0,
+    RECOVER,
+    FLATTEN,
+    NEUTRAL,
+    NORMAL
+} chassis_state_e;
+
 struct tof_data_t
 {
     uint8_t header[2];

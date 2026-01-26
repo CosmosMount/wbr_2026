@@ -59,10 +59,8 @@ __attribute__((section(".RAM_D3"))) msg_remoter_t debug_remoter;
     msg_remoter_t remoter{};
     om_suber_t *ins_suber = om_subscribe(om_find_topic("ins", UINT32_MAX));
     msg_ins_t ins{};
-    om_suber_t *solver_suber = om_subscribe(om_find_topic("solverfdb", UINT32_MAX));
-    msg_solver_t solver_fdb{};
-    om_suber_t *odom_suber = om_subscribe(om_find_topic("odom", UINT32_MAX));
-    msg_odometry_t odom{};
+    om_suber_t *pendulum_suber = om_subscribe(om_find_topic("pendulum", UINT32_MAX));
+    msg_pendulum_t pendulum_data{};
 
     /* Jump Stage */
 #ifdef JUMP_UP
@@ -76,8 +74,7 @@ __attribute__((section(".RAM_D3"))) msg_remoter_t debug_remoter;
 
         om_suber_export(remoter_suber, &remoter, false);
         om_suber_export(ins_suber, &ins, false);
-        om_suber_export(solver_suber, &solver_fdb, false);
-        om_suber_export(odom_suber, &odom, false);
+        om_suber_export(pendulum_suber, &pendulum_data, false);
 
         /* Receive and Check TOF Msg */
         bool tof_valid = false;
@@ -246,7 +243,7 @@ __attribute__((section(".RAM_D3"))) msg_remoter_t debug_remoter;
                         {
                             cmd.inair = false;
                             cmd.len = len_updater.UpdateVal(LEG_NORMAL_LEN);
-                            if (solver_fdb.N > 20.0f)
+                            if (pendulum_data.N > 20.0f)
                             {
                                 jump_stage = DONT_JUMP;
                                 len_updater.SetPath(LEG_NORMAL_STEP);
@@ -274,7 +271,7 @@ __attribute__((section(".RAM_D3"))) msg_remoter_t debug_remoter;
             {
                 if (!maintained_x)
                 {
-                    x_maintain = odom.x;
+                    x_maintain = pendulum_data.x;
                     maintained_x = true;
                 }
                 cmd.x = x_maintain;
@@ -282,7 +279,7 @@ __attribute__((section(".RAM_D3"))) msg_remoter_t debug_remoter;
             else
             {   
                 maintained_x = false;
-                cmd.x = odom.x+cmd.v*0.001f;
+                cmd.x = pendulum_data.x+cmd.v*0.001f;
             }
 
             if (fabs(cmd.dyaw)<0.002f && remoter.ctrl_sw != Spin)

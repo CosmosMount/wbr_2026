@@ -67,9 +67,11 @@ public:
 class Odometry
 {
 private:
-    msg_odometry_t odom_data_;
     VelFusionKF vel_kf;
 public:
+    float x;
+    float v;
+    float az;
 
     /**
      * @brief odometry update function
@@ -80,11 +82,11 @@ public:
      * @param _yaw in degree
      * @return odometry_info
      */
-    msg_odometry_t Update(float *_quaternion, float *_acc, float _vel, float _yaw)
+    void Update(float *_quaternion, float *_acc, float _vel, float _yaw)
     {
-        odom_data_.x = 0.0f;
-        odom_data_.v = 0.0f;
-        odom_data_.a_z = 0.0f;
+        x = 0.0f;
+        v = 0.0f;
+        az = 0.0f;
 
         float temp[4] = {0};
         float a_world[4] = {0};
@@ -97,16 +99,16 @@ public:
 
         vel_kf.UpdateKalman(_vel, a_x);
 
-        odom_data_.v = vel_kf.GetVhat();
-        odom_data_.x = vel_kf.GetXhat();
-        odom_data_.a_z = a_world[3];
-
-        return odom_data_;
+        v = vel_kf.GetVhat();
+        x = vel_kf.GetXhat();
+        az = a_world[3];
     }
 
     void Reset()
     {
         vel_kf.ResetKF();
-        odom_data_ = {0.0f, 0.0f, 0.0f};
+        x = 0.0f;
+        v = 0.0f;
+        az = 0.0f;
     }
 };
