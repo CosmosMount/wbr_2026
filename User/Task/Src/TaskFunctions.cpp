@@ -267,21 +267,30 @@ __attribute__((section(".RAM_D3"))) msg_remoter_t debug_remoter;
                 cmd.v = 0.0f;
             }
 
-            if (fabsf(cmd.v) < 0.002f || remoter.ctrl_sw == Spin)
+            if (!pendulum_data.neutral)
             {
-                if (!maintained_x)
-                {
-                    x_maintain = pendulum_data.x;
-                    maintained_x = true;
-                }
-                cmd.x = x_maintain;
+                maintained_x = false;
+                cmd.x = pendulum_data.x;
+                cmd.v = 0.0f;
             }
             else
-            {   
-                maintained_x = false;
-                cmd.x = pendulum_data.x+cmd.v*0.001f;
+            {
+                if (fabsf(cmd.v) < 0.002f || remoter.ctrl_sw == Spin)
+                {
+                    if (!maintained_x)
+                    {
+                        x_maintain = pendulum_data.x;
+                        maintained_x = true;
+                    }
+                    cmd.x = x_maintain;
+                }
+                else
+                {   
+                    maintained_x = false;
+                    cmd.x = pendulum_data.x+cmd.v*0.001f;
+                }
             }
-
+            
             if (fabs(cmd.dyaw)<0.002f && remoter.ctrl_sw != Spin)
             {
                 if (!maintained_yaw)

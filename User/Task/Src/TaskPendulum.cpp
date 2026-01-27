@@ -311,7 +311,9 @@ __attribute__((section(".RAM_D3"))) force_debug_t force_debug;
             }
 
             if (lsolver.flat && rsolver.flat)
+            {
                 chassis_state = NEUTRAL;
+            }
         }
         else
         {
@@ -326,13 +328,13 @@ __attribute__((section(".RAM_D3"))) force_debug_t force_debug;
             observedX[8] = pitch;
             observedX[9] = dpitch;
 
-            refX[0] = cmd.x;
-            refX[1] = cmd.v;
+            refX[0] = cmd.x;//odom.x;//
+            refX[1] = cmd.v;//odom.v;//
             refX[2] = cmd.yaw;
             refX[3] = cmd.w+cmd.dyaw;
-            refX[4] = 0.08f+0.12f*(0.21f-lsolver.len);
+            refX[4] = 0.06f;
             refX[5] = 0.0f;
-            refX[6] = 0.08f+0.12f*(0.21f-rsolver.len);
+            refX[6] = 0.06f;
             refX[7] = 0.0f;
             refX[8] = 0.0f;
             refX[9] = 0.0f;
@@ -349,7 +351,10 @@ __attribute__((section(".RAM_D3"))) force_debug_t force_debug;
                 lleg_len_pd.ref = 0.21f;
                 rleg_len_pd.ref = 0.21f;
                 if (lsolver.neutral && rsolver.neutral)
+                {
+                    pendulum_data.neutral = true;
                     chassis_state = NORMAL;
+                }
             }
             else if (chassis_state == NORMAL)
             {
@@ -364,7 +369,7 @@ __attribute__((section(".RAM_D3"))) force_debug_t force_debug;
                     Fl[1] = 0.0f;
                     Fr[1] = 0.0f;
                 }
-                if (lsolver.neutral && rsolver.neutral && (N<20.0f || cmd.inair))
+                if (lsolver.neutral && rsolver.neutral && (N<5.0f || cmd.inair))
                 {
                     Twl = 0.0f;
                     Twr = 0.0f;
@@ -390,14 +395,14 @@ __attribute__((section(".RAM_D3"))) force_debug_t force_debug;
             RWheel.currentSet = Numeric::FloatConstrain(Twr, -MAX_WHEEL_TOR, MAX_WHEEL_TOR) * Tk_M3508;
         }
 
+        DMMotorHandler::Instance()->sendControlData();
+        DJIMotorHandler::Instance()->sendControlData();
+
         pendulum_data.x = odom.x;
         pendulum_data.v = odom.v;
         pendulum_data.N = (lsolver.N+rsolver.N)*0.5f;
-        om_publish(pendulum_pub, &pendulum_data, sizeof(msg_pendulum_t), true, false);
-        DMMotorHandler::Instance()->sendControlData();
-        DJIMotorHandler::Instance()->sendControlData();
+        om_publish(pendulum_pub, &pendulum_data, sizeof(msg_pendulum_t), true, false);  
         tx_semaphore_put(&PendulumThreadSem);
-        tx_thread_sleep(MIN(1, 1-(tx_time_get()-thread_start_time)));
 
     #ifdef DEBUG
         debug_ins = ins;

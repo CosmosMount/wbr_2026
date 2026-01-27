@@ -102,6 +102,7 @@ struct msg_pendulum_t
     float N;
     float x;
     float v;
+    bool neutral;
 };
 
 struct msg_ctrl_t
