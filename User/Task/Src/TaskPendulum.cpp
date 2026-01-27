@@ -85,8 +85,8 @@ struct pendulum_debug_t
     float Tpr;
     float Fl;
     float Fr;
-    float delta_phi;
-    float Cphi;
+    float Nl;
+    float Nr;
     float llendot;
     float rlendot;
     float yaw;
@@ -96,26 +96,25 @@ struct pendulum_debug_t
     bool lneutral;
     bool rneutral;
 };
-struct force_debug_t
-{
-    float Flreal;
-    float Frreal;
-    float Tleal;
-    float Treal;
-    float Nl;
-    float Nr;
-    float Pl;
-    float Pr;
-    float N;
-    float Tljoint4;
-    float Tljoint1;
-    float Trjoint4;
-    float Trjoint1;
-};
+// struct force_debug_t
+// {
+//     float Flreal;
+//     float Frreal;
+//     float Tleal;
+//     float Treal;
+//     float Nl;
+//     float Nr;
+//     float Pl;
+//     float Pr;
+//     float N;
+//     float Tljoint4;
+//     float Tljoint1;
+//     float Trjoint4;
+//     float Trjoint1;
+// };
 msg_ins_t debug_ins;
 pendulum_debug_t pendulum_debug;
 __attribute__((section(".RAM_D3"))) solver_debug_t solver_debug;
-__attribute__((section(".RAM_D3"))) force_debug_t force_debug;
 #endif
 
 [[noreturn]] void PendulumThreadFun(ULONG initial_input)
@@ -183,8 +182,8 @@ __attribute__((section(".RAM_D3"))) force_debug_t force_debug;
     msg_pendulum_t pendulum_data{};
 
     /* solvers */
-    PendulumSolver lsolver;
-    PendulumSolver rsolver;
+    PendulumSolver lsolver(false);
+    PendulumSolver rsolver(true);
     /* odom */
     Odometry odom;
     /* lqr */
@@ -251,11 +250,11 @@ __attribute__((section(".RAM_D3"))) force_debug_t force_debug;
         float yaw = ins.total_yaw*DegreeToRad;
         float dyaw = ins.gyro_y;
 
-        lsolver.Update(PI+LJoint1.motorFeedback.positionFdb, LJoint4.motorFeedback.positionFdb, pitch, 
+        lsolver.Update(LJoint1.motorFeedback.positionFdb, LJoint4.motorFeedback.positionFdb, pitch, 
                       LJoint1.motorFeedback.speedFdb, LJoint4.motorFeedback.speedFdb, dpitch, 
                       LJoint1.motorFeedback.torqueFdb, LJoint4.motorFeedback.torqueFdb, odom.az);
-        rsolver.Update(PI-RJoint1.motorFeedback.positionFdb, -RJoint4.motorFeedback.positionFdb, pitch, 
-                      -RJoint1.motorFeedback.speedFdb, -RJoint4.motorFeedback.speedFdb, dpitch, 
+        rsolver.Update(RJoint1.motorFeedback.positionFdb, RJoint4.motorFeedback.positionFdb, pitch, 
+                      RJoint1.motorFeedback.speedFdb, RJoint4.motorFeedback.speedFdb, dpitch, 
                       RJoint1.motorFeedback.torqueFdb, RJoint4.motorFeedback.torqueFdb, odom.az);
         odom.Update(ins.quaternion, ins.accel, 
                     (-LWheel.motorFeedback.speedFdb+RWheel.motorFeedback.speedFdb)*WHEEL_RADIUS*0.5f, yaw);
@@ -269,6 +268,7 @@ __attribute__((section(".RAM_D3"))) force_debug_t force_debug;
             rrelax();
             odom.Reset();
             flatten_initialized = false;
+            pendulum_data.neutral = false;
             if (cmd.move)
                 chassis_state = RECOVER;
         }
@@ -369,7 +369,7 @@ __attribute__((section(".RAM_D3"))) force_debug_t force_debug;
                     Fl[1] = 0.0f;
                     Fr[1] = 0.0f;
                 }
-                if (lsolver.neutral && rsolver.neutral && (N<5.0f || cmd.inair))
+                if (lsolver.neutral && rsolver.neutral && (N<20.0f || cmd.inair))
                 {
                     Twl = 0.0f;
                     Twr = 0.0f;
@@ -441,7 +441,8 @@ __attribute__((section(".RAM_D3"))) force_debug_t force_debug;
         pendulum_debug.Fr = Fr[0];
         pendulum_debug.lneutral = lsolver.neutral;
         pendulum_debug.rneutral = rsolver.neutral;
-        
+        pendulum_debug.Nl = lsolver.N;
+        pendulum_debug.Nr = rsolver.N;
     #endif
 
         tx_thread_sleep(MIN(1, 1-(tx_time_get()-thread_start_time)));
