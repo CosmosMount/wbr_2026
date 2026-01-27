@@ -41,7 +41,7 @@ public:
 
         /* alpha params */
         float phi = this->vmc.GetPhi();
-        this->alpha = Numeric::LoopFloatConstrain(phi - 0.5f*PI + _pitch*Numeric::DegreeToRad, -PI, PI);
+        this->alpha = Numeric::LoopFloatConstrain(phi-0.5f*PI+_pitch, -PI, PI);
         this->dalpha = xdot[1] + _dpitch;
 
         /* inverse dynamics */
