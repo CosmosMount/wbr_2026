@@ -1,3 +1,4 @@
+#include "arm_math_types.h"
 #include "main.h"
 #include "tx_api.h"
 #include "om.h"
@@ -93,6 +94,8 @@ struct pendulum_debug_t
     float yawref;
     float yaw_dot;
     float yaw_out;
+    bool lflat;
+    bool rflat;
     bool lneutral;
     bool rneutral;
 };
@@ -315,7 +318,45 @@ __attribute__((section(".RAM_D3"))) solver_debug_t solver_debug;
                 chassis_state = NEUTRAL;
             }
         }
-        else
+        else if (chassis_state == GOSTAIR)
+        {
+            odom.Reset();
+            LJoint4.torqueSet = 0; LJoint1.torqueSet = 0; 
+            RJoint4.torqueSet = 0; RJoint1.torqueSet = 0;
+            if (!flatten_initialized)
+            {
+                ljoint1_flat_init = LJoint1.motorFeedback.positionFdb;
+                rjoint1_flat_init = RJoint1.motorFeedback.positionFdb;
+                flatten_initialized = true;
+            }
+            if (lsolver.flat)
+                lrelax();
+            else
+            {
+                LJoint1.positionSet = ljoint1_flat_init+JOINT_STAIR_DELTA;
+                LJoint4.positionSet = 0.0f;
+                LJoint1.speedSet = 0.1f; LJoint4.speedSet = 0.0f;
+                LJoint1.KP = 2.0f; LJoint4.KP = 0.0f;
+                LJoint1.KD = 1.0f; LJoint4.KD = 0.0f;
+            }
+
+            if (rsolver.flat)
+                rrelax();
+            else
+            {
+                RJoint1.positionSet = rjoint1_flat_init-JOINT_STAIR_DELTA;
+                RJoint4.positionSet = 0.0f;
+                RJoint1.speedSet = -0.1f; RJoint4.speedSet = 0.0f;
+                RJoint1.KP = 2.0f; RJoint4.KP = 0.0f;
+                RJoint1.KD = 1.0f; RJoint4.KD = 0.0f;
+            }
+
+            if (lsolver.flat && rsolver.flat)
+            {
+                chassis_state = NEUTRAL;
+            }
+        }
+        else if (chassis_state == NEUTRAL || chassis_state == NORMAL)
         {
             observedX[0] = odom.x;
             observedX[1] = odom.v;
@@ -328,8 +369,8 @@ __attribute__((section(".RAM_D3"))) solver_debug_t solver_debug;
             observedX[8] = pitch;
             observedX[9] = dpitch;
 
-            refX[0] = cmd.x;//odom.x;//
-            refX[1] = cmd.v;//odom.v;//
+            refX[0] = cmd.x;
+            refX[1] = cmd.v;
             refX[2] = cmd.yaw;
             refX[3] = cmd.w+cmd.dyaw;
             refX[4] = 0.06f;
@@ -364,15 +405,17 @@ __attribute__((section(".RAM_D3"))) solver_debug_t solver_debug;
                 roll_pd.UpdateResult(ins.gyro_r);
                 lleg_len_pd.ref = cmd.len+0.03f+roll_pd.result;
                 rleg_len_pd.ref = cmd.len+0.03f-roll_pd.result;
-                if (cmd.gostair)
-                {
-                    Fl[1] = 0.0f;
-                    Fr[1] = 0.0f;
-                }
+                
                 if (lsolver.neutral && rsolver.neutral && (N<20.0f || cmd.inair))
                 {
                     Twl = 0.0f;
                     Twr = 0.0f;
+                }
+
+                if (cmd.gostair&&N<20.0f)
+                {
+                    chassis_state = GOSTAIR;
+                    flatten_initialized = false;
                 }
             }
 
@@ -441,6 +484,8 @@ __attribute__((section(".RAM_D3"))) solver_debug_t solver_debug;
         pendulum_debug.Fr = Fr[0];
         pendulum_debug.lneutral = lsolver.neutral;
         pendulum_debug.rneutral = rsolver.neutral;
+        pendulum_debug.lflat = lsolver.flat;
+        pendulum_debug.rflat = rsolver.flat;
         pendulum_debug.Nl = lsolver.N;
         pendulum_debug.Nr = rsolver.N;
     #endif

@@ -32,6 +32,7 @@
 #define LEG_JUMP_AIR_LEN 0.140f
 
 #define JOINT_FLAT_DELTA 2.71f
+#define JOINT_STAIR_DELTA 1.57f
 
 #ifndef DEBUG
 #define DEBUG
@@ -90,7 +91,8 @@ typedef enum
     RECOVER,
     FLATTEN,
     NEUTRAL,
-    NORMAL
+    NORMAL,
+    GOSTAIR
 } chassis_state_e;
 
 struct tof_data_t
