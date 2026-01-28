@@ -119,7 +119,6 @@ int main(void)
   MX_UART7_Init();
   MX_SPI2_Init();
   MX_TIM3_Init();
-  MX_TIM2_Init();
   MX_CRC_Init();
   MX_USB_OTG_HS_PCD_Init();
   /* USER CODE BEGIN 2 */
