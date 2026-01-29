@@ -136,15 +136,15 @@ void HAL_FDCAN_RxFifo0Callback(FDCAN_HandleTypeDef *hfdcan, uint32_t RxFifo0ITs)
     }
 
     /*--------------------------------------------------达妙电机数据--------------------------------------------------*/
-    else if (rx_header.Identifier >= 0x05 && rx_header.Identifier <= 0x08)//Master ID 数值范围，自己在上位机定义
+    else if (rx_header.Identifier >= DM_MASTER_ID && rx_header.Identifier <= DM_MASTER_ID+3)//Master ID 数值范围，自己在上位机定义
     {
         if (hfdcan == &hfdcan1)
         {
-            DMMotorHandler::Instance()->UpdateFeedback(hfdcan, rx_data, int(rx_header.Identifier - 0x05));
+            DMMotorHandler::Instance()->UpdateFeedback(hfdcan, rx_data, int(rx_header.Identifier - DM_MASTER_ID));
         }
         else if (hfdcan == &hfdcan2) // 处理CAN2的数据
         {
-            DMMotorHandler::Instance()->UpdateFeedback(hfdcan, rx_data, int(rx_header.Identifier - 0x05));
+            DMMotorHandler::Instance()->UpdateFeedback(hfdcan, rx_data, int(rx_header.Identifier - DM_MASTER_ID));
         }
     }
     
@@ -168,11 +168,11 @@ void HAL_FDCAN_RxFifo1Callback(FDCAN_HandleTypeDef *hfdcan, uint32_t RxFifo1ITs)
     uint8_t rx_data[8];
     HAL_FDCAN_GetRxMessage(hfdcan, FDCAN_RX_FIFO1, &rx_header, rx_data);
 
-    if (rx_header.Identifier >= 0x05 && rx_header.Identifier <= 0x08)//Master ID 数值范围，自己在上位机定义
+    if (rx_header.Identifier >= DM_MASTER_ID && rx_header.Identifier <= DM_MASTER_ID+3)//Master ID 数值范围，自己在上位机定义
     {
         if (hfdcan == &hfdcan1)
         {
-            DMMotorHandler::Instance()->UpdateFeedback(hfdcan, rx_data, int(rx_header.Identifier - 0x05));
+            DMMotorHandler::Instance()->UpdateFeedback(hfdcan, rx_data, int(rx_header.Identifier - DM_MASTER_ID));
         }
     }
 }

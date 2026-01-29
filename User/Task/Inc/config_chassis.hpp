@@ -14,7 +14,7 @@
 
 /* 腿长，单位m */
 #define VMC_L1 0.220f
-#define VMC_L2 0.250f
+#define VMC_L2 0.260f
 #define VMC_MotorDistance 0.0f
 #define VMC_HalfMotorDistance (VMC_MotorDistance / 2.0f)
 
