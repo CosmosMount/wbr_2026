@@ -63,6 +63,8 @@ struct pendulum_debug_t
     bool rflat;
     bool lneutral;
     bool rneutral;
+    float lwheel_tor;
+    float rwheel_tor;
     float ljoint4_tor;
     float ljoint1_tor;
     float rjoint4_tor;
@@ -71,6 +73,8 @@ struct pendulum_debug_t
     float ljoint1_pos;
     float rjoint4_pos;
     float rjoint1_pos;
+    float lwheel_spd;
+    float rwheel_spd;
 };
 struct pid_tuning_t 
 {
@@ -81,6 +85,7 @@ struct pid_tuning_t
 msg_ins_t debug_ins;
 pendulum_debug_t pendulum_debug;
 pid_tuning_t lenpd_tuning = {4000.0f, 0.0f, -2000.0f};
+pid_tuning_t rollpd_tuning = {0.7f, 0.0f, 1.4f};
 #endif
 
 [[noreturn]] void PendulumThreadFun(ULONG initial_input)
@@ -162,7 +167,7 @@ pid_tuning_t lenpd_tuning = {4000.0f, 0.0f, -2000.0f};
     PID rleg_len_pd(2000.0f, 0.0f, -1000.0f, 200.0f, 0.0f, PID_DVEL);
     PID lleg_len_pd(2000.0f, 0.0f, -1000.0f, 200.0f, 0.0f, PID_DVEL);
     /* roll */
-    PID roll_pd(0.7f, 0.0f, 0.01f, 3.0f, 0.0f);
+    PID roll_pd(0.7f, 0.0f, 0.04f, 3.0f, 0.0f);
     /* state machine */
     chassis_state_e chassis_state = RELAX;
 
@@ -319,7 +324,7 @@ pid_tuning_t lenpd_tuning = {4000.0f, 0.0f, -2000.0f};
                 chassis_state = NEUTRAL;
             }
         }
-        else if (chassis_state == NEUTRAL || chassis_state == NORMAL)
+        else
         {
             observedX[0] = odom.x;
             observedX[1] = odom.v;
@@ -335,7 +340,7 @@ pid_tuning_t lenpd_tuning = {4000.0f, 0.0f, -2000.0f};
             refX[0] = cmd.x;
             refX[1] = cmd.v;
             refX[2] = cmd.yaw;
-            refX[3] = cmd.w+cmd.dyaw;
+            refX[3] = cmd.dyaw;
             refX[4] = 0.0f;
             refX[5] = 0.0f;
             refX[6] = 0.0f;
@@ -363,7 +368,7 @@ pid_tuning_t lenpd_tuning = {4000.0f, 0.0f, -2000.0f};
                 {
                     Fl[1]=0.0f;    
                 }
-                if (Numeric::abs(lsolver.alpha) > 0.5f)
+                if (Numeric::abs(lsolver.alpha) > 0.45f)
                 {
                     Twl=0.0f;
                 }  
@@ -371,7 +376,7 @@ pid_tuning_t lenpd_tuning = {4000.0f, 0.0f, -2000.0f};
                 {
                     Fr[1]=0.0f;
                 }
-                if (Numeric::abs(rsolver.alpha) > 0.5f)
+                if (Numeric::abs(rsolver.alpha) > 0.45f)
                 {
                     Twr=0.0f;
                 }
@@ -438,11 +443,14 @@ pid_tuning_t lenpd_tuning = {4000.0f, 0.0f, -2000.0f};
         pendulum_debug.ljoint4_tor = LJoint4.motorFeedback.torqueFdb;
         pendulum_debug.rjoint1_tor = RJoint1.motorFeedback.torqueFdb;
         pendulum_debug.rjoint4_tor = RJoint4.motorFeedback.torqueFdb;
+        pendulum_debug.lwheel_tor = LWheel.motorFeedback.currentFdb / Tk_M3508;
+        pendulum_debug.rwheel_tor = RWheel.motorFeedback.currentFdb / Tk_M3508;
         
         pendulum_debug.x = odom.x;
         pendulum_debug.xref = cmd.x;
         pendulum_debug.v = odom.v;
         pendulum_debug.vref = cmd.v;
+        pendulum_debug.l_ref = cmd.len;
         pendulum_debug.llen = lsolver.len;
         pendulum_debug.rlen = rsolver.len;
         pendulum_debug.alphal = lsolver.alpha;
@@ -468,6 +476,7 @@ pid_tuning_t lenpd_tuning = {4000.0f, 0.0f, -2000.0f};
         pendulum_debug.Nr = rsolver.N;
         lleg_len_pd.Tuning(lenpd_tuning.kp, lenpd_tuning.ki, lenpd_tuning.kd);
         rleg_len_pd.Tuning(lenpd_tuning.kp, lenpd_tuning.ki, lenpd_tuning.kd);
+        roll_pd.Tuning(rollpd_tuning.kp, rollpd_tuning.ki, rollpd_tuning.kd);
     #endif
 
         tx_thread_sleep(MIN(1, 1-(tx_time_get()-thread_start_time)));

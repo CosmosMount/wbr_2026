@@ -125,7 +125,6 @@ struct msg_cmd_t
 {
     float x;
     float v;
-    float w;
     float len;
     float yaw;
     float dyaw;

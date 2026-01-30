@@ -2,8 +2,8 @@
 
 #define CHASSIS_ONLY
 
-// #define JUMP_UP
-#define STAIR_UP
+#define JUMP_UP
+// #define STAIR_UP
 
 #define TOF_DATA_SIZE 9
 
@@ -27,9 +27,9 @@
 #define LEG_NORMAL_STEP 0.001f
 #define LEG_JUMP_STEP 0.007f
 
-#define LEG_NORMAL_LEN 0.22f
-#define LEG_JUMP_START_LEN 0.370f
-#define LEG_JUMP_AIR_LEN 0.140f
+#define LEG_NORMAL_LEN 0.21f
+#define LEG_JUMP_START_LEN 0.35f
+#define LEG_JUMP_AIR_LEN 0.14f
 
 #define F_SPRING 250.0f
 

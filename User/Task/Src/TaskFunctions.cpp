@@ -114,7 +114,6 @@ __attribute__((section(".RAM_D3"))) msg_remoter_t debug_remoter;
             if (isnan(dlen_rx) || isnan(v_rx) || isnan(relativeangle) || (mode.chassis_mode > 3) || (mode.rotate_type > 1) || (mode.jump_ctrl > 2)) // 如果出现nan错误，将速度设定值设为0
             {
                 cmd.v = 0.0f;
-                cmd.w = 0.0f;
                 cmd.dlen = 0.0f;
                 cmd.dyaw = 0.0f;
                 relativeangle = 0.0f;
@@ -126,7 +125,6 @@ __attribute__((section(".RAM_D3"))) msg_remoter_t debug_remoter;
             else if (mode.chassis_mode == NONE)
             {
                 cmd.v = 0.0f;
-                cmd.w = 0.0f;
                 cmd.dlen = 0.0f;
                 cmd.dyaw = 0.0f;
                 cmd.move = false;
@@ -147,13 +145,11 @@ __attribute__((section(".RAM_D3"))) msg_remoter_t debug_remoter;
                 
                 if (mode.rotate_type == SPIN_ROTATE)
                 {
-                    cmd.w = 3.0f;
-                    cmd.dyaw = 0.0f;
+                    cmd.dyaw = 8.0f;
                 }
                 else 
                 {
                     cmd.dyaw = yaw_updater.UpdateVal(relativeangle)*2.0f;
-                    cmd.w = 0.0f;
                 }
 
                 if (fabsf(cmd.v) < 0.002f || mode.rotate_type == SPIN_ROTATE)
@@ -176,7 +172,6 @@ __attribute__((section(".RAM_D3"))) msg_remoter_t debug_remoter;
             if (remoter.ctrl_sw == Relax || remoter.offline)
             {
                 cmd.v = 0.0f;
-                cmd.w = 0.0f;
                 cmd.len = LEG_NORMAL_LEN;
                 cmd.dyaw = 0.0f;
                 cmd.move = false;
@@ -189,10 +184,9 @@ __attribute__((section(".RAM_D3"))) msg_remoter_t debug_remoter;
                 {
                     cmd.dyaw = yaw_updater.UpdateVal(-remoter.right_x*2.0f);
                     cmd.v = v_updater.UpdateVal(remoter.left_y*2.0f);
-                    cmd.roll = 0.0f;//remoter.left_x*0.1f;//
-                    cmd.len += remoter.right_y*0.001f;
+                    cmd.roll = 0.0f;
+                    cmd.len += remoter.right_y*0.0008f;
                     cmd.len = FloatConstrain(cmd.len, MIN_LEG_LEN, MAX_LEG_LEN);
-                    cmd.w = 0.0f;
                     cmd.inair = false;
                     cmd.gostair = false;
                 }
@@ -201,7 +195,6 @@ __attribute__((section(".RAM_D3"))) msg_remoter_t debug_remoter;
                 #ifdef JUMP_UP
                     static uint16_t delay_timer;
                     cmd.dyaw = 0.0f;
-                    cmd.w = 0.0f;
                     if (remoter.jump_sw == Prepared)
                     {
                         cmd.len = LEG_NORMAL_LEN;
@@ -223,7 +216,7 @@ __attribute__((section(".RAM_D3"))) msg_remoter_t debug_remoter;
                         else if (jump_stage == EXTEND_LEGS)
                         {
                             cmd.len = len_updater.UpdateVal(LEG_JUMP_START_LEN);
-                            if (++delay_timer == 70)
+                            if (++delay_timer == 150)
                             {
                                 delay_timer = 0;
                                 jump_stage = IN_AIR;
@@ -262,8 +255,7 @@ __attribute__((section(".RAM_D3"))) msg_remoter_t debug_remoter;
             else if (remoter.ctrl_sw == Spin)
             {
                 cmd.move = true;
-                cmd.w = 3.0f;
-                cmd.dyaw = 0.0f;
+                cmd.dyaw = yaw_updater.UpdateVal(8.0f);
                 cmd.v = 0.0f;
             }
 
@@ -271,7 +263,7 @@ __attribute__((section(".RAM_D3"))) msg_remoter_t debug_remoter;
             {
                 maintained_x = false;
                 cmd.x = pendulum_data.x;
-                cmd.v = pendulum_data.v;//0.0f;
+                cmd.v = pendulum_data.v;
             }
             else
             {
@@ -291,7 +283,7 @@ __attribute__((section(".RAM_D3"))) msg_remoter_t debug_remoter;
                 }
             }
             
-            if (fabs(cmd.dyaw)<0.002f && remoter.ctrl_sw != Spin)
+            if (fabs(cmd.dyaw)<0.002f)
             {
                 if (!maintained_yaw)
                 {
@@ -303,7 +295,10 @@ __attribute__((section(".RAM_D3"))) msg_remoter_t debug_remoter;
             else
             {
                 maintained_yaw = false;
-                cmd.yaw = ins.total_yaw*DegreeToRad+cmd.dyaw*0.001f;
+                if (remoter.ctrl_sw == Spin)
+                    cmd.yaw = ins.total_yaw*DegreeToRad;
+                else
+                    cmd.yaw = ins.total_yaw*DegreeToRad+cmd.dyaw*0.001f;
             }
 
             if (pendulum_data.len > 0.17f)
