@@ -1,5 +1,6 @@
 #pragma once
 
+#include "fast_math_functions.h"
 #include "vmc.hpp"
 #include "math.hpp"
 #include "odometry.hpp"
@@ -63,7 +64,7 @@ public:
         this->vmc.VMCRevCal(Trev, Treal);
         float P = Trev[0]*arm_cos_f32(this->alpha) + Trev[1]/this->len*arm_sin_f32(this->alpha);
         float ddlen = (this->dlen-this->prev_dlen)*1000.0f;
-        this->N = P + WHEEL_MASS*(_az - ddlen*arm_cos_f32(this->alpha));
+        this->N = P + WHEEL_MASS*(_az - ddlen*arm_cos_f32(this->alpha)) + F_SPRING*arm_cos_f32(_phi1-phi);
 
         /* neutral and flat detection */
         if (Numeric::abs(this->alpha) < 0.25f)
