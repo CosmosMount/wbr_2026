@@ -47,7 +47,7 @@ __attribute__((section(".RAM_D3"))) msg_remoter_t debug_remoter;
 
     /* Slope Updaters */
     SLOPE yaw_updater(0.0f, 0.01f);
-    SLOPE v_updater(0.0f,0.005f);
+    SLOPE v_updater(0.0f,0.003f);
     SLOPE len_updater(0.13f,LEG_NORMAL_STEP);
 
     /* om publishers */
@@ -275,7 +275,7 @@ __attribute__((section(".RAM_D3"))) msg_remoter_t debug_remoter;
             }
             else
             {
-                if (fabsf(cmd.v) < 0.002f || remoter.ctrl_sw == Spin)
+                if (fabsf(cmd.v) < 0.005f || remoter.ctrl_sw == Spin)
                 {
                     if (!maintained_x)
                     {
@@ -305,6 +305,9 @@ __attribute__((section(".RAM_D3"))) msg_remoter_t debug_remoter;
                 maintained_yaw = false;
                 cmd.yaw = ins.total_yaw*DegreeToRad+cmd.dyaw*0.001f;
             }
+
+            if (pendulum_data.len > 0.17f)
+                v_updater.SetPath(0.001f+0.0154f*(pendulum_data.len-0.17f));
         #endif           
         }
 

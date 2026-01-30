@@ -262,7 +262,7 @@ pid_tuning_t lenpd_tuning = {4000.0f, 0.0f, -2000.0f};
                 LJoint4.positionSet = ljoint4_flat_init-JOINT_FLAT_DELTA;
                 LJoint1.speedSet = -0.1f; LJoint4.speedSet = -0.1f;
                 LJoint1.KP = 2.0f; LJoint4.KP = 2.0f;
-                LJoint1.KD = 1.5f; LJoint4.KD = 1.5f;
+                LJoint1.KD = 2.0f; LJoint4.KD = 2.0f;
             }
 
             if (rsolver.flat)
@@ -273,7 +273,7 @@ pid_tuning_t lenpd_tuning = {4000.0f, 0.0f, -2000.0f};
                 RJoint4.positionSet = rjoint4_flat_init+JOINT_FLAT_DELTA;
                 RJoint1.speedSet = 0.1f; RJoint4.speedSet = 0.1f;
                 RJoint1.KP = 2.0f; RJoint4.KP = 2.0f;
-                RJoint1.KD = 1.5f; RJoint4.KD = 1.5f;
+                RJoint1.KD = 2.0f; RJoint4.KD = 2.0f;
             }
 
             if (lsolver.flat && rsolver.flat)
@@ -336,9 +336,9 @@ pid_tuning_t lenpd_tuning = {4000.0f, 0.0f, -2000.0f};
             refX[1] = cmd.v;
             refX[2] = cmd.yaw;
             refX[3] = cmd.w+cmd.dyaw;
-            refX[4] = 0.06f;
+            refX[4] = 0.0f;
             refX[5] = 0.0f;
-            refX[6] = 0.06f;
+            refX[6] = 0.0f;
             refX[7] = 0.0f;
             refX[8] = 0.0f;
             refX[9] = 0.0f;
@@ -363,14 +363,18 @@ pid_tuning_t lenpd_tuning = {4000.0f, 0.0f, -2000.0f};
                 {
                     Fl[1]=0.0f;    
                 }
-                if (Numeric::abs(lsolver.alpha) > 0.8f)
+                if (Numeric::abs(lsolver.alpha) > 0.5f)
+                {
                     Twl=0.0f;
+                }  
                 if (rsolver.len>0.18f)
                 {
                     Fr[1]=0.0f;
                 }
-                if (Numeric::abs(rsolver.alpha) > 0.8f)
+                if (Numeric::abs(rsolver.alpha) > 0.5f)
+                {
                     Twr=0.0f;
+                }
             }
             else if (chassis_state == NORMAL)
             {
@@ -419,6 +423,7 @@ pid_tuning_t lenpd_tuning = {4000.0f, 0.0f, -2000.0f};
         pendulum_data.x = odom.x;
         pendulum_data.v = odom.v;
         pendulum_data.N = (lsolver.N+rsolver.N)*0.5f;
+        pendulum_data.len = (lsolver.len+rsolver.len)*0.5f;
         om_publish(pendulum_pub, &pendulum_data, sizeof(msg_pendulum_t), true, false);  
         tx_semaphore_put(&PendulumThreadSem);
 

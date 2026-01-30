@@ -47,7 +47,8 @@ leg = 0.10:0.01:0.35;
 
 %Q矩阵
 %         s  ds yaw dyaw alphal dalphal alphar dalphar theta dtheta
-Q = diag([80 60 80 60 600 20 600 20 3000 15]);
+Q = diag([120 100 40 40 900 90 900 90 4000 40]);
+% Q = diag([80 60 80 60 600 50 600 50 3000 30]);
 % 其中：
 % s        : 自然坐标系下机器人水平方向移动距离，单位：m，ds为其导数
 % yaw      ：机器人水平方向移动时yaw偏航角度，dphi为其导数
