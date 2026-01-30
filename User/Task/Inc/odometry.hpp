@@ -79,7 +79,7 @@ public:
      * @param _quaternion [w, x, y, z] format
      * @param _acc [0, ax, ay, az] quaternion format for acceleration
      * @param _vel velocity measurement
-     * @param _yaw in degree
+     * @param _yaw in radians
      * @return odometry_info
      */
     void Update(float *_quaternion, float *_acc, float _vel, float _yaw)
@@ -95,7 +95,7 @@ public:
         arm_quaternion_product_f32(temp, _quaternion_conj, a_world, 1);
 
         float a_x = sqrtf(a_world[1] * a_world[1] + a_world[2] * a_world[2]) *
-                    arm_cos_f32(atan2f(a_world[2], a_world[1]) - _yaw * Numeric::DegreeToRad);
+                    arm_cos_f32(atan2f(a_world[2], a_world[1]) - _yaw);
 
         vel_kf.UpdateKalman(_vel, a_x);
 
