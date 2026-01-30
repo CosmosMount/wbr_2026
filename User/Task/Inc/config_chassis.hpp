@@ -27,9 +27,11 @@
 #define LEG_NORMAL_STEP 0.001f
 #define LEG_JUMP_STEP 0.007f
 
-#define LEG_NORMAL_LEN 0.23f
+#define LEG_NORMAL_LEN 0.22f
 #define LEG_JUMP_START_LEN 0.370f
 #define LEG_JUMP_AIR_LEN 0.140f
+
+#define F_SPRING 250.0f
 
 #define JOINT_FLAT_DELTA 2.71f
 #define JOINT_STAIR_DELTA 1.57f

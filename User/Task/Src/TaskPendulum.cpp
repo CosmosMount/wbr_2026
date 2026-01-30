@@ -30,41 +30,6 @@ uint8_t PendulumThreadStack[8192] = {0};
 
 
 #ifdef DEBUG
-struct solver_debug_t
-{
-    float llength;
-    float rlength;
-    float lphi;
-    float rphi;
-    float llength_dot;
-    float rlength_dot;
-    float lphi_dot;
-    float rphi_dot;
-    float lphi1;
-    float lphi4;
-    float lphi1dot;
-    float lphi4dot;
-    float rphi1;
-    float rphi4;
-    float rphi1dot;
-    float rphi4dot;
-    float ljoint4_tor;
-    float ljoint1_tor;
-    float rjoint4_tor;
-    float rjoint1_tor;
-    float rwheel_tor_ref;
-    float lwheel_tor_ref;
-    float rwheel_tor_fdb;
-    float lwheel_tor_fdb;
-    float ljoint4_pos;
-    float ljoint1_pos;
-    float rjoint4_pos;
-    float rjoint1_pos;
-    float lwheel_pos;
-    float rwheel_pos;
-    float lalpha;
-    float ralpha;
-};
 struct pendulum_debug_t
 {
     float alphal;
@@ -98,26 +63,24 @@ struct pendulum_debug_t
     bool rflat;
     bool lneutral;
     bool rneutral;
+    float ljoint4_tor;
+    float ljoint1_tor;
+    float rjoint4_tor;
+    float rjoint1_tor;
+    float ljoint4_pos;
+    float ljoint1_pos;
+    float rjoint4_pos;
+    float rjoint1_pos;
 };
-// struct force_debug_t
-// {
-//     float Flreal;
-//     float Frreal;
-//     float Tleal;
-//     float Treal;
-//     float Nl;
-//     float Nr;
-//     float Pl;
-//     float Pr;
-//     float N;
-//     float Tljoint4;
-//     float Tljoint1;
-//     float Trjoint4;
-//     float Trjoint1;
-// };
+struct pid_tuning_t 
+{
+    float kp;
+    float ki;
+    float kd;
+};
 msg_ins_t debug_ins;
 pendulum_debug_t pendulum_debug;
-__attribute__((section(".RAM_D3"))) solver_debug_t solver_debug;
+pid_tuning_t lenpd_tuning = {4000.0f, 0.0f, -2000.0f};
 #endif
 
 [[noreturn]] void PendulumThreadFun(ULONG initial_input)
@@ -298,8 +261,8 @@ __attribute__((section(".RAM_D3"))) solver_debug_t solver_debug;
                 LJoint1.positionSet = ljoint1_flat_init-JOINT_FLAT_DELTA;
                 LJoint4.positionSet = ljoint4_flat_init-JOINT_FLAT_DELTA;
                 LJoint1.speedSet = -0.1f; LJoint4.speedSet = -0.1f;
-                LJoint1.KP = 1.0f; LJoint4.KP = 1.0f;
-                LJoint1.KD = 1.0f; LJoint4.KD = 1.0f;
+                LJoint1.KP = 2.0f; LJoint4.KP = 2.0f;
+                LJoint1.KD = 1.5f; LJoint4.KD = 1.5f;
             }
 
             if (rsolver.flat)
@@ -309,8 +272,8 @@ __attribute__((section(".RAM_D3"))) solver_debug_t solver_debug;
                 RJoint1.positionSet = rjoint1_flat_init+JOINT_FLAT_DELTA;
                 RJoint4.positionSet = rjoint4_flat_init+JOINT_FLAT_DELTA;
                 RJoint1.speedSet = 0.1f; RJoint4.speedSet = 0.1f;
-                RJoint1.KP = 1.0f; RJoint4.KP = 1.0f;
-                RJoint1.KD = 1.0f; RJoint4.KD = 1.0f;
+                RJoint1.KP = 2.0f; RJoint4.KP = 2.0f;
+                RJoint1.KD = 1.5f; RJoint4.KD = 1.5f;
             }
 
             if (lsolver.flat && rsolver.flat)
@@ -389,13 +352,25 @@ __attribute__((section(".RAM_D3"))) solver_debug_t solver_debug;
 
             if (chassis_state == NEUTRAL)
             {
-                lleg_len_pd.ref = 0.21f;
-                rleg_len_pd.ref = 0.21f;
+                lleg_len_pd.ref = 0.15f;
+                rleg_len_pd.ref = 0.15f;
                 if (lsolver.neutral && rsolver.neutral)
                 {
                     pendulum_data.neutral = true;
                     chassis_state = NORMAL;
                 }
+                if (lsolver.len>0.18f)
+                {
+                    Fl[1]=0.0f;    
+                }
+                if (Numeric::abs(lsolver.alpha) > 0.8f)
+                    Twl=0.0f;
+                if (rsolver.len>0.18f)
+                {
+                    Fr[1]=0.0f;
+                }
+                if (Numeric::abs(rsolver.alpha) > 0.8f)
+                    Twr=0.0f;
             }
             else if (chassis_state == NORMAL)
             {
@@ -403,8 +378,8 @@ __attribute__((section(".RAM_D3"))) solver_debug_t solver_debug;
                 roll_pd.ref = 0.0f;
                 roll_pd.fdb = ins.roll*DegreeToRad;
                 roll_pd.UpdateResult(ins.gyro_r);
-                lleg_len_pd.ref = cmd.len+0.03f+roll_pd.result;
-                rleg_len_pd.ref = cmd.len+0.03f-roll_pd.result;
+                lleg_len_pd.ref = cmd.len-0.03f+roll_pd.result;
+                rleg_len_pd.ref = cmd.len-0.03f-roll_pd.result;
                 
                 if (lsolver.neutral && rsolver.neutral && (N<20.0f || cmd.inair))
                 {
@@ -450,16 +425,14 @@ __attribute__((section(".RAM_D3"))) solver_debug_t solver_debug;
     #ifdef DEBUG
         debug_ins = ins;
 
-        solver_debug.llength = lsolver.len;
-        solver_debug.rlength = rsolver.len;
-        solver_debug.lalpha = lsolver.alpha;
-        solver_debug.ralpha = rsolver.alpha;
-        solver_debug.ljoint1_pos = LJoint1.motorFeedback.positionFdb;
-        solver_debug.ljoint4_pos = LJoint4.motorFeedback.positionFdb;
-        solver_debug.rjoint1_pos = RJoint1.motorFeedback.positionFdb;
-        solver_debug.rjoint4_pos = RJoint4.motorFeedback.positionFdb;
-        solver_debug.lwheel_pos = LWheel.motorFeedback.positionFdb;
-        solver_debug.rwheel_pos = RWheel.motorFeedback.positionFdb;
+        pendulum_debug.ljoint1_pos = LJoint1.motorFeedback.positionFdb;
+        pendulum_debug.ljoint4_pos = LJoint4.motorFeedback.positionFdb;
+        pendulum_debug.rjoint1_pos = RJoint1.motorFeedback.positionFdb;
+        pendulum_debug.rjoint4_pos = RJoint4.motorFeedback.positionFdb;
+        pendulum_debug.ljoint1_tor = LJoint1.motorFeedback.torqueFdb;
+        pendulum_debug.ljoint4_tor = LJoint4.motorFeedback.torqueFdb;
+        pendulum_debug.rjoint1_tor = RJoint1.motorFeedback.torqueFdb;
+        pendulum_debug.rjoint4_tor = RJoint4.motorFeedback.torqueFdb;
         
         pendulum_debug.x = odom.x;
         pendulum_debug.xref = cmd.x;
@@ -488,6 +461,8 @@ __attribute__((section(".RAM_D3"))) solver_debug_t solver_debug;
         pendulum_debug.rflat = rsolver.flat;
         pendulum_debug.Nl = lsolver.N;
         pendulum_debug.Nr = rsolver.N;
+        lleg_len_pd.Tuning(lenpd_tuning.kp, lenpd_tuning.ki, lenpd_tuning.kd);
+        rleg_len_pd.Tuning(lenpd_tuning.kp, lenpd_tuning.ki, lenpd_tuning.kd);
     #endif
 
         tx_thread_sleep(MIN(1, 1-(tx_time_get()-thread_start_time)));

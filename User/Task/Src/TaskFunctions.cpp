@@ -271,7 +271,7 @@ __attribute__((section(".RAM_D3"))) msg_remoter_t debug_remoter;
             {
                 maintained_x = false;
                 cmd.x = pendulum_data.x;
-                cmd.v = 0.0f;
+                cmd.v = pendulum_data.v;//0.0f;
             }
             else
             {
