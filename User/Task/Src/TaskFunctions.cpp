@@ -200,6 +200,7 @@ __attribute__((section(".RAM_D3"))) msg_remoter_t debug_remoter;
                         cmd.len = LEG_NORMAL_LEN;
                         cmd.v = v_updater.UpdateVal(remoter.left_y);
                         cmd.inair = false;
+                        cmd.ifjump = true;
                         jump_stage = START_JUMP;
                         delay_timer = 0;
                         len_updater.SetPath(LEG_JUMP_STEP);
@@ -216,11 +217,13 @@ __attribute__((section(".RAM_D3"))) msg_remoter_t debug_remoter;
                         else if (jump_stage == EXTEND_LEGS)
                         {
                             cmd.len = len_updater.UpdateVal(LEG_JUMP_START_LEN);
-                            if (++delay_timer == 150)
-                            {
-                                delay_timer = 0;
-                                jump_stage = IN_AIR;
-                            }                                
+                            // if (++delay_timer == 150)
+                            // {
+                            //     delay_timer = 0;
+                            //     jump_stage = IN_AIR;
+                            // }
+                            if (pendulum_data.len >= 0.29f)
+                                jump_stage = IN_AIR;                               
                         }
                         else if (jump_stage == IN_AIR)
                         {
@@ -234,10 +237,11 @@ __attribute__((section(".RAM_D3"))) msg_remoter_t debug_remoter;
                         }
                         else if (jump_stage == LANDING)
                         {
-                            cmd.inair = false;
                             cmd.len = len_updater.UpdateVal(LEG_NORMAL_LEN);
                             if (pendulum_data.N > 20.0f)
                             {
+                                cmd.inair = false;
+                                cmd.ifjump = false;
                                 jump_stage = DONT_JUMP;
                                 len_updater.SetPath(LEG_NORMAL_STEP);
                             }
@@ -247,6 +251,11 @@ __attribute__((section(".RAM_D3"))) msg_remoter_t debug_remoter;
                 #ifdef STAIR_UP
                     if (remoter.jump_sw == Prepared)
                     {
+                        cmd.dyaw = yaw_updater.UpdateVal(-remoter.right_x*2.0f);
+                        cmd.v = v_updater.UpdateVal(remoter.left_y*2.0f);
+                        cmd.roll = 0.0f;
+                        cmd.len += remoter.right_y*0.0008f;
+                        cmd.len = FloatConstrain(cmd.len, MIN_LEG_LEN, MAX_LEG_LEN);
                         cmd.gostair = true;
                     }
                 #endif

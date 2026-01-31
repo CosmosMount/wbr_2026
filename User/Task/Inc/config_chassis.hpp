@@ -25,7 +25,7 @@
 #define MAX_WHEEL_TOR 15.0f
 
 #define LEG_NORMAL_STEP 0.001f
-#define LEG_JUMP_STEP 0.007f
+#define LEG_JUMP_STEP 0.01f
 
 #define LEG_NORMAL_LEN 0.21f
 #define LEG_JUMP_START_LEN 0.35f
@@ -94,7 +94,8 @@ typedef enum
     FLATTEN,
     NEUTRAL,
     NORMAL,
-    GOSTAIR
+    GOSTAIR,
+    JUMP
 } chassis_state_e;
 
 struct tof_data_t

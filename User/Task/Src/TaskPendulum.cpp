@@ -164,8 +164,8 @@ pid_tuning_t rollpd_tuning = {0.7f, 0.0f, 1.4f};
     float refX[10] = {0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f};
     lqr.InitMatX(&refX[0], &observedX[0]);
     /* len */
-    PID rleg_len_pd(2000.0f, 0.0f, -1000.0f, 200.0f, 0.0f, PID_DVEL);
-    PID lleg_len_pd(2000.0f, 0.0f, -1000.0f, 200.0f, 0.0f, PID_DVEL);
+    PID rleg_len_pd(4000.0f, 0.0f, -2000.0f, 200.0f, 0.0f, PID_DVEL);
+    PID lleg_len_pd(4000.0f, 0.0f, -2000.0f, 200.0f, 0.0f, PID_DVEL);
     /* roll */
     PID roll_pd(0.7f, 0.0f, 0.04f, 3.0f, 0.0f);
     /* state machine */
@@ -359,27 +359,17 @@ pid_tuning_t rollpd_tuning = {0.7f, 0.0f, 1.4f};
             {
                 lleg_len_pd.ref = 0.15f;
                 rleg_len_pd.ref = 0.15f;
+                
                 if (lsolver.neutral && rsolver.neutral)
                 {
                     pendulum_data.neutral = true;
                     chassis_state = NORMAL;
                 }
-                if (lsolver.len>0.18f)
-                {
-                    Fl[1]=0.0f;    
-                }
-                if (Numeric::abs(lsolver.alpha) > 0.45f)
-                {
-                    Twl=0.0f;
-                }  
-                if (rsolver.len>0.18f)
-                {
-                    Fr[1]=0.0f;
-                }
-                if (Numeric::abs(rsolver.alpha) > 0.45f)
-                {
-                    Twr=0.0f;
-                }
+
+                if (lsolver.len>0.18f) {    Fl[1]=0.0f;    }
+                if (rsolver.len>0.18f) {    Fr[1]=0.0f;    }
+                if (Numeric::abs(lsolver.alpha) > 0.45f) {    Twl=0.0f;    }  
+                if (Numeric::abs(rsolver.alpha) > 0.45f) {    Twr=0.0f;    }
             }
             else if (chassis_state == NORMAL)
             {
@@ -389,9 +379,36 @@ pid_tuning_t rollpd_tuning = {0.7f, 0.0f, 1.4f};
                 roll_pd.UpdateResult(ins.gyro_r);
                 lleg_len_pd.ref = cmd.len-0.03f+roll_pd.result;
                 rleg_len_pd.ref = cmd.len-0.03f-roll_pd.result;
-                
-                if (lsolver.neutral && rsolver.neutral && (N<20.0f || cmd.inair))
+
+                if (cmd.ifjump) 
                 {
+                    if (!cmd.inair) 
+                    {
+                        rleg_len_pd.Tuning(6000.0f, 0.0f, -1500.0f);
+                        lleg_len_pd.Tuning(6000.0f, 0.0f, -1500.0f);
+                    }
+                    else 
+                    {
+                        rleg_len_pd.Tuning(10000.0f, 0.0f, -1500.0f);
+                        lleg_len_pd.Tuning(10000.0f, 0.0f, -1500.0f);
+                    }
+                }
+                else 
+                {
+                    rleg_len_pd.Tuning(4000.0f, 0.0f, -2000.0f);
+                    lleg_len_pd.Tuning(4000.0f, 0.0f, -2000.0f);
+                }
+                
+                if (lsolver.neutral && rsolver.neutral && N<20.0f)
+                {
+                    Twl = 0.0f;
+                    Twr = 0.0f;
+                }
+
+                if (cmd.inair)
+                {
+                    Fl[1] = 0.0f;
+                    Fr[1] = 0.0f;
                     Twl = 0.0f;
                     Twr = 0.0f;
                 }
@@ -474,8 +491,8 @@ pid_tuning_t rollpd_tuning = {0.7f, 0.0f, 1.4f};
         pendulum_debug.rflat = rsolver.flat;
         pendulum_debug.Nl = lsolver.N;
         pendulum_debug.Nr = rsolver.N;
-        lleg_len_pd.Tuning(lenpd_tuning.kp, lenpd_tuning.ki, lenpd_tuning.kd);
-        rleg_len_pd.Tuning(lenpd_tuning.kp, lenpd_tuning.ki, lenpd_tuning.kd);
+        // lleg_len_pd.Tuning(lenpd_tuning.kp, lenpd_tuning.ki, lenpd_tuning.kd);
+        // rleg_len_pd.Tuning(lenpd_tuning.kp, lenpd_tuning.ki, lenpd_tuning.kd);
         roll_pd.Tuning(rollpd_tuning.kp, rollpd_tuning.ki, rollpd_tuning.kd);
     #endif
 
