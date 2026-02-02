@@ -27,8 +27,8 @@
 #define LEG_NORMAL_STEP 0.001f
 #define LEG_JUMP_STEP 0.01f
 
-#define LEG_NORMAL_LEN 0.21f
-#define LEG_JUMP_START_LEN 0.35f
+#define LEG_JUMP_START_LEN 0.21f
+#define LEG_JUMP_UP_LEN 0.35f
 #define LEG_JUMP_AIR_LEN 0.14f
 
 #define F_SPRING 250.0f
@@ -42,10 +42,10 @@
 
 typedef enum
 {
-    DONT_JUMP,
-    START_JUMP,
-    EXTEND_LEGS,
-    IN_AIR,
+    DONT,
+    START,
+    EXTENDING,
+    INAIR,
     LANDING
 }jump_stage_e;
 
@@ -78,14 +78,6 @@ typedef enum
 } fly_ctrl_e;
 
 #pragma pack(push,1)
-
-typedef struct
-{
-    chassis_mode_e chassis_mode : 2;
-    rotate_ctrl_e rotate_type : 1;
-    jump_ctrl_e jump_ctrl : 2;
-    fly_ctrl_e fly_ctrl : 1;
-} chassis_mode_t;
 
 typedef enum
 {

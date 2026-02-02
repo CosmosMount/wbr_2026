@@ -63,9 +63,9 @@ __attribute__((section(".RAM_D3"))) msg_remoter_t debug_remoter;
     msg_pendulum_t pendulum_data{};
 
     /* Jump Stage */
-#ifdef JUMP_UP
-    jump_stage_e jump_stage = DONT_JUMP;
-#endif
+// #ifdef JUMP_UP
+//     // jump_stage_e jump_stage = DONT_JUMP;
+// #endif
 
     for (;;)
     {
@@ -172,7 +172,7 @@ __attribute__((section(".RAM_D3"))) msg_remoter_t debug_remoter;
             if (remoter.ctrl_sw == Relax || remoter.offline)
             {
                 cmd.v = 0.0f;
-                cmd.len = LEG_NORMAL_LEN;
+                cmd.len = 0.21f;
                 cmd.dyaw = 0.0f;
                 cmd.move = false;
                 cmd.inair = false;
@@ -193,59 +193,62 @@ __attribute__((section(".RAM_D3"))) msg_remoter_t debug_remoter;
                 else
                 {
                 #ifdef JUMP_UP
-                    static uint16_t delay_timer;
+                    // static uint16_t delay_timer;
                     cmd.dyaw = 0.0f;
                     if (remoter.jump_sw == Prepared)
                     {
-                        cmd.len = LEG_NORMAL_LEN;
-                        cmd.v = v_updater.UpdateVal(remoter.left_y);
-                        cmd.inair = false;
-                        cmd.ifjump = true;
-                        jump_stage = START_JUMP;
-                        delay_timer = 0;
-                        len_updater.SetPath(LEG_JUMP_STEP);
+                        cmd.prejump = true;
+                        // cmd.len = LEG_NORMAL_LEN;
+                        // cmd.v = v_updater.UpdateVal(remoter.left_y);
+                        // cmd.inair = false;
+                        // cmd.ifjump = true;
+                        // jump_stage = START_JUMP;
+                        // delay_timer = 0;
+                        // len_updater.SetPath(LEG_JUMP_STEP);
                     }
                     else if (remoter.jump_sw == Jump)
                     {
-                        cmd.v = 0.0f;
-                        if (jump_stage == START_JUMP)
-                        {
-                            cmd.len = len_updater.UpdateVal(LEG_NORMAL_LEN);
-                            if (len_updater.CheckReached())
-                                jump_stage = EXTEND_LEGS;
-                        }
-                        else if (jump_stage == EXTEND_LEGS)
-                        {
-                            cmd.len = len_updater.UpdateVal(LEG_JUMP_START_LEN);
-                            // if (++delay_timer == 150)
-                            // {
-                            //     delay_timer = 0;
-                            //     jump_stage = IN_AIR;
-                            // }
-                            if (pendulum_data.len >= 0.29f)
-                                jump_stage = IN_AIR;                               
-                        }
-                        else if (jump_stage == IN_AIR)
-                        {
-                            cmd.inair = true;
-                            cmd.len = len_updater.UpdateVal(LEG_JUMP_AIR_LEN);
-                            if (++delay_timer == 150)
-                            {
-                                delay_timer = 0;
-                                jump_stage = LANDING;
-                            }
-                        }
-                        else if (jump_stage == LANDING)
-                        {
-                            cmd.len = len_updater.UpdateVal(LEG_NORMAL_LEN);
-                            if (pendulum_data.N > 20.0f)
-                            {
-                                cmd.inair = false;
-                                cmd.ifjump = false;
-                                jump_stage = DONT_JUMP;
-                                len_updater.SetPath(LEG_NORMAL_STEP);
-                            }
-                        }
+                        cmd.ifjump = true;
+                        cmd.prejump = false;
+                        // cmd.v = 0.0f;
+                        // if (jump_stage == START_JUMP)
+                        // {
+                        //     cmd.len = len_updater.UpdateVal(LEG_NORMAL_LEN);
+                        //     if (len_updater.CheckReached())
+                        //         jump_stage = EXTEND_LEGS;
+                        // }
+                        // else if (jump_stage == EXTEND_LEGS)
+                        // {
+                        //     cmd.len = len_updater.UpdateVal(LEG_JUMP_START_LEN);
+                        //     // if (++delay_timer == 150)
+                        //     // {
+                        //     //     delay_timer = 0;
+                        //     //     jump_stage = IN_AIR;
+                        //     // }
+                        //     if (pendulum_data.len >= 0.29f)
+                        //         jump_stage = IN_AIR;                               
+                        // }
+                        // else if (jump_stage == IN_AIR)
+                        // {
+                        //     cmd.inair = true;
+                        //     cmd.len = len_updater.UpdateVal(LEG_JUMP_AIR_LEN);
+                        //     if (++delay_timer == 150)
+                        //     {
+                        //         delay_timer = 0;
+                        //         jump_stage = LANDING;
+                        //     }
+                        // }
+                        // else if (jump_stage == LANDING)
+                        // {
+                        //     cmd.len = len_updater.UpdateVal(LEG_NORMAL_LEN);
+                        //     if (pendulum_data.N > 20.0f)
+                        //     {
+                        //         cmd.inair = false;
+                        //         cmd.ifjump = false;
+                        //         jump_stage = DONT_JUMP;
+                        //         len_updater.SetPath(LEG_NORMAL_STEP);
+                        //     }
+                        // }
                     }
                 #endif
                 #ifdef STAIR_UP

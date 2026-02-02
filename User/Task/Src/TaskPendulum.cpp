@@ -158,11 +158,9 @@ pid_tuning_t rollpd_tuning = {0.7f, 0.0f, 1.4f};
     /* odom */
     Odometry odom;
     /* lqr */
-    LQR lqr;
-    float Tout[4] = {0.0f, 0.0f, 0.0f, 0.0f};
     float observedX[10] = {0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f};
     float refX[10] = {0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f};
-    lqr.InitMatX(&refX[0], &observedX[0]);
+    LQR lqr(&refX[0], &observedX[0]);
     /* len */
     PID rleg_len_pd(4000.0f, 0.0f, -2000.0f, 200.0f, 0.0f, PID_DVEL);
     PID lleg_len_pd(4000.0f, 0.0f, -2000.0f, 200.0f, 0.0f, PID_DVEL);
@@ -170,6 +168,7 @@ pid_tuning_t rollpd_tuning = {0.7f, 0.0f, 1.4f};
     PID roll_pd(0.7f, 0.0f, 0.04f, 3.0f, 0.0f);
     /* state machine */
     chassis_state_e chassis_state = RELAX;
+    jump_stage_e jump_stage = DONT;
 
     /* force&torque */
     float Twl = 0.0f;
@@ -207,6 +206,19 @@ pid_tuning_t rollpd_tuning = {0.7f, 0.0f, 1.4f};
         RWheel.currentSet = 0;
     };
 
+    auto applytorque = [&]()
+    {
+        lsolver.ForwardDynamics(Fl, Tl);
+        rsolver.ForwardDynamics(Fr, Tr);
+
+        LJoint1.torqueSet = Numeric::FloatConstrain(Tl[0], -MAX_HIP_TOR, MAX_HIP_TOR);
+        LJoint4.torqueSet = Numeric::FloatConstrain(Tl[1], -MAX_HIP_TOR, MAX_HIP_TOR);
+        RJoint1.torqueSet = -Numeric::FloatConstrain(Tr[0], -MAX_HIP_TOR, MAX_HIP_TOR);
+        RJoint4.torqueSet = -Numeric::FloatConstrain(Tr[1], -MAX_HIP_TOR, MAX_HIP_TOR);
+        LWheel.currentSet = -Numeric::FloatConstrain(Twl, -MAX_WHEEL_TOR, MAX_WHEEL_TOR) * Tk_M3508;
+        RWheel.currentSet = Numeric::FloatConstrain(Twr, -MAX_WHEEL_TOR, MAX_WHEEL_TOR) * Tk_M3508;
+    };
+
     float thread_start_time = 0.0f;
     bool flatten_initialized = false;
 
@@ -230,11 +242,37 @@ pid_tuning_t rollpd_tuning = {0.7f, 0.0f, 1.4f};
         odom.Update(ins.quaternion, ins.accel, 
                     (-LWheel.motorFeedback.speedFdb+RWheel.motorFeedback.speedFdb)*WHEEL_RADIUS*0.5f, yaw);
 
+        observedX[0] = odom.x;
+        observedX[1] = odom.v;
+        observedX[2] = yaw;
+        observedX[3] = dyaw;
+        observedX[4] = lsolver.alpha;
+        observedX[5] = lsolver.dalpha;
+        observedX[6] = rsolver.alpha;
+        observedX[7] = rsolver.dalpha;
+        observedX[8] = pitch;
+        observedX[9] = dpitch;
+
+        refX[0] = cmd.x;
+        refX[1] = cmd.v;
+        refX[2] = cmd.yaw;
+        refX[3] = cmd.dyaw;
+        refX[4] = 0.0f;
+        refX[5] = 0.0f;
+        refX[6] = 0.0f;
+        refX[7] = 0.0f;
+        refX[8] = 0.0f;
+        refX[9] = 0.0f;
+        lqr.Update(lsolver.len, rsolver.len);
+
+        float N = (lsolver.N+rsolver.N)*0.5f;
+
         if (!cmd.move)
             chassis_state = RELAX;
 
-        if (chassis_state == RELAX)
+        switch (chassis_state) 
         {
+        case RELAX:
             lrelax();
             rrelax();
             odom.Reset();
@@ -242,13 +280,10 @@ pid_tuning_t rollpd_tuning = {0.7f, 0.0f, 1.4f};
             pendulum_data.neutral = false;
             if (cmd.move)
                 chassis_state = RECOVER;
-        }
-        else if (chassis_state == RECOVER)
-        {
+        case RECOVER:
             chassis_state = FLATTEN;
-        }
-        else if (chassis_state == FLATTEN)
-        {
+        case FLATTEN:
+            odom.Reset();
             LJoint4.torqueSet = 0; LJoint1.torqueSet = 0; 
             RJoint4.torqueSet = 0; RJoint1.torqueSet = 0;
             if (!flatten_initialized)
@@ -285,9 +320,7 @@ pid_tuning_t rollpd_tuning = {0.7f, 0.0f, 1.4f};
             {
                 chassis_state = NEUTRAL;
             }
-        }
-        else if (chassis_state == GOSTAIR)
-        {
+        case GOSTAIR:
             odom.Reset();
             LJoint4.torqueSet = 0; LJoint1.torqueSet = 0; 
             RJoint4.torqueSet = 0; RJoint1.torqueSet = 0;
@@ -323,102 +356,14 @@ pid_tuning_t rollpd_tuning = {0.7f, 0.0f, 1.4f};
             {
                 chassis_state = NEUTRAL;
             }
-        }
-        else
-        {
-            observedX[0] = odom.x;
-            observedX[1] = odom.v;
-            observedX[2] = yaw;
-            observedX[3] = dyaw;
-            observedX[4] = lsolver.alpha;
-            observedX[5] = lsolver.dalpha;
-            observedX[6] = rsolver.alpha;
-            observedX[7] = rsolver.dalpha;
-            observedX[8] = pitch;
-            observedX[9] = dpitch;
+        case NEUTRAL:
+            Twl = lqr.Tout[0];
+            Twr = lqr.Tout[1];
+            Fl[1] = lqr.Tout[2];
+            Fr[1] = lqr.Tout[3];
 
-            refX[0] = cmd.x;
-            refX[1] = cmd.v;
-            refX[2] = cmd.yaw;
-            refX[3] = cmd.dyaw;
-            refX[4] = 0.0f;
-            refX[5] = 0.0f;
-            refX[6] = 0.0f;
-            refX[7] = 0.0f;
-            refX[8] = 0.0f;
-            refX[9] = 0.0f;
-            lqr.refreshLQRK(lsolver.len, rsolver.len);
-            lqr.LQRCal(Tout);
-            
-            Twl = Tout[0];
-            Twr = Tout[1];
-            Fl[1] = Tout[2];
-            Fr[1] = Tout[3];
-
-            if (chassis_state == NEUTRAL)
-            {
-                lleg_len_pd.ref = 0.15f;
-                rleg_len_pd.ref = 0.15f;
-                
-                if (lsolver.neutral && rsolver.neutral)
-                {
-                    pendulum_data.neutral = true;
-                    chassis_state = NORMAL;
-                }
-
-                if (lsolver.len>0.18f) {    Fl[1]=0.0f;    }
-                if (rsolver.len>0.18f) {    Fr[1]=0.0f;    }
-                if (Numeric::abs(lsolver.alpha) > 0.45f) {    Twl=0.0f;    }  
-                if (Numeric::abs(rsolver.alpha) > 0.45f) {    Twr=0.0f;    }
-            }
-            else if (chassis_state == NORMAL)
-            {
-                float N = (lsolver.N+rsolver.N)*0.5f;
-                roll_pd.ref = 0.0f;
-                roll_pd.fdb = ins.roll*DegreeToRad;
-                roll_pd.UpdateResult(ins.gyro_r);
-                lleg_len_pd.ref = cmd.len-0.03f+roll_pd.result;
-                rleg_len_pd.ref = cmd.len-0.03f-roll_pd.result;
-
-                if (cmd.ifjump) 
-                {
-                    if (!cmd.inair) 
-                    {
-                        rleg_len_pd.Tuning(6000.0f, 0.0f, -1500.0f);
-                        lleg_len_pd.Tuning(6000.0f, 0.0f, -1500.0f);
-                    }
-                    else 
-                    {
-                        rleg_len_pd.Tuning(10000.0f, 0.0f, -1500.0f);
-                        lleg_len_pd.Tuning(10000.0f, 0.0f, -1500.0f);
-                    }
-                }
-                else 
-                {
-                    rleg_len_pd.Tuning(4000.0f, 0.0f, -2000.0f);
-                    lleg_len_pd.Tuning(4000.0f, 0.0f, -2000.0f);
-                }
-                
-                if (lsolver.neutral && rsolver.neutral && N<20.0f)
-                {
-                    Twl = 0.0f;
-                    Twr = 0.0f;
-                }
-
-                if (cmd.inair)
-                {
-                    Fl[1] = 0.0f;
-                    Fr[1] = 0.0f;
-                    Twl = 0.0f;
-                    Twr = 0.0f;
-                }
-
-                if (cmd.gostair&&N<20.0f)
-                {
-                    chassis_state = GOSTAIR;
-                    flatten_initialized = false;
-                }
-            }
+            lleg_len_pd.ref = 0.15f;
+            rleg_len_pd.ref = 0.15f;
 
             lleg_len_pd.fdb = lsolver.len;
             lleg_len_pd.UpdateResult(lsolver.dlen);
@@ -428,15 +373,127 @@ pid_tuning_t rollpd_tuning = {0.7f, 0.0f, 1.4f};
             rleg_len_pd.UpdateResult(rsolver.dlen);
             Fr[0] = rleg_len_pd.result;
 
-            lsolver.ForwardDynamics(Fl, Tl);
-            rsolver.ForwardDynamics(Fr, Tr);
+            if (lsolver.len>0.18f) {    Fl[1]=0.0f;    }
+            if (rsolver.len>0.18f) {    Fr[1]=0.0f;    }
+            if (Numeric::abs(lsolver.alpha) > 0.45f) {    Twl=0.0f;    }  
+            if (Numeric::abs(rsolver.alpha) > 0.45f) {    Twr=0.0f;    }
 
-            LJoint1.torqueSet = Numeric::FloatConstrain(Tl[0], -MAX_HIP_TOR, MAX_HIP_TOR);
-            LJoint4.torqueSet = Numeric::FloatConstrain(Tl[1], -MAX_HIP_TOR, MAX_HIP_TOR);
-            RJoint1.torqueSet = -Numeric::FloatConstrain(Tr[0], -MAX_HIP_TOR, MAX_HIP_TOR);
-            RJoint4.torqueSet = -Numeric::FloatConstrain(Tr[1], -MAX_HIP_TOR, MAX_HIP_TOR);
-            LWheel.currentSet = -Numeric::FloatConstrain(Twl, -MAX_WHEEL_TOR, MAX_WHEEL_TOR) * Tk_M3508;
-            RWheel.currentSet = Numeric::FloatConstrain(Twr, -MAX_WHEEL_TOR, MAX_WHEEL_TOR) * Tk_M3508;
+            applytorque();
+
+            if (lsolver.neutral && rsolver.neutral)
+            {
+                pendulum_data.neutral = true;
+                chassis_state = NORMAL;
+            }
+        case NORMAL:
+            Twl = lqr.Tout[0];
+            Twr = lqr.Tout[1];
+            Fl[1] = lqr.Tout[2];
+            Fr[1] = lqr.Tout[3];
+
+            roll_pd.ref = 0.0f;
+            roll_pd.fdb = ins.roll*DegreeToRad;
+            roll_pd.UpdateResult(ins.gyro_r);
+
+            lleg_len_pd.ref = cmd.len-0.03f+roll_pd.result;
+            rleg_len_pd.ref = cmd.len-0.03f-roll_pd.result;
+            lleg_len_pd.fdb = lsolver.len;
+            lleg_len_pd.UpdateResult(lsolver.dlen);
+            Fl[0] = lleg_len_pd.result;
+            rleg_len_pd.fdb = rsolver.len;
+            rleg_len_pd.UpdateResult(rsolver.dlen);
+            Fr[0] = rleg_len_pd.result;
+
+            if (lsolver.neutral && rsolver.neutral && N<20.0f)
+            {
+                Twl = 0.0f;
+                Twr = 0.0f;
+            }
+
+            applytorque();
+            
+            if (cmd.gostair&&N<20.0f)
+            {
+                chassis_state = GOSTAIR;
+                flatten_initialized = false;
+            }
+            if (cmd.prejump) { chassis_state = JUMP; jump_stage = START; }
+            break;
+        case JUMP:
+            switch (jump_stage) 
+            {
+            case DONT:
+                chassis_state = NORMAL;
+                break;
+            case START:
+                Twl = lqr.Tout[0];
+                Twr = lqr.Tout[1];
+                Fl[1] = lqr.Tout[2];
+                Fr[1] = lqr.Tout[3];
+                lleg_len_pd.ref = LEG_JUMP_START_LEN;
+                rleg_len_pd.ref = LEG_JUMP_START_LEN;
+                lleg_len_pd.fdb = lsolver.len;
+                lleg_len_pd.UpdateResult(lsolver.dlen);
+                Fl[0] = lleg_len_pd.result;
+                rleg_len_pd.fdb = rsolver.len;
+                rleg_len_pd.UpdateResult(rsolver.dlen);
+                Fr[0] = rleg_len_pd.result;
+                if (cmd.ifjump)
+                {
+                    jump_stage = EXTENDING;
+                }
+                break;
+            case EXTENDING:
+                Twl = lqr.Tout[0];
+                Twr = lqr.Tout[1];
+                if (cmd.v>0.01f)
+                {
+                    Twl += 1.0f;
+                    Twr += 1.0f;
+                }
+                Fl[1] = lqr.Tout[2];
+                Fr[1] = lqr.Tout[3];
+                Fl[0] = -200.0f;
+                Fr[0] = -200.0f;
+                if (lsolver.len>=0.29f && rsolver.len>=0.29f)
+                {
+                    jump_stage = INAIR;
+                }
+            case INAIR:
+                Twl = 0.0f;
+                Twr = 0.0f;
+                Fl[1] = 0.0f;
+                Fr[1] = 0.0f;
+                lleg_len_pd.ref = LEG_JUMP_AIR_LEN;
+                rleg_len_pd.ref = LEG_JUMP_AIR_LEN;
+                lleg_len_pd.fdb = lsolver.len;
+                lleg_len_pd.UpdateResult(lsolver.dlen);
+                Fl[0] = lleg_len_pd.result;
+                rleg_len_pd.fdb = rsolver.len;
+                rleg_len_pd.UpdateResult(rsolver.dlen);
+                Fr[0] = rleg_len_pd.result;
+                if (lsolver.len<=0.16f && rsolver.len<=0.16f)
+                {
+                    jump_stage = LANDING;
+                }
+            case LANDING:
+                Twl = 0.0f;
+                Twr = 0.0f;
+                Fl[1] = lqr.Tout[2];
+                Fr[1] = lqr.Tout[3];
+                Fl[0] = 0.0f;
+                Fr[0] = 0.0f;
+                if (N>20.0f)
+                {
+                    jump_stage = DONT;
+                    chassis_state = NORMAL;
+                }
+                break;
+            }
+            applytorque();
+            break;
+        default:
+            break;
         }
 
         DMMotorHandler::Instance()->sendControlData();
@@ -481,8 +538,8 @@ pid_tuning_t rollpd_tuning = {0.7f, 0.0f, 1.4f};
         pendulum_debug.yaw_dot = dyaw;
         pendulum_debug.Twl = Twl;
         pendulum_debug.Twr = Twr;
-        pendulum_debug.Tpl = Tout[2];
-        pendulum_debug.Tpr = Tout[3];
+        pendulum_debug.Tpl = lqr.Tout[2];
+        pendulum_debug.Tpr = lqr.Tout[3];
         pendulum_debug.Fl = Fl[0];
         pendulum_debug.Fr = Fr[0];
         pendulum_debug.lneutral = lsolver.neutral;

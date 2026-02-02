@@ -61,10 +61,33 @@ protected:
     float * LQRXObsX;
 
 public:
+    float Tout[4] = {0.0f, 0.0f, 0.0f, 0.0f};
 
-    /* [Tl;Tr;Tpl;Tpr] = -K(X_obs - X_ref) */
-    void LQRCal(float *Tout)
+    LQR(float *pMatXRef, float *pMatXObs) 
     {
+        // Store pointers to the actual data arrays
+        this->LQRXRefX = pMatXRef;
+        this->LQRXObsX = pMatXObs;
+    }
+
+    /* 根据腿长更新使用的矩阵k */
+    void Update(float _llen, float _rlen)
+    {
+        _llen = (_llen < MIN_LEG_LEN) ? MIN_LEG_LEN : _llen;
+        _llen = (_llen > MAX_LEG_LEN) ? MAX_LEG_LEN : _llen;
+        _rlen = (_rlen < MIN_LEG_LEN) ? MIN_LEG_LEN : _rlen;
+        _rlen = (_rlen > MAX_LEG_LEN) ? MAX_LEG_LEN : _rlen;
+        //保留两位小数
+        _llen = roundf(_llen * 100) / 100.0f;
+        _rlen = roundf(_rlen * 100) / 100.0f;
+
+        /* a1 + a2*L_len + a3*R_len + a4*L_len^2 + a5*L_len*R_len + a6*R_len^2 */ 
+        for(int i = 0; i < 40; i++)
+        {
+            LQRKBuf[i] = LQRKcoeffs[i][0] + LQRKcoeffs[i][1] * _llen + LQRKcoeffs[i][2] * _rlen + LQRKcoeffs[i][3] * _llen * _llen + LQRKcoeffs[i][4] * _llen * _rlen + LQRKcoeffs[i][5] * _rlen * _rlen;
+        }
+
+        /* [Tl;Tr;Tpl;Tpr] = -K(X_obs - X_ref) */
         // 1. Calculate Error: X_err = X_obs - X_ref
         float err[10] = {0};
         for (int i=0; i<10; i++)
@@ -83,32 +106,5 @@ public:
             }   
             Tout[i] = temp;
         }
-            
-    }
-
-    /* 根据腿长更新使用的矩阵k */
-    void refreshLQRK(float _llen, float _rlen)
-    {
-        _llen = (_llen < MIN_LEG_LEN) ? MIN_LEG_LEN : _llen;
-        _llen = (_llen > MAX_LEG_LEN) ? MAX_LEG_LEN : _llen;
-        _rlen = (_rlen < MIN_LEG_LEN) ? MIN_LEG_LEN : _rlen;
-        _rlen = (_rlen > MAX_LEG_LEN) ? MAX_LEG_LEN : _rlen;
-        //保留两位小数
-        _llen = roundf(_llen * 100) / 100.0f;
-        _rlen = roundf(_rlen * 100) / 100.0f;
-
-        /* a1 + a2*L_len + a3*R_len + a4*L_len^2 + a5*L_len*R_len + a6*R_len^2 */ 
-        for(int i = 0; i < 40; i++)
-        {
-            LQRKBuf[i] = LQRKcoeffs[i][0] + LQRKcoeffs[i][1] * _llen + LQRKcoeffs[i][2] * _rlen + LQRKcoeffs[i][3] * _llen * _llen + LQRKcoeffs[i][4] * _llen * _rlen + LQRKcoeffs[i][5] * _rlen * _rlen;
-        }
-    }
-
-    // Modified to accept raw float pointers or extract data pointer from arm_matrix_instance_f32 if needed
-    void InitMatX(float *pMatXRef, float *pMatXObs) 
-    {
-        // Store pointers to the actual data arrays
-        this->LQRXRefX = pMatXRef;
-        this->LQRXObsX = pMatXObs;
     }
 };

@@ -132,5 +132,6 @@ struct msg_cmd_t
     bool move;
     bool gostair;
     bool inair;
+    bool prejump;
     bool ifjump;
 };
