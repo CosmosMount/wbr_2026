@@ -7,7 +7,8 @@
 #include "arm_math.h"
 #include "config_chassis.hpp"
 
-class PendulumSolver
+template <typename hiptype, typename wheeltype>
+class Pendulum
 {
 protected:
     VMCsolver vmc;
@@ -15,8 +16,22 @@ protected:
     float prev_dlen;
     bool reverse;
 
+    hiptype* joint1;
+    hiptype* joint4;
+    wheeltype* wheel;
+
+    static constexpr float Tk_wheel = 1400.0f;
+    static constexpr float wheel_mass = 15.0f;
+    static constexpr float max_hip_tor = 40.0f;
+    static constexpr float max_wheel_tor = 15.0f;
+
+    float prev_pdelta;
+    float joint1_pos_init;
+    float joint4_pos_init;
+
 public:
-    PendulumSolver(bool _reverse)
+    Pendulum(bool _reverse, hiptype* _joint1, hiptype* _joint4, wheeltype* _wheel)
+        : joint1(_joint1), joint4(_joint4), wheel(_wheel)
     {
         this->reverse = _reverse;
     }
@@ -31,21 +46,27 @@ public:
     bool flat;
     bool neutral;
 
-    void Update(float _ang1, float _ang4, float _pitch, float _vel1, float _vel4, float _dpitch, float _tor1, float _tor4, float _az)
+    void Solve(float _pitch, float _dpitch, float _az)
     {
         /* inverse kinematics */
         /* resolve vmc */
-        float _phi1 = this->reverse ? (PI-_ang1) : (PI+_ang1);
-        float _phi4 = this->reverse ? (-_ang4) : (_ang4);
-        float _dphi1 = this->reverse ? (-_vel1) : (_vel1);
-        float _dphi4 = this->reverse ? (-_vel4) : (_vel4);
-        _tor1 = this->reverse ? (-_tor1) : (_tor1);
-        _tor4 = this->reverse ? (-_tor4) : (_tor4);
-        
-        this->vmc.Resolve(_phi1, _phi4);
+        float joint1_pos = this->joint1->motorFeedback.positionFdb;
+        float joint4_pos = this->joint4->motorFeedback.positionFdb;
+        float joint1_vel = this->joint1->motorFeedback.speedFdb;
+        float joint4_vel = this->joint4->motorFeedback.speedFdb;
+        float joint1_tor = this->joint1->motorFeedback.torqueFdb;
+        float joint4_tor = this->joint4->motorFeedback.torqueFdb;
+        float phi1 = this->reverse ? (PI-joint1_pos) : (PI+joint1_pos);
+        float phi4 = this->reverse ? (-joint4_pos) : (joint4_pos);
+        float dphi1 = this->reverse ? (-joint1_vel) : (joint1_vel);
+        float dphi4 = this->reverse ? (-joint4_vel) : (joint4_vel);
 
+        joint1_tor = this->reverse ? (-joint1_tor) : (joint1_tor);
+        joint4_tor = this->reverse ? (-joint4_tor) : (joint4_tor);
+        
+        this->vmc.Resolve(phi1, phi4);
         /* xdot */
-        float qdot[2] = {_dphi1, _dphi4};
+        float qdot[2] = {dphi1, dphi4};
         float xdot[2] = {0.0f, 0.0f};
         this->vmc.VMCVelCal(qdot, xdot);
 
@@ -59,12 +80,12 @@ public:
         this->dalpha = xdot[1] + _dpitch;
 
         /* inverse dynamics */
-        float Treal[2] = {_tor1, _tor4};
+        float Treal[2] = {joint1_tor, joint4_tor};
         float Trev[2] = {0.0f, 0.0f};
         this->vmc.VMCRevCal(Trev, Treal);
         float P = Trev[0]*arm_cos_f32(this->alpha) + Trev[1]/this->len*arm_sin_f32(this->alpha);
         float ddlen = (this->dlen-this->prev_dlen)*1000.0f;
-        this->N = P + WHEEL_MASS*(_az - ddlen*arm_cos_f32(this->alpha)) + F_SPRING*arm_cos_f32(_phi1-phi);
+        this->N = P + wheel_mass*(_az - ddlen*arm_cos_f32(this->alpha)) + F_SPRING*arm_cos_f32(phi1-phi);
 
         /* neutral and flat detection */
         if (Numeric::abs(this->alpha) < 0.25f)
@@ -77,9 +98,44 @@ public:
         this->prev_dlen = this->dlen;
     }
 
-    void ForwardDynamics(float *_F, float *_T)
+    void Relax()
     {
-        this->vmc.VMCCal(_F, _T);
+        this->neutral = false;
+        this->flat = false;
+        this->prev_pdelta = 0.0f;
+        this->joint1->KP = 0.0f; this->joint4->KP = 0.0f;
+        this->joint1->KD = 0.0f; this->joint4->KD = 0.0f;
+        this->joint1->speedSet = 0.0f; this->joint1->torqueSet = 0.0f;
+        this->joint4->speedSet = 0.0f; this->joint4->torqueSet = 0.0f;
+        this->wheel->currentSet = 0.0f;
+    }
+
+    void DeltaPControl(float _pdelta, float _kp, float _kd)
+    {
+        if (prev_pdelta != _pdelta)
+        {
+            joint1_pos_init = this->joint1->motorFeedback.positionFdb;
+            joint4_pos_init = this->joint4->motorFeedback.positionFdb;
+        }
+        this->joint1->torqueSet = 0.0f;
+        this->joint4->torqueSet = 0.0f;
+        this->joint1->positionSet = joint1_pos_init + (_pdelta * (this->reverse ? -1.0f : 1.0f));
+        this->joint4->positionSet = joint4_pos_init + (_pdelta * (this->reverse ? -1.0f : 1.0f));
+        this->joint1->KP = _kp; this->joint4->KP = _kp;
+        this->joint1->KD = _kd; this->joint4->KD = _kd;
+        prev_pdelta = _pdelta;
+    }
+
+    void TorqueControl(float *_F, float _Tw)
+    {
+        float T[2] = {0.0f, 0.0f};
+        this->vmc.VMCCal(_F, T);
+        this->joint1->torqueSet = Numeric::FloatConstrain(T[0], -max_hip_tor, max_hip_tor)
+                                 * (this->reverse ? -1.0f : 1.0f);
+        this->joint4->torqueSet = Numeric::FloatConstrain(T[1], -max_hip_tor, max_hip_tor)
+                                 * (this->reverse ? -1.0f : 1.0f);
+        this->wheel->currentSet = Numeric::FloatConstrain(_Tw, -max_wheel_tor, max_wheel_tor)
+                                 * Tk_wheel * (this->reverse ? -1.0f : 1.0f);
     }
 
 };
