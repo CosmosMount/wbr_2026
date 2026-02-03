@@ -25,7 +25,6 @@ protected:
     static constexpr float max_hip_tor = 40.0f;
     static constexpr float max_wheel_tor = 15.0f;
 
-    float prev_pdelta;
     float joint1_pos_init;
     float joint4_pos_init;
 
@@ -34,6 +33,14 @@ public:
         : joint1(_joint1), joint4(_joint4), wheel(_wheel)
     {
         this->reverse = _reverse;
+        this->prev_dlen = 0.0f;
+        this->neutral_count = 0;
+        this->delta_init = false;
+        this->dlen = 0.0f;
+        this->joint1_pos_init = 0.0f;
+        this->joint4_pos_init = 0.0f;
+        this->flat = false;
+        this->neutral = false;
     }
 
     float alpha;
@@ -45,6 +52,7 @@ public:
 
     bool flat;
     bool neutral;
+    bool delta_init;
 
     void Solve(float _pitch, float _dpitch, float _az)
     {
@@ -101,8 +109,7 @@ public:
     void Relax()
     {
         this->neutral = false;
-        this->flat = false;
-        this->prev_pdelta = 0.0f;
+        this->delta_init = false;
         this->joint1->KP = 0.0f; this->joint4->KP = 0.0f;
         this->joint1->KD = 0.0f; this->joint4->KD = 0.0f;
         this->joint1->speedSet = 0.0f; this->joint1->torqueSet = 0.0f;
@@ -112,10 +119,11 @@ public:
 
     void DeltaPControl(float _pdelta, float _kp, float _kd)
     {
-        if (prev_pdelta != _pdelta)
+        if (!delta_init)
         {
             joint1_pos_init = this->joint1->motorFeedback.positionFdb;
             joint4_pos_init = this->joint4->motorFeedback.positionFdb;
+            delta_init = true;
         }
         this->joint1->torqueSet = 0.0f;
         this->joint4->torqueSet = 0.0f;
@@ -123,7 +131,6 @@ public:
         this->joint4->positionSet = joint4_pos_init + (_pdelta * (this->reverse ? -1.0f : 1.0f));
         this->joint1->KP = _kp; this->joint4->KP = _kp;
         this->joint1->KD = _kd; this->joint4->KD = _kd;
-        prev_pdelta = _pdelta;
     }
 
     void TorqueControl(float *_F, float _Tw)
@@ -135,7 +142,7 @@ public:
         this->joint4->torqueSet = Numeric::FloatConstrain(T[1], -max_hip_tor, max_hip_tor)
                                  * (this->reverse ? -1.0f : 1.0f);
         this->wheel->currentSet = Numeric::FloatConstrain(_Tw, -max_wheel_tor, max_wheel_tor)
-                                 * Tk_wheel * (this->reverse ? -1.0f : 1.0f);
+                                 * Tk_wheel * (this->reverse ? 1.0f : -1.0f);
     }
 
 };

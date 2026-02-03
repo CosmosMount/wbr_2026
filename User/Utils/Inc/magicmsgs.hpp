@@ -13,7 +13,11 @@ typedef enum {
 typedef enum {
     None = 2,
     Prepared = 3,
-    Jump = 1
+    Jump = 1,
+    N2P = 4,
+    P2J = 5,
+    J2P = 6,
+    P2N = 7
 }JUMP_STATE;
 
 typedef enum {
@@ -130,6 +134,7 @@ struct msg_cmd_t
     float dyaw;
     float roll;
     bool move;
+    bool spin;
     bool gostair;
     bool inair;
     bool prejump;

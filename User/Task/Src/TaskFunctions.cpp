@@ -44,6 +44,7 @@ __attribute__((section(".RAM_D3"))) msg_remoter_t debug_remoter;
     bool maintained_x = false;
     float yaw_maintain;
     bool maintained_yaw = false;
+    bool not_jump = true;
 
     /* Slope Updaters */
     SLOPE yaw_updater(0.0f, 0.01f);
@@ -61,11 +62,6 @@ __attribute__((section(".RAM_D3"))) msg_remoter_t debug_remoter;
     msg_ins_t ins{};
     om_suber_t *pendulum_suber = om_subscribe(om_find_topic("pendulum", UINT32_MAX));
     msg_pendulum_t pendulum_data{};
-
-    /* Jump Stage */
-// #ifdef JUMP_UP
-//     // jump_stage_e jump_stage = DONT_JUMP;
-// #endif
 
     for (;;)
     {
@@ -193,69 +189,28 @@ __attribute__((section(".RAM_D3"))) msg_remoter_t debug_remoter;
                 else
                 {
                 #ifdef JUMP_UP
-                    // static uint16_t delay_timer;
-                    cmd.dyaw = 0.0f;
-                    if (remoter.jump_sw == Prepared)
+                    cmd.dyaw = yaw_updater.UpdateVal(-remoter.right_x*2.0f);//0.0f;//
+                    cmd.v = v_updater.UpdateVal(remoter.left_y*2.0f);
+                    if (remoter.jump_sw == Prepared && not_jump)
                     {
                         cmd.prejump = true;
-                        // cmd.len = LEG_NORMAL_LEN;
-                        // cmd.v = v_updater.UpdateVal(remoter.left_y);
-                        // cmd.inair = false;
-                        // cmd.ifjump = true;
-                        // jump_stage = START_JUMP;
-                        // delay_timer = 0;
-                        // len_updater.SetPath(LEG_JUMP_STEP);
+                        not_jump = false;
                     }
-                    else if (remoter.jump_sw == Jump)
+                    else if (remoter.jump_sw == Jump && not_jump)
                     {
                         cmd.ifjump = true;
+                    }
+                    else 
+                    {
+                        not_jump = true;
                         cmd.prejump = false;
-                        // cmd.v = 0.0f;
-                        // if (jump_stage == START_JUMP)
-                        // {
-                        //     cmd.len = len_updater.UpdateVal(LEG_NORMAL_LEN);
-                        //     if (len_updater.CheckReached())
-                        //         jump_stage = EXTEND_LEGS;
-                        // }
-                        // else if (jump_stage == EXTEND_LEGS)
-                        // {
-                        //     cmd.len = len_updater.UpdateVal(LEG_JUMP_START_LEN);
-                        //     // if (++delay_timer == 150)
-                        //     // {
-                        //     //     delay_timer = 0;
-                        //     //     jump_stage = IN_AIR;
-                        //     // }
-                        //     if (pendulum_data.len >= 0.29f)
-                        //         jump_stage = IN_AIR;                               
-                        // }
-                        // else if (jump_stage == IN_AIR)
-                        // {
-                        //     cmd.inair = true;
-                        //     cmd.len = len_updater.UpdateVal(LEG_JUMP_AIR_LEN);
-                        //     if (++delay_timer == 150)
-                        //     {
-                        //         delay_timer = 0;
-                        //         jump_stage = LANDING;
-                        //     }
-                        // }
-                        // else if (jump_stage == LANDING)
-                        // {
-                        //     cmd.len = len_updater.UpdateVal(LEG_NORMAL_LEN);
-                        //     if (pendulum_data.N > 20.0f)
-                        //     {
-                        //         cmd.inair = false;
-                        //         cmd.ifjump = false;
-                        //         jump_stage = DONT_JUMP;
-                        //         len_updater.SetPath(LEG_NORMAL_STEP);
-                        //     }
-                        // }
+                        cmd.ifjump = false;
                     }
                 #endif
                 #ifdef STAIR_UP
                     if (remoter.jump_sw == Prepared)
                     {
-                        cmd.dyaw = yaw_updater.UpdateVal(-remoter.right_x*2.0f);
-                        cmd.v = v_updater.UpdateVal(remoter.left_y*2.0f);
+                        
                         cmd.roll = 0.0f;
                         cmd.len += remoter.right_y*0.0008f;
                         cmd.len = FloatConstrain(cmd.len, MIN_LEG_LEN, MAX_LEG_LEN);
@@ -267,8 +222,12 @@ __attribute__((section(".RAM_D3"))) msg_remoter_t debug_remoter;
             else if (remoter.ctrl_sw == Spin)
             {
                 cmd.move = true;
+                cmd.roll = 0.0f;
                 cmd.dyaw = yaw_updater.UpdateVal(8.0f);
                 cmd.v = 0.0f;
+                cmd.inair = false;
+                cmd.gostair = false;
+                cmd.spin = true;
             }
 
             if (!pendulum_data.neutral)

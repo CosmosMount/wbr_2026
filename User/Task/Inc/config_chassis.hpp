@@ -20,6 +20,9 @@
 
 #define WHEEL_RADIUS 0.075f
 #define WHEEL_MASS 1.41f
+#define WHEEL_DIST 0.43f
+
+#define BODY_MASS 14.0f
 
 #define MAX_HIP_TOR 40.0f
 #define MAX_WHEEL_TOR 15.0f
@@ -27,9 +30,9 @@
 #define LEG_NORMAL_STEP 0.001f
 #define LEG_JUMP_STEP 0.01f
 
-#define LEG_JUMP_START_LEN 0.21f
+#define LEG_JUMP_START_LEN 0.19f
 #define LEG_JUMP_UP_LEN 0.35f
-#define LEG_JUMP_AIR_LEN 0.14f
+#define LEG_JUMP_AIR_LEN 0.11f
 
 #define F_SPRING 250.0f
 

@@ -57,6 +57,23 @@ inline dr16_data_t& Dr16_Data()
             msg_remoter.ctrl_sw = CTRL_STATE::S2N;
         }
 
+        if (msg_remoter.last_jump_sw == JUMP_STATE::Prepared && msg_remoter.jump_sw == JUMP_STATE::Jump) 
+        {
+            msg_remoter.jump_sw = JUMP_STATE::N2P;
+        }
+        else if (msg_remoter.last_jump_sw == JUMP_STATE::Jump && msg_remoter.jump_sw == JUMP_STATE::Prepared) 
+        {
+            msg_remoter.jump_sw = JUMP_STATE::P2N;
+        }
+        else if (msg_remoter.last_jump_sw == JUMP_STATE::Prepared && msg_remoter.jump_sw == JUMP_STATE::None) 
+        {
+            msg_remoter.jump_sw = JUMP_STATE::P2J;
+        }
+        else if (msg_remoter.last_jump_sw == JUMP_STATE::None && msg_remoter.jump_sw == JUMP_STATE::Prepared) 
+        {
+            msg_remoter.jump_sw = JUMP_STATE::J2P;
+        }
+
         // 摇杆 11 位 -> float [-1,1]
         msg_remoter.right_x  = (static_cast<float>(Dr16_Data().ch_0) - RC_CH_VALUE_OFFSET) / RC_CH_OFFSET_MAX;
         msg_remoter.right_y  = (static_cast<float>(Dr16_Data().ch_1) - RC_CH_VALUE_OFFSET) / RC_CH_OFFSET_MAX;

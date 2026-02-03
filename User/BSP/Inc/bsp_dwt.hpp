@@ -83,6 +83,20 @@ uint64_t DWT_GetTimeline_us(void);
 void DWT_Delay(float Delay);
 
 /**
+ * @brief DWT延时函数,单位为毫秒/ms
+ * 
+ * @param ms 延时时间,单位为毫秒/ms
+ */
+void DWT_Delay_ms(float ms);
+
+/**
+ * @brief DWT延时函数,单位为微秒/us
+ * 
+ * @param us 延时时间,单位为微秒/us
+ */
+void DWT_Delay_us(float us);
+
+/**
  * @brief DWT更新时间轴函数,会被三个timeline函数调用
  * @attention 如果长时间不调用timeline函数,则需要手动调用该函数更新时间轴,否则CYCCNT溢出后定时和时间轴不准确
  */

@@ -183,9 +183,10 @@ pid_tuning_t rollpd_tuning = {0.7f, 0.0f, 1.4f};
         float dpitch = ins.gyro_p;
         float yaw = ins.total_yaw*DegreeToRad;
         float dyaw = ins.gyro_y;
+        float vlwheel = -LWheel.motorFeedback.speedFdb * WHEEL_RADIUS;
+        float vrwheel = RWheel.motorFeedback.speedFdb * WHEEL_RADIUS;
 
-        odom.Update(ins.quaternion, ins.accel, 
-                    (-LWheel.motorFeedback.speedFdb+RWheel.motorFeedback.speedFdb)*WHEEL_RADIUS*0.5f, yaw);
+        odom.Update(ins.quaternion, ins.accel,(vlwheel+vrwheel)*0.5f, yaw);
         lpendulum.Solve(pitch, dpitch, odom.az);
         rpendulum.Solve(pitch, dpitch, odom.az);
 
@@ -226,30 +227,56 @@ pid_tuning_t rollpd_tuning = {0.7f, 0.0f, 1.4f};
             pendulum_data.neutral = false;
             if (cmd.move)
                 chassis_state = RECOVER;
+            break;
         case RECOVER:
             chassis_state = FLATTEN;
+            break;
         case FLATTEN:
             odom.Reset();
-            if (lpendulum.flat) {    lpendulum.Relax(); } 
-            else  {    lpendulum.DeltaPControl(JOINT_FLAT_DELTA, 2.0f, 1.0f);   }
-            if (rpendulum.flat) {    rpendulum.Relax(); } 
-            else  {    rpendulum.DeltaPControl(JOINT_FLAT_DELTA, 2.0f, 1.0f);   }
-            
-            if (lpendulum.flat && rpendulum.flat)
+            if (lpendulum.flat) 
+            {
+                lpendulum.Relax();
+            } 
+            else    
+            {
+                lpendulum.DeltaPControl(-JOINT_FLAT_DELTA, 2.0f, 2.0f);
+            }
+            if (rpendulum.flat) 
+            {
+                rpendulum.Relax();
+            } 
+            else    
+            {
+                rpendulum.DeltaPControl(-JOINT_FLAT_DELTA, 2.0f, 2.0f);
+            }
+            if (lpendulum.flat && rpendulum.flat)   
             {
                 chassis_state = NEUTRAL;
             }
+            break;
         case GOSTAIR:
             odom.Reset();
-            if (lpendulum.flat) {    lpendulum.Relax(); } 
-            else  {    lpendulum.DeltaPControl(JOINT_STAIR_DELTA, 2.0f, 1.0f);   }
-            if (rpendulum.flat) {    rpendulum.Relax(); } 
-            else  {    rpendulum.DeltaPControl(JOINT_STAIR_DELTA, 2.0f, 1.0f);   }
-            
-            if (lpendulum.flat && rpendulum.flat)
+            if (lpendulum.flat) 
+            {
+                lpendulum.Relax();
+            }
+            else    
+            {
+                lpendulum.DeltaPControl(JOINT_STAIR_DELTA, 2.0f, 1.0f);
+            }
+            if (rpendulum.flat) 
+            {
+                rpendulum.Relax();
+            } 
+            else    
+            {
+                rpendulum.DeltaPControl(JOINT_STAIR_DELTA, 2.0f, 1.0f);
+            }
+            if (lpendulum.flat && rpendulum.flat)   
             {
                 chassis_state = NEUTRAL;
             }
+            break;
         case NEUTRAL:
             Twl = lqr.Tout[0];
             Twr = lqr.Tout[1];
@@ -267,10 +294,10 @@ pid_tuning_t rollpd_tuning = {0.7f, 0.0f, 1.4f};
             rleg_len_pd.UpdateResult(rpendulum.dlen);
             Fr[0] = rleg_len_pd.result;
 
-            if (lpendulum.len>0.18f) {    Fl[1]=0.0f;    }
-            if (rpendulum.len>0.18f) {    Fr[1]=0.0f;    }
-            if (Numeric::abs(lpendulum.alpha) > 0.45f) {    Twl=0.0f;    }  
-            if (Numeric::abs(rpendulum.alpha) > 0.45f) {    Twr=0.0f;    }
+            if (lpendulum.len>0.18f) {Fl[1]=0.0f;}
+            if (rpendulum.len>0.18f) {Fr[1]=0.0f;}
+            if (Numeric::abs(lpendulum.alpha) > 0.45f) {Twl=0.0f;}  
+            if (Numeric::abs(rpendulum.alpha) > 0.45f) {Twr=0.0f;}
 
             lpendulum.TorqueControl(Fl, Twl);
             rpendulum.TorqueControl(Fr, Twr);
@@ -279,7 +306,10 @@ pid_tuning_t rollpd_tuning = {0.7f, 0.0f, 1.4f};
             {
                 pendulum_data.neutral = true;
                 chassis_state = NORMAL;
+                lpendulum.delta_init = false;
+                rpendulum.delta_init = false;
             }
+            break;
         case NORMAL:
             Twl = lqr.Tout[0];
             Twr = lqr.Tout[1];
@@ -289,6 +319,19 @@ pid_tuning_t rollpd_tuning = {0.7f, 0.0f, 1.4f};
             roll_pd.ref = 0.0f;
             roll_pd.fdb = ins.roll*DegreeToRad;
             roll_pd.UpdateResult(ins.gyro_r);
+
+            // if (cmd.spin)
+            // {
+                // bool rspin = ins.gyro_y < 0.0f;
+                // float vout = rspin?fabs(vlwheel):fabs(vrwheel);
+                // float vin = rspin?fabs(vrwheel):fabs(vlwheel);
+                // float term1 = BODY_MASS * ((lpendulum.len+rpendulum.len) + WHEEL_DIST);
+                // float term2 = (vout * vout - vin * vin);
+                // float div = 8.0f * WHEEL_DIST * WHEEL_DIST;
+                // float Fn = term1 * term2 / div;
+                // rspin ? Fl[0] += Fn : Fr[0] += Fn;
+                // roll_pd.result = 0.0f;
+            // }
 
             lleg_len_pd.ref = cmd.len-0.03f+roll_pd.result;
             rleg_len_pd.ref = cmd.len-0.03f-roll_pd.result;
@@ -341,24 +384,20 @@ pid_tuning_t rollpd_tuning = {0.7f, 0.0f, 1.4f};
             case EXTENDING:
                 Twl = lqr.Tout[0];
                 Twr = lqr.Tout[1];
-                if (cmd.v>0.01f)
-                {
-                    Twl += 1.0f;
-                    Twr += 1.0f;
-                }
                 Fl[1] = lqr.Tout[2];
                 Fr[1] = lqr.Tout[3];
-                Fl[0] = -200.0f;
-                Fr[0] = -200.0f;
+                Fl[0] = 300.0f;
+                Fr[0] = 300.0f;
                 if (lpendulum.len>=0.29f && rpendulum.len>=0.29f)
                 {
                     jump_stage = INAIR;
                 }
+                break;
             case INAIR:
-                Twl = 0.0f;
-                Twr = 0.0f;
-                Fl[1] = 0.0f;
-                Fr[1] = 0.0f;
+                Twl = 1.0f;
+                Twr = 1.0f;
+                Fl[1] = lqr.Tout[2];//0.0f;
+                Fr[1] = lqr.Tout[3];//0.0f;
                 lleg_len_pd.ref = LEG_JUMP_AIR_LEN;
                 rleg_len_pd.ref = LEG_JUMP_AIR_LEN;
                 lleg_len_pd.fdb = lpendulum.len;
@@ -367,21 +406,29 @@ pid_tuning_t rollpd_tuning = {0.7f, 0.0f, 1.4f};
                 rleg_len_pd.fdb = rpendulum.len;
                 rleg_len_pd.UpdateResult(rpendulum.dlen);
                 Fr[0] = rleg_len_pd.result;
-                if (lpendulum.len<=0.16f && rpendulum.len<=0.16f)
+                if (lpendulum.len<=0.15f && rpendulum.len<=0.15f)
                 {
                     jump_stage = LANDING;
                 }
+                break;
             case LANDING:
-                Twl = 0.0f;
-                Twr = 0.0f;
+                Twl = 1.6f;
+                Twr = 1.6f;
                 Fl[1] = lqr.Tout[2];
                 Fr[1] = lqr.Tout[3];
-                Fl[0] = 0.0f;
-                Fr[0] = 0.0f;
-                if (N>20.0f)
+                lleg_len_pd.ref = 0.17f;
+                rleg_len_pd.ref = 0.17f;
+                lleg_len_pd.fdb = lpendulum.len;
+                lleg_len_pd.UpdateResult(lpendulum.dlen);
+                Fl[0] = lleg_len_pd.result;
+                rleg_len_pd.fdb = rpendulum.len;
+                rleg_len_pd.UpdateResult(rpendulum.dlen);
+                Fr[0] = rleg_len_pd.result;
+                if (N>100.0f)
                 {
+                    odom.Reset();
                     jump_stage = DONT;
-                    chassis_state = NORMAL;
+                    chassis_state = NEUTRAL;
                 }
                 break;
             }
