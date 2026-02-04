@@ -16,9 +16,9 @@ using namespace Filter;
 class VelFusionKF : public KalmanFilter
 {
 protected:
-    const float qq = 5.0f;//10
+    const float qq = 5.0f;
     const float rv = 0.1f;
-    const float ra = 50.0f;//25.0f
+    const float ra = 50.0f;
 
     const float A_Init[9] = {1, dt, dt2 / 2, 0, 1, dt, 0, 0, 1};
     const float Q_Init[9] = {dt3 / 20 * qq, dt4 / 8 * qq, dt3 / 6 * qq, 
@@ -109,6 +109,5 @@ public:
         vel_kf.ResetKF();
         x = 0.0f;
         v = 0.0f;
-        az = 0.0f;
     }
 };

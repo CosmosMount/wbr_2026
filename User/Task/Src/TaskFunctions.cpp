@@ -191,18 +191,17 @@ __attribute__((section(".RAM_D3"))) msg_remoter_t debug_remoter;
                 #ifdef JUMP_UP
                     cmd.dyaw = yaw_updater.UpdateVal(-remoter.right_x*2.0f);//0.0f;//
                     cmd.v = v_updater.UpdateVal(remoter.left_y*2.0f);
-                    if (remoter.jump_sw == Prepared && not_jump)
+                    if (remoter.jump_sw == Prepared)
                     {
                         cmd.prejump = true;
-                        not_jump = false;
                     }
-                    else if (remoter.jump_sw == Jump && not_jump)
+                    else if (remoter.jump_sw == Jump)
                     {
                         cmd.ifjump = true;
+                        cmd.prejump = false;
                     }
                     else 
                     {
-                        not_jump = true;
                         cmd.prejump = false;
                         cmd.ifjump = false;
                     }
@@ -274,6 +273,8 @@ __attribute__((section(".RAM_D3"))) msg_remoter_t debug_remoter;
 
             if (pendulum_data.len > 0.17f)
                 v_updater.SetPath(0.001f+0.0154f*(pendulum_data.len-0.17f));
+            else
+                v_updater.SetPath(0.003f);
         #endif           
         }
 

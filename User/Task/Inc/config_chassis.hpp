@@ -89,6 +89,7 @@ typedef enum
     FLATTEN,
     NEUTRAL,
     NORMAL,
+    OFFGROUND,
     GOSTAIR,
     JUMP
 } chassis_state_e;

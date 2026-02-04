@@ -45,9 +45,9 @@ Leg_data_r =   Leg_data_l;
 
 leg = 0.10:0.01:0.35;
 
-%Q矩阵
+% Q矩阵
 %         s  ds yaw dyaw alphal dalphal alphar dalphar theta dtheta
-Q = diag([100 100 10 10 900 90 900 90 4000 40]);
+Q = diag([80 60 60 60 1800 100 1800 100 18000 150]);
 % Q = diag([80 60 80 60 600 50 600 50 3000 30]);
 % 其中：
 % s        : 自然坐标系下机器人水平方向移动距离，单位：m，ds为其导数
@@ -56,7 +56,7 @@ Q = diag([100 100 10 10 900 90 900 90 4000 40]);
 % alphar   ：右腿摆杆与竖直方向（自然坐标系z轴）夹角，dtheta_lr为其导数
 % theta    ：机体与自然坐标系水平夹角，dtheta_b为其导数
 
-%R矩阵
+% R矩阵
 %    T_wl    T_wr     T_bl     T_br
 R = diag([10 10 1 1]);
 % 其中：

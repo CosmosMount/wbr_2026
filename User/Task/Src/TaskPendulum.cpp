@@ -53,6 +53,7 @@ struct pendulum_debug_t
     float Fr;
     float Nl;
     float Nr;
+    float N;
     float llendot;
     float rlendot;
     float yaw;
@@ -201,19 +202,7 @@ pid_tuning_t rollpd_tuning = {0.7f, 0.0f, 1.4f};
         observedX[8] = pitch;
         observedX[9] = dpitch;
 
-        refX[0] = cmd.x;
-        refX[1] = cmd.v;
-        refX[2] = cmd.yaw;
-        refX[3] = cmd.dyaw;
-        refX[4] = 0.0f;
-        refX[5] = 0.0f;
-        refX[6] = 0.0f;
-        refX[7] = 0.0f;
-        refX[8] = 0.0f;
-        refX[9] = 0.0f;
-        lqr.Update(lpendulum.len, rpendulum.len);
-
-        float N = (lpendulum.N+rpendulum.N)*0.5f;
+        float N = lpendulum.N+rpendulum.N;
 
         if (!cmd.move)
             chassis_state = RELAX;
@@ -221,6 +210,7 @@ pid_tuning_t rollpd_tuning = {0.7f, 0.0f, 1.4f};
         switch (chassis_state) 
         {
         case RELAX:
+
             lpendulum.Relax();
             rpendulum.Relax();
             odom.Reset();
@@ -228,10 +218,14 @@ pid_tuning_t rollpd_tuning = {0.7f, 0.0f, 1.4f};
             if (cmd.move)
                 chassis_state = RECOVER;
             break;
+
         case RECOVER:
+
             chassis_state = FLATTEN;
             break;
+
         case FLATTEN:
+
             odom.Reset();
             if (lpendulum.flat) 
             {
@@ -254,7 +248,9 @@ pid_tuning_t rollpd_tuning = {0.7f, 0.0f, 1.4f};
                 chassis_state = NEUTRAL;
             }
             break;
+
         case GOSTAIR:
+        
             odom.Reset();
             if (lpendulum.flat) 
             {
@@ -277,7 +273,21 @@ pid_tuning_t rollpd_tuning = {0.7f, 0.0f, 1.4f};
                 chassis_state = NEUTRAL;
             }
             break;
+
         case NEUTRAL:
+
+            refX[0] = cmd.x;
+            refX[1] = cmd.v;
+            refX[2] = cmd.yaw;
+            refX[3] = cmd.dyaw;
+            refX[4] = 0.0f;
+            refX[5] = 0.0f;
+            refX[6] = 0.0f;
+            refX[7] = 0.0f;
+            refX[8] = 0.0f;
+            refX[9] = 0.0f;
+            lqr.Update(lpendulum.len, rpendulum.len);
+
             Twl = lqr.Tout[0];
             Twr = lqr.Tout[1];
             Fl[1] = lqr.Tout[2];
@@ -296,8 +306,8 @@ pid_tuning_t rollpd_tuning = {0.7f, 0.0f, 1.4f};
 
             if (lpendulum.len>0.18f) {Fl[1]=0.0f;}
             if (rpendulum.len>0.18f) {Fr[1]=0.0f;}
-            if (Numeric::abs(lpendulum.alpha) > 0.45f) {Twl=0.0f;}  
-            if (Numeric::abs(rpendulum.alpha) > 0.45f) {Twr=0.0f;}
+            if (Numeric::abs(lpendulum.alpha) > 0.8f) {Twl=0.0f;}  
+            if (Numeric::abs(rpendulum.alpha) > 0.8f) {Twr=0.0f;}
 
             lpendulum.TorqueControl(Fl, Twl);
             rpendulum.TorqueControl(Fr, Twr);
@@ -310,7 +320,21 @@ pid_tuning_t rollpd_tuning = {0.7f, 0.0f, 1.4f};
                 rpendulum.delta_init = false;
             }
             break;
+
         case NORMAL:
+
+            refX[0] = cmd.x;
+            refX[1] = cmd.v;
+            refX[2] = cmd.yaw;
+            refX[3] = cmd.dyaw;
+            refX[4] = 0.01f;
+            refX[5] = 0.0f;
+            refX[6] = 0.01f;
+            refX[7] = 0.0f;
+            refX[8] = 0.0f;
+            refX[9] = 0.0f;
+            lqr.Update(lpendulum.len, rpendulum.len);
+
             Twl = lqr.Tout[0];
             Twr = lqr.Tout[1];
             Fl[1] = lqr.Tout[2];
@@ -342,28 +366,67 @@ pid_tuning_t rollpd_tuning = {0.7f, 0.0f, 1.4f};
             rleg_len_pd.UpdateResult(rpendulum.dlen);
             Fr[0] = rleg_len_pd.result;
 
-            if (lpendulum.neutral && rpendulum.neutral && N<20.0f)
-            {
-                Twl = 0.0f;
-                Twr = 0.0f;
-            }
-
             lpendulum.TorqueControl(Fl, Twl);
             rpendulum.TorqueControl(Fr, Twr);
             
-            if (cmd.gostair&&N<20.0f)
-            {
-                chassis_state = GOSTAIR;
-            }
+            if (Fl[0] <= -50.0f && Fr[0] <= -50.0f) { chassis_state = OFFGROUND; }
+            if (cmd.gostair) { chassis_state = GOSTAIR; }
             if (cmd.prejump) { chassis_state = JUMP; jump_stage = START; }
             break;
+
+        case OFFGROUND:
+
+            refX[0] = observedX[0];
+            refX[1] = observedX[1];
+            refX[2] = observedX[2];
+            refX[3] = observedX[3];
+            refX[4] = 0.0f;
+            refX[5] = 0.0f;
+            refX[6] = 0.0f;
+            refX[7] = 0.0f;
+            refX[8] = observedX[8];
+            refX[9] = observedX[9];
+            lqr.Update(lpendulum.len, rpendulum.len);
+
+            Twl = 0.0f;
+            Twr = 0.0f;
+            Fl[1] = lqr.Tout[2];
+            Fr[1] = lqr.Tout[3];
+            lleg_len_pd.ref = cmd.len;
+            rleg_len_pd.ref = cmd.len;
+            lleg_len_pd.fdb = lpendulum.len;
+            lleg_len_pd.UpdateResult(lpendulum.dlen);
+            Fl[0] = lleg_len_pd.result;
+            rleg_len_pd.fdb = rpendulum.len;
+            rleg_len_pd.UpdateResult(rpendulum.dlen);
+            Fr[0] = rleg_len_pd.result;
+
+            if (Fl[0] >= 0.0f && Fr[0] >= 0.0f) { chassis_state = NORMAL; }
+            break;
+
         case JUMP:
+
             switch (jump_stage) 
             {
+
             case DONT:
                 chassis_state = NORMAL;
                 break;
+
             case START:
+
+                refX[0] = cmd.x;
+                refX[1] = cmd.v;
+                refX[2] = cmd.yaw;
+                refX[3] = cmd.dyaw;
+                refX[4] = 0.0f;
+                refX[5] = 0.0f;
+                refX[6] = 0.0f;
+                refX[7] = 0.0f;
+                refX[8] = 0.0f;
+                refX[9] = 0.0f;
+                lqr.Update(lpendulum.len, rpendulum.len);
+
                 Twl = lqr.Tout[0];
                 Twr = lqr.Tout[1];
                 Fl[1] = lqr.Tout[2];
@@ -376,12 +439,28 @@ pid_tuning_t rollpd_tuning = {0.7f, 0.0f, 1.4f};
                 rleg_len_pd.fdb = rpendulum.len;
                 rleg_len_pd.UpdateResult(rpendulum.dlen);
                 Fr[0] = rleg_len_pd.result;
+
+
                 if (cmd.ifjump)
                 {
                     jump_stage = EXTENDING;
                 }
                 break;
+
             case EXTENDING:
+
+                refX[0] = cmd.x;
+                refX[1] = cmd.v;
+                refX[2] = cmd.yaw;
+                refX[3] = cmd.dyaw;
+                refX[4] = 0.0f;
+                refX[5] = 0.0f;
+                refX[6] = 0.0f;
+                refX[7] = 0.0f;
+                refX[8] = 0.0f;
+                refX[9] = 0.0f;
+                lqr.Update(lpendulum.len, rpendulum.len);
+
                 Twl = lqr.Tout[0];
                 Twr = lqr.Tout[1];
                 Fl[1] = lqr.Tout[2];
@@ -393,7 +472,21 @@ pid_tuning_t rollpd_tuning = {0.7f, 0.0f, 1.4f};
                     jump_stage = INAIR;
                 }
                 break;
+
             case INAIR:
+
+                refX[0] = observedX[0];
+                refX[1] = observedX[1];
+                refX[2] = observedX[2];
+                refX[3] = observedX[3];
+                refX[4] = 0.0f;
+                refX[5] = 0.0f;
+                refX[6] = 0.0f;
+                refX[7] = 0.0f;
+                refX[8] = observedX[8];
+                refX[9] = observedX[9];
+                lqr.Update(lpendulum.len, rpendulum.len);
+
                 Twl = 1.0f;
                 Twr = 1.0f;
                 Fl[1] = lqr.Tout[2];//0.0f;
@@ -411,7 +504,21 @@ pid_tuning_t rollpd_tuning = {0.7f, 0.0f, 1.4f};
                     jump_stage = LANDING;
                 }
                 break;
+
             case LANDING:
+
+                refX[0] = observedX[0];
+                refX[1] = observedX[1];
+                refX[2] = observedX[2];
+                refX[3] = observedX[3];
+                refX[4] = 0.0f;
+                refX[5] = 0.0f;
+                refX[6] = 0.0f;
+                refX[7] = 0.0f;
+                refX[8] = observedX[8];
+                refX[9] = observedX[9];
+                lqr.Update(lpendulum.len, rpendulum.len);
+
                 Twl = 1.6f;
                 Twr = 1.6f;
                 Fl[1] = lqr.Tout[2];
@@ -435,6 +542,7 @@ pid_tuning_t rollpd_tuning = {0.7f, 0.0f, 1.4f};
             lpendulum.TorqueControl(Fl, Twl);
             rpendulum.TorqueControl(Fr, Twr);
             break;
+
         default:
             break;
         }
@@ -491,6 +599,7 @@ pid_tuning_t rollpd_tuning = {0.7f, 0.0f, 1.4f};
         pendulum_debug.rflat = rpendulum.flat;
         pendulum_debug.Nl = lpendulum.N;
         pendulum_debug.Nr = rpendulum.N;
+        pendulum_debug.N = N;
         // lleg_len_pd.Tuning(lenpd_tuning.kp, lenpd_tuning.ki, lenpd_tuning.kd);
         // rleg_len_pd.Tuning(lenpd_tuning.kp, lenpd_tuning.ki, lenpd_tuning.kd);
         roll_pd.Tuning(rollpd_tuning.kp, rollpd_tuning.ki, rollpd_tuning.kd);
