@@ -272,7 +272,7 @@ __attribute__((section(".RAM_D3"))) msg_remoter_t debug_remoter;
             }
 
             if (pendulum_data.len > 0.17f)
-                v_updater.SetPath(0.001f+0.0154f*(pendulum_data.len-0.17f));
+                v_updater.SetPath(0.003f-0.0154f*(pendulum_data.len-0.17f));
             else
                 v_updater.SetPath(0.003f);
         #endif           
