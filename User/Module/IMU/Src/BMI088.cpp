@@ -69,15 +69,17 @@ namespace BMI088
         TempPid.ref = target_temp;
         TempPid.fdb = TempFdbFilter.Update(acc_data.temperature);
         TempPid.UpdateResult();
+        float duty_ratio = TempPid.result / 999.0f;
+        if (duty_ratio<0.0f)
+        {
+            duty_ratio = 0.0f;
+        }
+        else if (duty_ratio>0.2f)
+        {
+            duty_ratio = 0.2f;
+        }
 
-        if (TempPid.result < 0)
-        {
-            PWM_SetDutyRatio(&HEATING_RESISTANCE_TIM, 0, TIM_CHANNEL_4);
-        }
-        else
-        {
-            PWM_SetDutyRatio(&HEATING_RESISTANCE_TIM, TempPid.result / 999, TIM_CHANNEL_4);
-        }
+        PWM_SetDutyRatio(&HEATING_RESISTANCE_TIM, duty_ratio, TIM_CHANNEL_4);
     }
 
     void cBMI088::VerifyAccChipID()

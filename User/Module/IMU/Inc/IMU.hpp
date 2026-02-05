@@ -65,7 +65,7 @@ public:
     gyro_data_t gyro_data;
     imu_error_t self_test;
 
-    PID TempPid = PID(0.1f, 0.0f, 0.0f, 25000.0f, 3.0f, PID_POSITION);
+    PID TempPid = PID(0.1f, 0.0f, 0.0f, 10.0f, 3.0f, PID_POSITION);
     float TargetTemp;
     IIRFilter TempFdbFilter = IIRFilter(2,LOWPASS,2);
 
