@@ -64,6 +64,7 @@ struct pendulum_debug_t
     bool rflat;
     bool lneutral;
     bool rneutral;
+    bool offground;
     float lwheel_tor;
     float rwheel_tor;
     float ljoint4_tor;
@@ -306,8 +307,8 @@ pid_tuning_t rollpd_tuning = {0.7f, 0.0f, 1.4f};
 
             if (lpendulum.len>0.18f) {Fl[1]=0.0f;}
             if (rpendulum.len>0.18f) {Fr[1]=0.0f;}
-            if (Numeric::abs(lpendulum.alpha) > 0.8f) {Twl=0.0f;}  
-            if (Numeric::abs(rpendulum.alpha) > 0.8f) {Twr=0.0f;}
+            if (Numeric::abs(lpendulum.alpha) > 0.7f) {Twl=0.0f;}  
+            if (Numeric::abs(rpendulum.alpha) > 0.7f) {Twr=0.0f;}
 
             lpendulum.TorqueControl(Fl, Twl);
             rpendulum.TorqueControl(Fr, Twr);
@@ -369,7 +370,7 @@ pid_tuning_t rollpd_tuning = {0.7f, 0.0f, 1.4f};
             lpendulum.TorqueControl(Fl, Twl);
             rpendulum.TorqueControl(Fr, Twr);
             
-            if (lpendulum.neutral && rpendulum.neutral && lpendulum.N < -5.0f && rpendulum.N < -5.0f) { chassis_state = OFFGROUND; }
+            if (lpendulum.neutral && rpendulum.neutral && lpendulum.N < 0.0f && rpendulum.N < 0.0f) { chassis_state = OFFGROUND; }
             if (cmd.gostair) { chassis_state = GOSTAIR; }
             if (cmd.prejump) { chassis_state = JUMP; jump_stage = START; }
             break;
@@ -392,8 +393,8 @@ pid_tuning_t rollpd_tuning = {0.7f, 0.0f, 1.4f};
             Twr = 0.0f;
             Fl[1] = lqr.Tout[2];
             Fr[1] = lqr.Tout[3];
-            lleg_len_pd.ref = cmd.len-0.03f+roll_pd.result;
-            rleg_len_pd.ref = cmd.len-0.03f-roll_pd.result;
+            lleg_len_pd.ref = cmd.len+0.03f;
+            rleg_len_pd.ref = cmd.len+0.03f;
             lleg_len_pd.fdb = lpendulum.len;
             lleg_len_pd.UpdateResult(lpendulum.dlen);
             Fl[0] = lleg_len_pd.result;
@@ -403,7 +404,7 @@ pid_tuning_t rollpd_tuning = {0.7f, 0.0f, 1.4f};
             lpendulum.TorqueControl(Fl, Twl);
             rpendulum.TorqueControl(Fr, Twr);
 
-            if (Fl[0] > 60.0f && Fr[0] > 60.0f) { chassis_state = NORMAL; }
+            if (lpendulum.N > 30.0f && rpendulum.N > 30.0f) { chassis_state = NORMAL; }
             break;
 
         case JUMP:
@@ -602,6 +603,7 @@ pid_tuning_t rollpd_tuning = {0.7f, 0.0f, 1.4f};
         pendulum_debug.Nl = lpendulum.N;
         pendulum_debug.Nr = rpendulum.N;
         pendulum_debug.N = N;
+        pendulum_debug.offground = (chassis_state == OFFGROUND);
         // lleg_len_pd.Tuning(lenpd_tuning.kp, lenpd_tuning.ki, lenpd_tuning.kd);
         // rleg_len_pd.Tuning(lenpd_tuning.kp, lenpd_tuning.ki, lenpd_tuning.kd);
         roll_pd.Tuning(rollpd_tuning.kp, rollpd_tuning.ki, rollpd_tuning.kd);
