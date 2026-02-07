@@ -168,7 +168,7 @@ __attribute__((section(".RAM_D3"))) msg_remoter_t debug_remoter;
             if (remoter.ctrl_sw == Relax || remoter.offline)
             {
                 cmd.v = 0.0f;
-                cmd.len = 0.21f;
+                cmd.len = 0.16f;
                 cmd.dyaw = 0.0f;
                 cmd.move = false;
                 cmd.inair = false;

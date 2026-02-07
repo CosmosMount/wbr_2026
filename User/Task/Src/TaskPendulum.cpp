@@ -287,6 +287,7 @@ pid_tuning_t rollpd_tuning = {0.7f, 0.0f, 1.4f};
             refX[7] = 0.0f;
             refX[8] = 0.0f;
             refX[9] = 0.0f;
+            lqr.lqr_type = LQR_LOW;
             lqr.Update(lpendulum.len, rpendulum.len);
 
             Twl = lqr.Tout[0];
@@ -334,6 +335,13 @@ pid_tuning_t rollpd_tuning = {0.7f, 0.0f, 1.4f};
             refX[7] = 0.0f;
             refX[8] = 0.0f;
             refX[9] = 0.0f;
+
+            //用腿长长度判断LQR选择
+            if ((lpendulum.len+rpendulum.len)*0.5f > 0.22f)
+            {
+                lqr.lqr_type = LQR_HIGH;
+            }
+            else{lqr.lqr_type = LQR_LOW;}
             lqr.Update(lpendulum.len, rpendulum.len);
 
             Twl = lqr.Tout[0];
@@ -358,8 +366,8 @@ pid_tuning_t rollpd_tuning = {0.7f, 0.0f, 1.4f};
                 // roll_pd.result = 0.0f;
             // }
 
-            lleg_len_pd.ref = cmd.len-0.03f+roll_pd.result;
-            rleg_len_pd.ref = cmd.len-0.03f-roll_pd.result;
+            lleg_len_pd.ref = cmd.len+roll_pd.result;//-0.03f
+            rleg_len_pd.ref = cmd.len-roll_pd.result;//-0.03f
             lleg_len_pd.fdb = lpendulum.len;
             lleg_len_pd.UpdateResult(lpendulum.dlen);
             Fl[0] = lleg_len_pd.result;
@@ -387,6 +395,7 @@ pid_tuning_t rollpd_tuning = {0.7f, 0.0f, 1.4f};
             refX[7] = 0.0f;
             refX[8] = observedX[8];
             refX[9] = observedX[9];
+            lqr.lqr_type = LQR_LOW;
             lqr.Update(lpendulum.len, rpendulum.len);
 
             Twl = 0.0f;
@@ -428,6 +437,7 @@ pid_tuning_t rollpd_tuning = {0.7f, 0.0f, 1.4f};
                 refX[7] = 0.0f;
                 refX[8] = 0.0f;
                 refX[9] = 0.0f;
+                lqr.lqr_type = LQR_LOW;
                 lqr.Update(lpendulum.len, rpendulum.len);
 
                 Twl = lqr.Tout[0];
@@ -462,6 +472,7 @@ pid_tuning_t rollpd_tuning = {0.7f, 0.0f, 1.4f};
                 refX[7] = 0.0f;
                 refX[8] = 0.0f;
                 refX[9] = 0.0f;
+                lqr.lqr_type = LQR_LOW;
                 lqr.Update(lpendulum.len, rpendulum.len);
 
                 Twl = lqr.Tout[0];
@@ -488,6 +499,7 @@ pid_tuning_t rollpd_tuning = {0.7f, 0.0f, 1.4f};
                 refX[7] = 0.0f;
                 refX[8] = observedX[8];
                 refX[9] = observedX[9];
+                lqr.lqr_type = LQR_LOW;
                 lqr.Update(lpendulum.len, rpendulum.len);
 
                 Twl = 1.0f;
@@ -520,6 +532,7 @@ pid_tuning_t rollpd_tuning = {0.7f, 0.0f, 1.4f};
                 refX[7] = 0.0f;
                 refX[8] = observedX[8];
                 refX[9] = observedX[9];
+                lqr.lqr_type = LQR_LOW;
                 lqr.Update(lpendulum.len, rpendulum.len);
 
                 Twl = 1.6f;
@@ -604,8 +617,8 @@ pid_tuning_t rollpd_tuning = {0.7f, 0.0f, 1.4f};
         pendulum_debug.Nr = rpendulum.N;
         pendulum_debug.N = N;
         pendulum_debug.offground = (chassis_state == OFFGROUND);
-        // lleg_len_pd.Tuning(lenpd_tuning.kp, lenpd_tuning.ki, lenpd_tuning.kd);
-        // rleg_len_pd.Tuning(lenpd_tuning.kp, lenpd_tuning.ki, lenpd_tuning.kd);
+        lleg_len_pd.Tuning(lenpd_tuning.kp, lenpd_tuning.ki, lenpd_tuning.kd);
+        rleg_len_pd.Tuning(lenpd_tuning.kp, lenpd_tuning.ki, lenpd_tuning.kd);
         roll_pd.Tuning(rollpd_tuning.kp, rollpd_tuning.ki, rollpd_tuning.kd);
     #endif
 

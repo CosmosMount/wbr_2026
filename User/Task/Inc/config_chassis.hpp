@@ -7,9 +7,9 @@
 
 #define TOF_DATA_SIZE 9
 
-#define MIN_LEG_LEN       0.10f
+#define MIN_LEG_LEN       0.15f//true:14
 #define MID_LEG_LEN       0.24f
-#define MAX_LEG_LEN       0.35f
+#define MAX_LEG_LEN       0.30f//true:30
 #define LQR_LEN_RESOLUTION     0.01f
 
 /* 腿长，单位m */
