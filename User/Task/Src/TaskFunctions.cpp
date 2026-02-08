@@ -48,7 +48,7 @@ __attribute__((section(".RAM_D3"))) msg_remoter_t debug_remoter;
 
     /* Slope Updaters */
     SLOPE yaw_updater(0.0f, 0.01f);
-    SLOPE v_updater(0.0f,0.004f);
+    SLOPE v_updater(0.0f,0.003f);
     SLOPE len_updater(0.13f,LEG_NORMAL_STEP);
 
     /* om publishers */
@@ -172,6 +172,10 @@ __attribute__((section(".RAM_D3"))) msg_remoter_t debug_remoter;
                 cmd.dyaw = 0.0f;
                 cmd.move = false;
                 cmd.inair = false;
+                if (pendulum_data.len > 0.17f)
+                    v_updater.SetPath(0.003f-0.0154f*(pendulum_data.len-0.17f));
+                else
+                    v_updater.SetPath(0.004f);
             }
             else if (remoter.ctrl_sw == Normal)
             {
@@ -189,8 +193,9 @@ __attribute__((section(".RAM_D3"))) msg_remoter_t debug_remoter;
                 else
                 {
                 #ifdef JUMP_UP
+                    v_updater.SetPath(0.003f);
                     cmd.dyaw = yaw_updater.UpdateVal(-remoter.right_x*2.0f);//0.0f;//
-                    cmd.v = v_updater.UpdateVal(remoter.left_y*2.5f);
+                    cmd.v = v_updater.UpdateVal(remoter.left_y*1.5f);
                     if (remoter.jump_sw == Prepared)
                     {
                         cmd.prejump = true;
@@ -270,11 +275,6 @@ __attribute__((section(".RAM_D3"))) msg_remoter_t debug_remoter;
                 else
                     cmd.yaw = ins.total_yaw*DegreeToRad+cmd.dyaw*0.001f;
             }
-
-            if (pendulum_data.len > 0.17f)
-                v_updater.SetPath(0.003f-0.0154f*(pendulum_data.len-0.17f));
-            else
-                v_updater.SetPath(0.004f);
         #endif           
         }
 
