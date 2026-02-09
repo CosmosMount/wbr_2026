@@ -212,6 +212,7 @@ pid_tuning_t rollpd_tuning = {0.7f, 0.0f, 1.4f};
 
         switch (chassis_state) 
         {
+
         case RELAX:
 
             lpendulum.Relax();
@@ -338,12 +339,14 @@ pid_tuning_t rollpd_tuning = {0.7f, 0.0f, 1.4f};
             refX[8] = 0.0f;
             refX[9] = 0.0f;
 
-            // 用腿长长度判断LQR选择
             if ((lpendulum.len+rpendulum.len)*0.5f > 0.22f)
             {
                 lqr.lqr_type = LQR_HIGH;
             }
-            else{lqr.lqr_type = LQR_LOW;}
+            else
+            {
+                lqr.lqr_type = LQR_LOW;
+            }
             lqr.Update(lpendulum.len, rpendulum.len);
 
             Twl = lqr.Tout[0];
@@ -354,19 +357,6 @@ pid_tuning_t rollpd_tuning = {0.7f, 0.0f, 1.4f};
             roll_pd.ref = 0.0f;
             roll_pd.fdb = ins.roll*DegreeToRad;
             roll_pd.UpdateResult(ins.gyro_r);
-
-            // if (cmd.spin)
-            // {
-                // bool rspin = ins.gyro_y < 0.0f;
-                // float vout = rspin?fabs(vlwheel):fabs(vrwheel);
-                // float vin = rspin?fabs(vrwheel):fabs(vlwheel);
-                // float term1 = BODY_MASS * ((lpendulum.len+rpendulum.len) + WHEEL_DIST);
-                // float term2 = (vout * vout - vin * vin);
-                // float div = 8.0f * WHEEL_DIST * WHEEL_DIST;
-                // float Fn = term1 * term2 / div;
-                // rspin ? Fl[0] += Fn : Fr[0] += Fn;
-                // roll_pd.result = 0.0f;
-            // }
 
             lleg_len_pd.ref = cmd.len+roll_pd.result;//-0.03f
             rleg_len_pd.ref = cmd.len-roll_pd.result;//-0.03f
@@ -481,6 +471,11 @@ pid_tuning_t rollpd_tuning = {0.7f, 0.0f, 1.4f};
 
                 Twl = lqr.Tout[0];
                 Twr = lqr.Tout[1];
+                if (cmd.v>0.01f)
+                {
+                    Twl += 1.0f;
+                    Twr += 1.0f;
+                }
                 Fl[1] = lqr.Tout[2];
                 Fr[1] = lqr.Tout[3];
                 Fl[0] = 300.0f;
@@ -501,15 +496,15 @@ pid_tuning_t rollpd_tuning = {0.7f, 0.0f, 1.4f};
                 refX[5] = 0.0f;
                 refX[6] = 0.0f;
                 refX[7] = 0.0f;
-                refX[8] = observedX[8];
-                refX[9] = observedX[9];
+                refX[8] = 0.0f;
+                refX[9] = 0.0f;
                 lqr.lqr_type = LQR_LOW;
                 lqr.Update(lpendulum.len, rpendulum.len);
 
-                Twl = 1.0f;
-                Twr = 1.0f;
-                Fl[1] = lqr.Tout[2];//0.0f;
-                Fr[1] = lqr.Tout[3];//0.0f;
+                Twl = 0.0f;
+                Twr = 0.0f;
+                Fl[1] = lqr.Tout[2];
+                Fr[1] = lqr.Tout[3];
                 lleg_len_pd.ref = LEG_JUMP_AIR_LEN;
                 rleg_len_pd.ref = LEG_JUMP_AIR_LEN;
                 lleg_len_pd.fdb = lpendulum.len;
@@ -534,13 +529,13 @@ pid_tuning_t rollpd_tuning = {0.7f, 0.0f, 1.4f};
                 refX[5] = 0.0f;
                 refX[6] = 0.0f;
                 refX[7] = 0.0f;
-                refX[8] = observedX[8];
-                refX[9] = observedX[9];
+                refX[8] = 0.0f;
+                refX[9] = 0.0f;
                 lqr.lqr_type = LQR_LOW;
                 lqr.Update(lpendulum.len, rpendulum.len);
 
-                Twl = 1.6f;
-                Twr = 1.6f;
+                Twl = 0.0f;
+                Twr = 0.0f;
                 Fl[1] = lqr.Tout[2];
                 Fr[1] = lqr.Tout[3];
                 lleg_len_pd.ref = 0.17f;
@@ -551,12 +546,12 @@ pid_tuning_t rollpd_tuning = {0.7f, 0.0f, 1.4f};
                 rleg_len_pd.fdb = rpendulum.len;
                 rleg_len_pd.UpdateResult(rpendulum.dlen);
                 Fr[0] = rleg_len_pd.result;
-                if (lpendulum.N > 100.0f && rpendulum.N > 100.0f)
-                {
-                    odom.Reset();
-                    jump_stage = DONT;
-                    chassis_state = NORMAL;
-                }
+                // if (lpendulum.N > 100.0f && rpendulum.N > 100.0f)
+                // {
+                //     odom.Reset();
+                //     jump_stage = DONT;
+                //     chassis_state = NEUTRAL;
+                // }
                 break;
             }
             lpendulum.TorqueControl(Fl, Twl);
