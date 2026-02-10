@@ -388,6 +388,42 @@ pid_tuning_t rollpd_tuning = {0.7f, 0.0f, 1.4f};
             if (cmd.prejump) { chassis_state = JUMP; jump_stage = START; }
             break;
 
+        case SPIN:
+
+            refX[0] = observedX[0];
+            refX[1] = observedX[1];
+            refX[2] = cmd.yaw;
+            refX[3] = cmd.dyaw;
+            refX[4] = 0.01f;
+            refX[5] = 0.0f;
+            refX[6] = 0.01f;
+            refX[7] = 0.0f;
+            refX[8] = 0.0f;
+            refX[9] = 0.0f;
+
+            lqr.lqr_type = LQR_LOW;
+            lqr.Update(lpendulum.len, rpendulum.len);
+
+            Twl = lqr.Tout[0];
+            Twr = lqr.Tout[1];
+            Fl[1] = lqr.Tout[2];
+            Fr[1] = lqr.Tout[3];
+
+            lleg_len_pd.ref = MIN_LEG_LEN;
+            rleg_len_pd.ref = MIN_LEG_LEN;
+            lleg_len_pd.fdb = lpendulum.len;
+            lleg_len_pd.UpdateResult(lpendulum.dlen);
+            Fl[0] = lleg_len_pd.result;
+            rleg_len_pd.fdb = rpendulum.len;
+            rleg_len_pd.UpdateResult(rpendulum.dlen);
+            Fr[0] = rleg_len_pd.result;
+
+            lpendulum.TorqueControl(Fl, Twl);
+            rpendulum.TorqueControl(Fr, Twr);
+
+            if (!cmd.spin) { chassis_state = NORMAL; }
+            break;
+
         case OFFGROUND:
 
             odom.Reset();

@@ -87,6 +87,7 @@ typedef enum
     FLATTEN,
     NEUTRAL,
     NORMAL,
+    SPIN,
     OFFGROUND,
     GOSTAIR,
     JUMP

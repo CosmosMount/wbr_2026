@@ -48,7 +48,7 @@ leg = 0.10:0.01:0.35;
 % Q矩阵
 %         s  ds yaw dyaw alphal dalphal alphar dalphar theta dtheta
 % 短腿长参数
-Q = diag([60 40 60 60 1600 70 1600 70 10000 80]);
+Q = diag([60 40 40 20 1600 70 1600 70 10000 80]);
 % 长腿长参数
 % Q = diag([40 30 50 50 600 50 600 50 3000 30]);
 % 其中：

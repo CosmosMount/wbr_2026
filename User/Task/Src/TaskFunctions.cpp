@@ -187,6 +187,7 @@ __attribute__((section(".RAM_D3"))) msg_remoter_t debug_remoter;
                     cmd.roll = 0.0f;
                     cmd.len += remoter.right_y*0.0008f;
                     cmd.len = FloatConstrain(cmd.len, MIN_LEG_LEN, MAX_LEG_LEN);
+                    cmd.spin = false;
                     cmd.inair = false;
                     cmd.gostair = false;
                 }
@@ -227,7 +228,7 @@ __attribute__((section(".RAM_D3"))) msg_remoter_t debug_remoter;
             {
                 cmd.move = true;
                 cmd.roll = 0.0f;
-                cmd.dyaw = yaw_updater.UpdateVal(8.0f);
+                cmd.dyaw = yaw_updater.UpdateVal(3.0f+5.0f*remoter.right_x);
                 cmd.v = 0.0f;
                 cmd.inair = false;
                 cmd.gostair = false;
