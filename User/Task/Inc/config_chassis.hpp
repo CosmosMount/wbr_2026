@@ -35,6 +35,7 @@
 
 #define JOINT_FLAT_DELTA 2.71f
 #define JOINT_STAIR_DELTA 1.57f
+#define JOINT_RECOVER_DELTA 6.28f
 
 #ifndef DEBUG
 #define DEBUG

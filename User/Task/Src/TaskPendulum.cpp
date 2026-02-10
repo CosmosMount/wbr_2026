@@ -27,6 +27,7 @@ extern FDCAN_HandleTypeDef hfdcan3;
 TX_THREAD PendulumThread;
 TX_SEMAPHORE PendulumThreadSem;
 uint8_t PendulumThreadStack[8192] = {0};
+extern TX_SEMAPHORE IMUThreadSem;
 
 
 #ifdef DEBUG
@@ -175,6 +176,8 @@ pid_tuning_t rollpd_tuning = {0.7f, 0.0f, 1.4f};
     float Fl[2] = {0.0f, 0.0f};
     float Fr[2] = {0.0f, 0.0f};
 
+    uint16_t recover_count = 0;
+
     float thread_start_time = 0.0f;
 
     for (;;)
@@ -207,7 +210,7 @@ pid_tuning_t rollpd_tuning = {0.7f, 0.0f, 1.4f};
 
         float N = lpendulum.N+rpendulum.N;
 
-        if (!cmd.move)
+        if (!cmd.move || tx_semaphore_get(&IMUThreadSem, TX_NO_WAIT) != TX_SUCCESS)
             chassis_state = RELAX;
 
         switch (chassis_state) 
@@ -220,37 +223,47 @@ pid_tuning_t rollpd_tuning = {0.7f, 0.0f, 1.4f};
             odom.Reset();
             pendulum_data.neutral = false;
             if (cmd.move)
-                chassis_state = RECOVER;
+            {
+                if (ins.accel[2] < 0.0f)
+                    chassis_state = RECOVER;
+                else
+                    chassis_state = FLATTEN;
+            }
+                
             break;
 
         case RECOVER:
 
-            chassis_state = FLATTEN;
+            if (ins.accel[2] > 0.0f)
+            {
+                recover_count++;
+            }
+
+            if (recover_count >= 100)
+            {
+                lpendulum.delta_init = false;
+                rpendulum.delta_init = false;
+                chassis_state = FLATTEN;
+                break;
+            }
+            
+            lpendulum.DeltaPControl(-JOINT_RECOVER_DELTA, 1.5f, 1.0f);
+            rpendulum.DeltaPControl(-JOINT_RECOVER_DELTA, 1.5f, 1.0f);
             break;
 
         case FLATTEN:
 
             odom.Reset();
             if (lpendulum.flat) 
-            {
                 lpendulum.Relax();
-            } 
-            else    
-            {
+            else
                 lpendulum.DeltaPControl(-JOINT_FLAT_DELTA, 2.0f, 2.0f);
-            }
-            if (rpendulum.flat) 
-            {
+            if (rpendulum.flat)
                 rpendulum.Relax();
-            } 
-            else    
-            {
+            else
                 rpendulum.DeltaPControl(-JOINT_FLAT_DELTA, 2.0f, 2.0f);
-            }
-            if (lpendulum.flat && rpendulum.flat)   
-            {
+            if (lpendulum.flat && rpendulum.flat)
                 chassis_state = NEUTRAL;
-            }
             break;
 
         case GOSTAIR:
