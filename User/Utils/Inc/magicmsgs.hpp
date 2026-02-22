@@ -133,6 +133,8 @@ struct msg_cmd_t
     float yaw;
     float dyaw;
     float roll;
+    float tri_spd;
+    uint16_t yawmotor_cur;
     bool move;
     bool spin;
     bool gostair;

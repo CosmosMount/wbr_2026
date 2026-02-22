@@ -1,23 +1,25 @@
+#include "tx_api.h"
+#include "vmc.hpp"
+#include "om.h"
+#include "usart.h"
+
 #include "bsp_dwt.hpp"
-#include "config_remoter.hpp"
 #include "math.hpp"
 #include "pid.hpp"
 #include "lqr.hpp"
 #include "slope.hpp"
 #include "magicmsgs.hpp"
+
 #include "config_chassis.hpp"
-#include "tx_api.h"
-#include "vmc.hpp"
-#include "om.h"
-#include "usart.h"
+#include "config_remoter.hpp"
+#include "config_comm.hpp"
 
 TX_THREAD FunctionThread;
 uint8_t FunctionThreadStack[2048] = {0};
 TX_SEMAPHORE TOFGot;
 TX_SEMAPHORE FunctionThreadSem;
 
-extern uint8_t xyAndRefAngleMsg[8];
-extern uint8_t StateAnduiMsg[8];
+extern uint8_t CmdMsg[16];
 __attribute__((section(".RAM_D1"))) uint8_t tof_rx[TOF_DATA_SIZE];
 
 extern TX_SEMAPHORE IMUThreadSem;
@@ -34,12 +36,6 @@ __attribute__((section(".RAM_D3"))) msg_remoter_t debug_remoter;
     UNUSED(initial_input);
 
     /* Control Signal Initialization */
-#ifndef CHASSIS_ONLY
-    chassis_mode_t mode = {NONE, NORMAL_ROTATE, DO_NOT_JUMP, NOT_FLY_MODE};
-    uint16_t dlen_rx;
-    uint16_t v_rx;
-    float relativeangle;
-#endif
     float x_maintain;
     bool maintained_x = false;
     float yaw_maintain;
@@ -95,72 +91,75 @@ __attribute__((section(".RAM_D3"))) msg_remoter_t debug_remoter;
         #ifndef CHASSIS_ONLY
 
             /* Receive Gimbal Msg */
-            uint8_t state_msg = StateAnduiMsg[0];
-            mode.chassis_mode = static_cast<chassis_mode_e>(state_msg & 0x03);
-            mode.rotate_type = static_cast<rotate_ctrl_e>((state_msg >> 2) & 0x01);
-            mode.jump_ctrl = static_cast<jump_ctrl_e>((state_msg >> 3) & 0x03);
-            mode.fly_ctrl = static_cast<fly_ctrl_e>((state_msg >> 5) & 0x01);
-
-            memcpy(&dlen_rx, xyAndRefAngleMsg, 2);                  // 将接收到的数据拷贝到Vx
-            memcpy(&v_rx, xyAndRefAngleMsg + 2, 2);                 // 将接收到的数据拷贝到Vy
-            memcpy(&relativeangle, xyAndRefAngleMsg + 4, 4);        // 将接收到的数据拷贝到RelativeAngle
+            comm_cmd_t *cmd_msg = reinterpret_cast<comm_cmd_t*>(CmdMsg);
 
             cmd.roll = 0.0f;
 
-            if (isnan(dlen_rx) || isnan(v_rx) || isnan(relativeangle) || (mode.chassis_mode > 3) || (mode.rotate_type > 1) || (mode.jump_ctrl > 2)) // 如果出现nan错误，将速度设定值设为0
+            if (isnan(cmd_msg->dlen) || isnan(cmd_msg->v)) // 如果出现nan错误，将速度设定值设为0
             {
                 cmd.v = 0.0f;
-                cmd.dlen = 0.0f;
-                cmd.dyaw = 0.0f;
-                relativeangle = 0.0f;
-                cmd.move = false;
-                mode.chassis_mode = NONE;
-                mode.rotate_type = NORMAL_ROTATE;
-                mode.jump_ctrl = DO_NOT_JUMP;
-            }
-            else if (mode.chassis_mode == NONE)
-            {
-                cmd.v = 0.0f;
-                cmd.dlen = 0.0f;
+                cmd.len = 0.16f;
                 cmd.dyaw = 0.0f;
                 cmd.move = false;
             }
-            else if (mode.chassis_mode == NORMAL_MOVING_MODE)
+            else if (!cmd_msg->ifmove)
+            {
+                cmd.v = 0.0f;
+                cmd.len = 0.16f;
+                cmd.dyaw = 0.0f;
+                cmd.move = false;
+            }
+            else
             {
                 cmd.move = true;
-                if (fabsf(cmd.dlen) < 0.0005f)
-                    cmd.dlen = 0.0f;
-                if (fabsf(cmd.v) < 0.0005f)
-                    cmd.v = 0.0f;
-                if (fabsf(relativeangle) < 0.0001f)
-                    relativeangle = 0.0f;
-
-                /* v, dlen [0,60000] -> [-2,2] */
-                cmd.dlen = len_updater.UpdateVal(((float)dlen_rx) / 15000.0f - 2.0f);
-                cmd.v = v_updater.UpdateVal(((float)v_rx) / 15000.0f - 2.0f);
                 
-                if (mode.rotate_type == SPIN_ROTATE)
+                if (cmd_msg->ifspin)
                 {
-                    cmd.dyaw = 8.0f;
+                    cmd.move = true;
+                    cmd.roll = 0.0f;
+                    cmd.dyaw = yaw_updater.UpdateVal(3.0f+5.0f*remoter.right_x);
+                    cmd.v = 0.0f;
+                    cmd.inair = false;
+                    cmd.gostair = false;
+                    cmd.spin = true;
                 }
-                else 
+                else if (cmd_msg->ifjump)
                 {
-                    cmd.dyaw = yaw_updater.UpdateVal(relativeangle)*2.0f;
+                    v_updater.SetPath(0.003f);
+                    cmd.dyaw = yaw_updater.UpdateVal(-remoter.right_x*2.0f);//0.0f;//
+                    cmd.v = v_updater.UpdateVal(remoter.left_y*1.5f);
+                    // if ()
+                    // {
+                    //     cmd.prejump = true;
+                    // }
+                    // else if ()
+                    // {
+                    //     cmd.ifjump = true;
+                    //     cmd.prejump = false;
+                    // }
+                    // else 
+                    // {
+                    //     cmd.prejump = false;
+                    //     cmd.ifjump = false;
+                    // }
                 }
-
-                if (fabsf(cmd.v) < 0.002f || mode.rotate_type == SPIN_ROTATE)
+                else if (cmd_msg->ifstair)
                 {
-                    if (!maintained_x)
-                    {
-                        x_maintain = odom.x;
-                        maintained_x = true;
-                    }
-                    cmd.x = x_maintain;
+                    cmd.roll = 0.0f;
+                    cmd.len += remoter.right_y*0.0008f;
+                    cmd.len = FloatConstrain(cmd.len, MIN_LEG_LEN, MAX_LEG_LEN);
+                    cmd.gostair = true;
                 }
                 else
-                {   
-                    maintained_x = false;
-                    cmd.x = odom.x+cmd.v*0.001f;
+                {
+                    cmd.dyaw = yaw_updater.UpdateVal(-remoter.right_x*2.0f);
+                    cmd.v = v_updater.UpdateVal(remoter.left_y*2.0f);
+                    cmd.roll = 0.0f;
+                    cmd.len += remoter.right_y*0.0008f;
+                    cmd.len = FloatConstrain(cmd.len, MIN_LEG_LEN, MAX_LEG_LEN);
+                    cmd.spin = false;
+                    cmd.inair = false;
+                    cmd.gostair = false;
                 }
             }
             
@@ -180,6 +179,7 @@ __attribute__((section(".RAM_D3"))) msg_remoter_t debug_remoter;
             else if (remoter.ctrl_sw == Normal)
             {
                 cmd.move = true;
+                cmd.spin = false;
                 if (remoter.jump_sw == None)
                 {
                     cmd.dyaw = yaw_updater.UpdateVal(-remoter.right_x*2.0f);
@@ -187,7 +187,6 @@ __attribute__((section(".RAM_D3"))) msg_remoter_t debug_remoter;
                     cmd.roll = 0.0f;
                     cmd.len += remoter.right_y*0.0008f;
                     cmd.len = FloatConstrain(cmd.len, MIN_LEG_LEN, MAX_LEG_LEN);
-                    cmd.spin = false;
                     cmd.inair = false;
                     cmd.gostair = false;
                 }
@@ -234,7 +233,7 @@ __attribute__((section(".RAM_D3"))) msg_remoter_t debug_remoter;
                 cmd.gostair = false;
                 cmd.spin = true;
             }
-
+        #endif
             if (!pendulum_data.neutral)
             {
                 maintained_x = false;
@@ -271,12 +270,11 @@ __attribute__((section(".RAM_D3"))) msg_remoter_t debug_remoter;
             else
             {
                 maintained_yaw = false;
-                if (remoter.ctrl_sw == Spin)
+                if (cmd.spin)
                     cmd.yaw = ins.total_yaw*DegreeToRad;
                 else
                     cmd.yaw = ins.total_yaw*DegreeToRad+cmd.dyaw*0.001f;
-            }
-        #endif           
+            }           
         }
 
         /* Publish cmd msg */

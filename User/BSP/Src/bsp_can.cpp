@@ -7,13 +7,14 @@
 
 #include "om.h"
 #include "magicmsgs.hpp"
+#include <cstring>
 
 extern FDCAN_HandleTypeDef hfdcan1;
 extern FDCAN_HandleTypeDef hfdcan2;
 extern FDCAN_HandleTypeDef hfdcan3;
 
-uint8_t xyAndRefAngleMsg[8] = {0};
-uint8_t StateAnduiMsg[8] = {0};
+uint8_t UIMsg[8] = {0};
+uint8_t CmdMsg[16] = {0};
 
 void FDCAN_Init(void)
 {
@@ -147,19 +148,6 @@ void HAL_FDCAN_RxFifo0Callback(FDCAN_HandleTypeDef *hfdcan, uint32_t RxFifo0ITs)
             DMMotorHandler::Instance()->UpdateFeedback(hfdcan, rx_data, int(rx_header.Identifier - DM_MASTER_ID));
         }
     }
-    
-    /*----------------------------------------------------云台数据----------------------------------------------------*/
-    else if (rx_header.Identifier >= 0xB1 && rx_header.Identifier <= 0xB4)
-    {
-        if (rx_header.Identifier == 0xB1)
-        {
-            memcpy(xyAndRefAngleMsg, rx_data, 8);
-        }
-        else if (rx_header.Identifier == 0xB2)
-        {
-            memcpy(StateAnduiMsg, rx_data, 8);
-        }
-    }
 }
 
 void HAL_FDCAN_RxFifo1Callback(FDCAN_HandleTypeDef *hfdcan, uint32_t RxFifo1ITs)
@@ -175,4 +163,16 @@ void HAL_FDCAN_RxFifo1Callback(FDCAN_HandleTypeDef *hfdcan, uint32_t RxFifo1ITs)
             DMMotorHandler::Instance()->UpdateFeedback(hfdcan, rx_data, int(rx_header.Identifier - DM_MASTER_ID));
         }
     }
+
+    /*----------------------------------------------------云台数据----------------------------------------------------*/
+    else
+    {
+        if (hfdcan == &hfdcan3)
+        {
+            if (rx_header.Identifier == 0xB1)
+                memcpy(UIMsg, rx_data, 8);
+            else if (rx_header.Identifier == 0xB2)
+                memcpy(CmdMsg, rx_data, 8);
+        }
+    }   
 }

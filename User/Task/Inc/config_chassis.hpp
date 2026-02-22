@@ -1,6 +1,6 @@
 #pragma once
 
-#define CHASSIS_ONLY
+// #define CHASSIS_ONLY
 
 #define JUMP_UP
 // #define STAIR_UP
@@ -50,36 +50,6 @@ typedef enum
     LANDING
 }jump_stage_e;
 
-/*底盘运动模式*/
-typedef enum
-{
-    NONE = 0,
-    NORMAL_MOVING_MODE,
-    ESCAPE_MODE,
-    ABNORMAL_MOVING_MODE
-} chassis_mode_e;
-
-typedef enum
-{
-    NORMAL_ROTATE = 0,
-    SPIN_ROTATE
-} rotate_ctrl_e;
-
-typedef enum
-{
-    DO_NOT_JUMP = 0,
-    JUMP_READY,
-    JUMP_START
-} jump_ctrl_e;
-
-typedef enum
-{
-    NOT_FLY_MODE = 0,
-    FLY_MODE
-} fly_ctrl_e;
-
-#pragma pack(push,1)
-
 typedef enum
 {
     RELAX = 0,
@@ -92,6 +62,9 @@ typedef enum
     GOSTAIR,
     JUMP
 } chassis_state_e;
+
+#pragma pack(push,1)
+
 
 struct tof_data_t
 {

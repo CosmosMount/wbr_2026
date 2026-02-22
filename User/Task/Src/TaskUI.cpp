@@ -3,11 +3,12 @@
 #include "main.h"
 #include "tx_api.h"
 #include "ui.hpp"
-#include <cstdint>
+#include "config_comm.hpp"
 
 TX_THREAD UIThread;
 TX_SEMAPHORE UIThreadSem;
 uint8_t UIThreadStack[2048] = {0};
+extern uint8_t UIMsg[8];
 
 [[noreturn]] void UIThreadFun(ULONG initial_input)
 {
@@ -32,6 +33,7 @@ uint8_t UIThreadStack[2048] = {0};
     int8_t LINE_SUPERCAP = ui.CreateLine(30, UIObjectColor::Yellow, 4, 800, 100, 1175, 100);
     for (;;)
     {
+        comm_ui_t *gimbal_ui = reinterpret_cast<comm_ui_t*>(&UIMsg);
         ui.MoveP2To(LINE_SUPERCAP, 800+DWT_GetTimeline_ms(), 100);
         ui.Update();
         tx_semaphore_put(&UIThreadSem);

@@ -178,11 +178,9 @@ pid_tuning_t rollpd_tuning = {0.7f, 0.0f, 1.4f};
 
     uint16_t recover_count = 0;
 
-    float thread_start_time = 0.0f;
-
     for (;;)
     {
-        thread_start_time = tx_time_get();
+        float thread_start_time = tx_time_get();
         om_suber_export(ins_suber, &ins, false);
         om_suber_export(cmd_suber, &cmd, false);
 
