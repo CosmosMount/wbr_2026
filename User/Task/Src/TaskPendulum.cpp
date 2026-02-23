@@ -138,7 +138,7 @@ pid_tuning_t rollpd_tuning = {0.7f, 0.0f, 1.4f};
     DMMotorHandler::Instance()->EnableMotor_Block(&RJoint1);
 
     /* If need to save zero points */
-    // DMMotorHandler::Instance()->SaveZeroPosition(&RJoint1);
+    // DMMotorHandler::Instance()->SaveZeroPosition(&LJoint4);
     // DMMotorHandler::Instance()->SaveZeroPosition(&LJoint1);
     // DMMotorHandler::Instance()->SaveZeroPosition(&RJoint4);
     // DMMotorHandler::Instance()->SaveZeroPosition(&RJoint1);

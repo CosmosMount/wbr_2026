@@ -39,6 +39,6 @@ uint8_t MotorsThreadStack[2048] = {0};
         trigger_motor.speedSet = cmd.tri_spd;
         trigger_motor.setOutput();
         DJIMotorHandler::Instance()->sendControlData();
-        tx_thread_sleep(1);
+        tx_thread_sleep(1-thread_start_time);
     }
 }

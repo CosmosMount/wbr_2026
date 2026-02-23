@@ -1,6 +1,6 @@
 #pragma once
 
-// #define CHASSIS_ONLY
+#define CHASSIS_ONLY
 
 #define JUMP_UP
 // #define STAIR_UP
