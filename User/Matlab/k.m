@@ -1,15 +1,5 @@
 clear; 
 
-syms L Lm
-
-R_w = 0.075;                                % 驱动轮半径                  （单位：m）
-R_l = 0.43/2;                               % 两个驱动轮之间距离/2         （单位：m）
-l_c = 0.037;                                % 机体质心到腿部关节中心点距离  （单位：m）
-m_w = 1.405; m_l = 0.7682; m_b = 14.5;      % 驱动轮质量 腿部质量 机体质量  （单位：kg）
-I_w = m_w*R_w^2 ;                           % 驱动轮转动惯量               （单位：kg m^2）
-I_b = m_b*(0.50^2+0.13^2)/12.0;             % m_b*(0.40^2+0.13^2)/12.0;     机体转动惯量(自然坐标系法向)  （单位：kg m^2）
-I_z = m_b*(0.50^2+0.28^2)/12.0;             % m_b*(0.40^2+0.325^2)/12.0;    机器人z轴转动惯量
-
 Leg_data_l =   [0.10, 0.00320, 0.09680, 0.110;
                 0.11, 0.01102, 0.09898, 0.114;
                 0.12, 0.01884, 0.10116, 0.118;
@@ -87,23 +77,21 @@ for i = 1:num_L
 
         l_l = L_length;
         L_row_index = round((L_length-0.10)/0.01 + 1);
-        l_wl = Leg_data_l(L_row_index,2);       % 左驱动轮质心到左腿摆杆质心距离                      （单位：m）
-        l_bl = Leg_data_l(L_row_index,3);       % 机体转轴到左腿摆杆质心距离                          （单位：m）
+        l_l_d = Leg_data_l(L_row_index,2);      % 左腿质心到轮轴距离                                 （单位：m）
         I_ll = Leg_data_l(L_row_index,4);       % 左腿摆杆转动惯量                                   （单位：kg m^2）
 
         l_r = R_length;
         R_row_index = round((R_length-0.10)/0.01 + 1);
-        l_wr = Leg_data_r(R_row_index,2);       % 左驱动轮质心到左腿摆杆质心距离                      （单位：m）
-        l_br = Leg_data_r(R_row_index,3);       % 机体转轴到左腿摆杆质心距离                          （单位：m）
-        I_lr = Leg_data_r(R_row_index,4);       % 左腿摆杆转动惯量                                   （单位：kg m^2）
+        l_r_d = Leg_data_r(R_row_index,2);      % 右腿质心到轮轴距离                                 （单位：m）
+        I_lr = Leg_data_r(R_row_index,4);       % 右腿摆杆转动惯量                                   （单位：kg m^2）
 
-        J_A = Amatrix(L_length, R_length,l_wl,l_bl,I_ll,l_wr,l_br,I_lr);
-        J_B = Bmatrix(L_length, R_length,l_wl,l_bl,I_ll,l_wr,l_br,I_lr);
+        J_A = matrixA(L_length, R_length, l_l_d, l_r_d, I_ll, I_lr);
+        J_B = matrixB(L_length, R_length, l_l_d, l_r_d, I_ll, I_lr);
 
-        A = compute_A(J_A, R_w, R_l, l_l, l_r);
-        B = compute_B(J_B, R_w, R_l, l_l, l_r);
+        A = fillA(J_A);
+        B = fillB(J_B);
 
-        K_matrices(:, :, sample_idx) = -lqr(A, B, Q, R);
+        K_matrices(:, :, sample_idx) = lqr(A, B, Q, R);
         sample_idx = sample_idx +1;
     end
 end
@@ -153,26 +141,19 @@ for i = 1:4
     end
 end
 
-function A = compute_A(J_A, R_w, R_l, l_l, l_r)
+function A = fillA(J_A)
     % 初始化A矩阵为零矩阵
     A = zeros(10, 10); 
 
-    % 填充A矩阵的数值
-    % 根据传入的雅可比矩阵 J_A 和机器人参数填充A矩阵
     for p = 5:2:9
         A_index = (p - 3) / 2;
-        % 计算A矩阵的不同元素
-        A(2, p) = R_w * (J_A(1, A_index) + J_A(2, A_index)) / 2;
-        A(4, p) = (R_w * (-J_A(1, A_index) + J_A(2, A_index))) / (2 * R_l) ...
-                  - (l_l * J_A(3, A_index)) / (2 * R_l) + (l_r * J_A(4, A_index)) / (2 * R_l);
-        
-        % 填充A矩阵的其余元素
-        for q = 6:2:10
-            A(q, p) = J_A(q / 2, A_index);
-        end
+        A(2, p) = J_A(1, A_index);  % dX_b_h
+        A(4, p) = J_A(2, A_index);  % dphi
+        A(6, p) = J_A(3, A_index);  % dtheta_l
+        A(8, p) = J_A(4, A_index);  % dtheta_r
+        A(10, p) = J_A(5, A_index); % dtheta_b
     end
 
-    % 设置A矩阵的固定数值
     for r = 1:10
         if rem(r, 2) == 0
             A(r, 1) = 0; A(r, 2) = 0; A(r, 3) = 0; A(r, 4) = 0; 
@@ -182,34 +163,22 @@ function A = compute_A(J_A, R_w, R_l, l_l, l_r)
             A(r, r + 1) = 1;
         end
     end
-
-    % 返回最终的A矩阵
-    A = double(A); % 转换为数值类型
+    A = double(A);
 end
 
-function B = compute_B(J_B, R_w, R_l, l_l, l_r)
-    % 初始化B矩阵为零矩阵
+function B = fillB(J_B)
     B = zeros(10, 4);
 
-    % 填充B矩阵的数值
     for h = 1:4
-        B(2, h) = R_w * (J_B(1, h) + J_B(2, h)) / 2;
-        B(4, h) = (R_w * (-J_B(1, h) + J_B(2, h))) / (2 * R_l) ...
-                  - (l_l * J_B(3, h)) / (2 * R_l) + (l_r * J_B(4, h)) / (2 * R_l);
-        
-        % 填充B矩阵的其余元素
-        for f = 6:2:10
-            B(f, h) = J_B(f / 2, h);
-        end
+        B(2, h) = J_B(1, h);  % dX_b_h
+        B(4, h) = J_B(2, h);  % dphi
+        B(6, h) = J_B(3, h);  % dtheta_l
+        B(8, h) = J_B(4, h);  % dtheta_r
+        B(10, h) = J_B(5, h); % dtheta_b
     end
 
-    % 设置B矩阵的固定数值
     for e = 1:2:9
         B(e, :) = zeros(1, 4);  % 每个偶数行的元素都设置为零
     end
-
-    % 返回最终的B矩阵
-    B = double(B);  % 转换为数值类型
+    B = double(B);
 end
-
-% matlabFunction(K,'File','Kfun');
