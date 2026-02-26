@@ -1,4 +1,5 @@
 clear;
+clc;
 
 % 物理常数
 syms g real
@@ -29,8 +30,8 @@ syms Tll Tlr Twl Twr real
 a_l_h =  ll*cos(thetall)*ddthetall-ll*sin(thetall)*dthetall^2 ...
        + lr*cos(thetalr)*ddthetalr-lr*sin(thetalr)*dthetalr^2;
 
-a_ll_v = -ll*sin(thetall)*ddthetall-thetall*cos(thetall)*dthetall^2;
-a_lr_v = -lr*sin(thetalr)*ddthetalr-thetalr*cos(thetalr)*dthetalr^2;
+a_ll_v = -ll*sin(thetall)*ddthetall-ll*cos(thetall)*dthetall^2;
+a_lr_v = -lr*sin(thetalr)*ddthetalr-lr*cos(thetalr)*dthetalr^2;
     
 ddthetawl = (ddx-Rb*ddphi+1/2*a_l_h)/Rw;
 ddthetawr = (ddx+Rb*ddphi+1/2*a_l_h)/Rw;
@@ -44,18 +45,18 @@ ddthetawr = (ddx+Rb*ddphi+1/2*a_l_h)/Rw;
 eqn1 = (Twl-Iw*ddthetawl+Twr-Iw*ddthetawr) - ((1/2*mb+ml+mw)*Rw*(ddthetawl+ddthetawr)+(1/2*mb+ml)*a_l_h)*Rw;
 
 % 偏航转动方程
-eqn2 = (Iphi*ddphi) - ((Twr-Iw*ddthetawr)-(Twl-Iw*ddthetawl)*Rb/Rw);
+eqn2 = (Iphi*ddphi) - ((Twr-Iw*ddthetawr)-(Twl-Iw*ddthetawl))*Rb/Rw;
 
 % 左腿转动方程 (替换为 Ill)
 eqn3 = Tll-Twl-ml*g*dll*sin(thetall+thetall0) ...
-       -((Twl-Iw)/Rw-ml*Rw)*ddthetawl*ll*sin(thetall) ...
-       +(1/2*mb+ml)*(g+(a_ll_v+a_lr_v)/2)*ll*cos(thetall) ...
+       -((Twl-Iw*ddthetawl)/Rw-ml*Rw*ddthetawl)*ll*cos(thetall) ...
+       +(1/2*mb+ml)*(g+(a_ll_v+a_lr_v)/2)*ll*sin(thetall) ...
        - Ill*ddthetall;
 
 % 右腿转动方程 (替换为 Ilr)
 eqn4 = Tlr-Twr-ml*g*dlr*sin(thetalr+thetalr0) ...
-       -((Twr-Iw)/Rw-ml*Rw)*ddthetawr*lr*sin(thetalr) ...
-       +(1/2*mb+ml)*(g+(a_ll_v+a_lr_v)/2)*lr*cos(thetalr) ...
+       -((Twr-Iw*ddthetawr)/Rw-ml*Rw*ddthetawr)*lr*cos(thetalr) ...
+       +(1/2*mb+ml)*(g+(a_ll_v+a_lr_v)/2)*lr*sin(thetalr) ...
        - Ilr*ddthetalr;
 
 % 机体转动方程
@@ -66,8 +67,8 @@ eqn5 = (-Tll-Tlr+mb*g*db*cos(thetab+thetab0)) - (Ib*ddthetab);
 %  § 平衡点解算 
 %  ========================================
 
-thetall_eq = atan2((1/2*mb+ml)*ll-ml*dll*sin(thetall0), ml*dll*cos(thetall0));
-thetalr_eq = atan2((1/2*mb+ml)*lr-ml*dlr*sin(thetalr0), ml*dlr*cos(thetalr0));
+thetall_eq = atan2(ml*dll*sin(thetall0), (1/2*mb+ml)*ll-ml*dll*cos(thetall0));
+thetalr_eq = atan2(ml*dlr*sin(thetalr0), (1/2*mb+ml)*lr-ml*dlr*cos(thetalr0));
 
 %% ========================================
 %  § 物理参数
@@ -85,7 +86,7 @@ mb_val = 7.846;            % 机体质量 (kg)
 Ib_val = 0.150;            % 机体俯仰转动惯量 (kg·m²)
 db_val = 0.055;            % 机体质心到俯仰轴距离 (m)
 Iphi_val = 0.465;          % 整体yaw轴转动惯量 (kg·m²)
-thetab0_val = 0;           % 质心偏移角度 (rad)
+thetab0_val = -pi/2;           % 质心偏移角度 (rad)
 
 % ==================== 轮子参数 ====================
 mw_val = 0.19;              % 轮质量 (kg)
@@ -121,105 +122,82 @@ u = [Twl; Twr; Tll; Tlr];
 q = [x; phi; thetall; thetalr; thetab];
 dq = [dx; dphi; dthetall; dthetalr; dthetab];
 ddq = [ddx; ddphi; ddthetall; ddthetalr; ddthetab];
-eqns = {eqn1; eqn2; eqn3; eqn4; eqn5};
+% 将方程组组合为列向量
+eqns_vec = [eqn1; eqn2; eqn3; eqn4; eqn5];
 
-M_sym = sym(zeros(5,5));
-for i = 1:5
-    for j = 1:5
-        M_sym(i,j) = diff(eqns{i}, ddq(j));
-    end
-end
+%% =======================================
+% § 提取偏导数矩阵 (相当于对隐函数 F=0 求雅可比矩阵)
+% ========================================
+% 质量/惯量矩阵 M = dF / d(ddq)
+M_sym = jacobian(eqns_vec, ddq);
 
-B_sym = sym(zeros(5,4));
-for i = 1:5
-    for j = 1:4
-        B_sym(i,j) = diff(eqns{i}, u(j));
-    end
-end
+% 阻尼/科里奥利矩阵 D = dF / d(dq)
+D_sym = jacobian(eqns_vec, dq);
 
-g_sym = sym(zeros(5,1));
-for i = 1:5
-    g_sym(i) = subs(eqns{i}, [ddq; dq; u], zeros(14,1));
-end
+% 刚度/重力矩阵 K = dF / d(q)
+K_sym = jacobian(eqns_vec, q);
 
-dg_dthetall_sym = diff(g_sym, thetall);
-dg_dthetalr_sym = diff(g_sym, thetalr);
-dg_dthetab_sym  = diff(g_sym, thetab);
+% 输入矩阵 H = dF / d(u)
+H_sym = jacobian(eqns_vec, u);
 
 % 代入物理参数
 M_param = simplify(subs(M_sym, params_subs(:,1), params_subs(:,2)));
-B_param = simplify(subs(B_sym, params_subs(:,1), params_subs(:,2)));
-dg_dthetall_param = simplify(subs(dg_dthetall_sym, params_subs(:,1), params_subs(:,2)));
-dg_dthetalr_param = simplify(subs(dg_dthetalr_sym, params_subs(:,1), params_subs(:,2)));
-dg_dthetab_param  = simplify(subs(dg_dthetab_sym, params_subs(:,1), params_subs(:,2)));
+D_param = simplify(subs(D_sym, params_subs(:,1), params_subs(:,2)));
+K_param = simplify(subs(K_sym, params_subs(:,1), params_subs(:,2)));
+H_param = simplify(subs(H_sym, params_subs(:,1), params_subs(:,2)));
 
-% 平衡点代换
+%% =======================================
+% § 在平衡点处计算矩阵的值
+% ========================================
 eq_subs = {
     thetall, thetall_eq;
     thetalr, thetalr_eq;
-    thetab, -thetab0_val;
-    dthetall, 0;
-    dthetalr, 0;
-    dthetab, 0;
-    phi, 0;
-    dphi, 0;
-    x, 0;
-    dx, 0;
-    ddx, 0;
-    ddphi, 0;
-    ddthetall, 0;
-    ddthetalr, 0;
-    ddthetab, 0;
-    Twl, 0;
-    Twr, 0;
-    Tll, 0;
-    Tlr, 0;
+    thetab, pi/2-thetab0_val;
+    dthetall, 0; dthetalr, 0; dthetab, 0;
+    phi, 0; dphi, 0;
+    x, 0; dx, 0;
+    ddx, 0; ddphi, 0; ddthetall, 0; ddthetalr, 0; ddthetab, 0;
+    Twl, 0; Twr, 0; Tll, 0; Tlr, 0;
 };
 
 M_eq = simplify(subs(M_param, eq_subs(:,1), eq_subs(:,2)));
-B_eq = simplify(subs(B_param, eq_subs(:,1), eq_subs(:,2)));
+D_eq = simplify(subs(D_param, eq_subs(:,1), eq_subs(:,2)));
+K_eq = simplify(subs(K_param, eq_subs(:,1), eq_subs(:,2)));
+H_eq = simplify(subs(H_param, eq_subs(:,1), eq_subs(:,2)));
 
-dg_dtheta_l = simplify(subs(dg_dthetall_param, eq_subs(:,1), eq_subs(:,2)));
-dg_dtheta_r = simplify(subs(dg_dthetalr_param, eq_subs(:,1), eq_subs(:,2)));
-dg_dtheta_b = simplify(subs(dg_dthetab_param, eq_subs(:,1), eq_subs(:,2)));
-
-n = 10;
+%% =======================================
+% § 构建线性化状态空间矩阵 A 和 B
+% ========================================
+n = 10; % 状态维度: [x, dx, phi, dphi, thetall, dthetall, thetalr, dthetalr, thetab, dthetab]^T
 m_ctrl = 4;
 
 A_num = sym(zeros(n, n));
 B_num = sym(zeros(n, m_ctrl));
 
-% 运动学关系 (位置-速度)
-A_num(1,2) = 1;   % dX_b^h/dt = V_b^h
+% 运动学关系: 导数关系
+A_num(1,2) = 1;   % dx/dt = dx
 A_num(3,4) = 1;   % dphi/dt = dphi
-A_num(5,6) = 1;   % dtheta_l/dt = dtheta_l
-A_num(7,8) = 1;   % dtheta_r/dt = dtheta_r
-A_num(9,10) = 1;  % dtheta_b/dt = dtheta_b
+A_num(5,6) = 1;   % dthetall/dt = dthetall
+A_num(7,8) = 1;   % dthetalr/dt = dthetalr
+A_num(9,10) = 1;  % dthetab/dt = dthetab
 
-% 计算 M^{-1}
+% 计算 M 的逆
 M_inv = inv(M_eq);
 
-% dg/d(theta) 矩阵
-dg_dtheta = [zeros(5,1), dg_dtheta_l, dg_dtheta_r, dg_dtheta_b];
+% 根据公式: ddq = -M^{-1}*K * q - M^{-1}*D * dq - M^{-1}*H * u
+A_dyn_K = -M_inv * K_eq;  % 对应位置 q 的系数
+A_dyn_D = -M_inv * D_eq;  % 对应速度 dq 的系数
+B_dyn   = -M_inv * H_eq;  % 对应输入 u 的系数
 
-% A矩阵动力学部分: M^{-1} * dg/d(theta)
-A_dyn = -M_inv*dg_dtheta;
+% 将动力学部分填入 A 矩阵 (偶数行为加速度方程)
+% 映射位置状态项 (q: 列 1, 3, 5, 7, 9)
+A_num(2:2:10, 1:2:9) = A_dyn_K;
 
-% 填充A矩阵 (加速度行)
-A_num(2,5) = A_dyn(1,2);   A_num(2,7) = A_dyn(1,3);   A_num(2,9) = A_dyn(1,4);
-A_num(4,5) = A_dyn(2,2);   A_num(4,7) = A_dyn(2,3);   A_num(4,9) = A_dyn(2,4);
-A_num(6,5) = A_dyn(3,2);   A_num(6,7) = A_dyn(3,3);   A_num(6,9) = A_dyn(3,4);
-A_num(8,5) = A_dyn(4,2);   A_num(8,7) = A_dyn(4,3);   A_num(8,9) = A_dyn(4,4);
-A_num(10,5) = A_dyn(5,2);  A_num(10,7) = A_dyn(5,3);  A_num(10,9) = A_dyn(5,4);
+% 映射速度状态项 (dq: 列 2, 4, 6, 8, 10)
+A_num(2:2:10, 2:2:10) = A_dyn_D;
 
-% B矩阵: M^{-1} * B
-B_dyn = M_inv * B_eq;
-
-B_num(2,:) = B_dyn(1,:);
-B_num(4,:) = B_dyn(2,:);
-B_num(6,:) = B_dyn(3,:);
-B_num(8,:) = B_dyn(4,:);
-B_num(10,:) = B_dyn(5,:);
+% 填入 B 矩阵
+B_num(2:2:10, :) = B_dyn;
 
 % (新增传入 Ill 和 Ilr 作为外部输入变量)
 fprintf('正在生成 matrices.m...\n');

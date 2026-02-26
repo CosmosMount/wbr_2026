@@ -2,9 +2,9 @@ clear;
 clc;
 
 % ========================================
-%  § 1. 查表数据导入
+%  § 数据导入
 % ========================================
-% 数据列: [腿长, 质心偏角, 质心距离, 腿部惯量]
+%  [l,    thetal0,             dl,                  Il]
 leg_data = [
     0.13, 0.13680373277071062, 0.06482330830804611, 0.01298843908;
     0.14, 0.14177326863693313, 0.06550465403312959, 0.01309498073;
@@ -36,54 +36,48 @@ leg_data = [
     0.40, 0.30618331143287353, 0.10117420718740523, 0.01716734433;
 ];
 
-% Q: [s, ds, yaw, dyaw, alphal, dalphal, alphar, dalphar, theta, dtheta]
-Q = diag([60 40 40 20 1600 70 1600 70 10000 80]);
+% Q: [x, dx, phi, dphi, thetall, dthetall, thetalr, dthetalr, thetab, dthetab]
+Q = diag([100, 1, 100, 1, 1000, 10, 1000, 10, 10000, 1]);
 
-% R: [T_wl, T_wr, T_bl, T_br]
+% R: [Twl, Twr, Tbl, Tbr]
 R = diag([10 10 1 1]);
 
 num_legs = size(leg_data, 1);
 num_samples = num_legs * num_legs;
-K_matrices = zeros(4, 10, num_samples);
+k_samples = zeros(4, 10, num_samples);
+eq_samples = zeros(2, num_samples);
 
-% 提取实际用于网格的腿长数组
 L_vals = leg_data(:, 1); 
 R_vals = leg_data(:, 1);
 
-fprintf('正在计算 %d 个网格点的 LQR 矩阵...\n', num_samples);
-
+fprintf('Fitting LQR gains for %d samples...\n\n', num_samples);
 sample_idx = 1;
 for i = 1:num_legs
     for j = 1:num_legs
         
-        % 左腿参数直接由行索引 i 决定
+        % 左腿参数由行索引 i 决定
         l_l      = leg_data(i, 1);
         thetall0 = leg_data(i, 2);
         dll      = leg_data(i, 3);
         Ill      = leg_data(i, 4);
         
-        % 右腿参数直接由行索引 j 决定
+        % 右腿参数由行索引 j 决定
         l_r      = leg_data(j, 1);
         thetalr0 = leg_data(j, 2);
         dlr      = leg_data(j, 3);
         Ilr      = leg_data(j, 4);
 
-        % 直接调用我们编译好的 10x10 和 10x4 矩阵函数！
-        % (注意：确保参数传入顺序与生成该函数时的 Vars 列表严格一致)
         [A, B, thetall_eq, thetalr_eq] = matrices(l_l, l_r, thetall0, thetalr0, dll, dlr, Ill, Ilr);
 
-        % 一键 LQR
-        K_matrices(:, :, sample_idx) = -lqr(A, B, Q, R);
+        k_samples(:, :, sample_idx) = -lqr(A, B, Q, R);
+        eq_samples(:, sample_idx) = [thetall_eq, thetalr_eq];
         
         sample_idx = sample_idx + 1;
     end
-    % 腿长，质心，平衡点
-    fprintf('腿长 %.2f m, 质心 %.2f, %.2f\n, 平衡点 %.4f\n', leg_data(i, 1), leg_data(i, 2), leg_data(i, 3), thetall_eq);
 end
-fprintf('✓ 计算完成！\n\n');
 
 % ========================================
-%  § 4. 最小二乘法双参数多项式拟合
+%  § 最小二乘法双参数多项式拟合
 % ========================================
 poly_coeffs_save = zeros(4, 10, 6);
 
@@ -96,37 +90,34 @@ L_vec = L_grid(:);
 R_vec = R_grid(:);
 
 % 拟合项顺序: [L^2, L*R, R^2, L, R, 常数]
-X = [L_vec.^2, L_vec.*R_vec, R_vec.^2, L_vec, R_vec, ones(num_samples, 1)]; 
+X = [ones(num_samples, 1), L_vec, R_vec, L_vec.^2, L_vec.*R_vec, R_vec.^2];
+eq_coeffs_save = (X \ eq_samples.').';
 
-fprintf('正在执行最小二乘法曲面拟合...\n');
+
 for i = 1:4
     for j = 1:10
-        y = squeeze(K_matrices(i, j, :));
+        y = squeeze(k_samples(i, j, :));
         coeffs = X \ y; % 矩阵左除，直接解出最小二乘最优解
-        poly_coeffs_save(i, j, :) = coeffs;
+        k_coeffs_save(i, j, :) = coeffs;
     end
 end
-fprintf('✓ 拟合完成！\n\n');
 
 % ========================================
-%  § 5. 格式化输出为 C 代码
+%  § 格式化输出为 C 代码
 % ========================================
+fprintf('float float LQRKLowcoeffs[40][6] =\n\t{\n')
 fprintf('\t/* Q = [%.f, %.f, %.f, %.f, %.f, %.f, %.f, %.f, %.f, %.f] \n\t   R = [%.f, %.f, %.f, %.f] */\n', ...
           Q(1,1), Q(2,2), Q(3,3), Q(4,4), Q(5,5), Q(6,6), Q(7,7), Q(8,8), Q(9,9), Q(10,10), R(1,1), R(2,2), R(3,3), R(4,4));
 fprintf('\t/* K(L, R) = a1 + a2*L_len + a3*R_len + a4*L_len^2 + a5*L_len*R_len + a6*R_len^2 */\n');
-fprintf('\t/* 系数顺序: { 常数, L_len, R_len, L_len^2, L_len*R_len, R_len^2 } */\n\n');
-
 for i = 1:4
     for j = 1:10
-        % 提取拟合系数 (按照 X 矩阵排列的倒序读取，匹配最终输出顺序)
-        p20 = poly_coeffs_save(i, j, 1);  % L^2 的项
-        p11 = poly_coeffs_save(i, j, 2);  % L * R 的项
-        p02 = poly_coeffs_save(i, j, 3);  % R^2 的项
-        p10 = poly_coeffs_save(i, j, 4);  % L 的线性项
-        p01 = poly_coeffs_save(i, j, 5);  % R 的线性项
-        p00 = poly_coeffs_save(i, j, 6);  % 常数项
-        
-        fprintf('\t{ %11.6f, %11.6f, %11.6f, %11.6f, %11.6f, %11.6f }, // K[%d][%d]\n', ...
-             p00, p10, p01, p20, p11, p02, i-1, j-1);
+        fprintf('\t{%11.6f,%11.6f,%11.6f,%11.6f,%11.6f,%11.6f},\n', ...
+             k_coeffs_save(i, j, 1), k_coeffs_save(i, j, 2), k_coeffs_save(i, j, 3), k_coeffs_save(i, j, 4), k_coeffs_save(i, j, 5), k_coeffs_save(i, j, 6));
     end
 end
+fprintf('\t};\n\n');
+
+fprintf('/* thetall_eq(L,R) = a1 + a2*L + a3*R + a4*L^2 + a5*L*R + a6*R^2 */\n');
+fprintf('float thetall_eq = {%11.6f,%11.6f,%11.6f,%11.6f,%11.6f,%11.6f},\n', eq_coeffs_save(1,1), eq_coeffs_save(1,2), eq_coeffs_save(1,3), eq_coeffs_save(1,4), eq_coeffs_save(1,5), eq_coeffs_save(1,6));
+fprintf('/* thetalr_eq(L,R) = a1 + a2*L + a3*R + a4*L^2 + a5*L*R + a6*R^2 */\n');
+fprintf('float thetalr_eq = {%11.6f,%11.6f,%11.6f,%11.6f,%11.6f,%11.6f},\n', eq_coeffs_save(2,1), eq_coeffs_save(2,2), eq_coeffs_save(2,3), eq_coeffs_save(2,4), eq_coeffs_save(2,5), eq_coeffs_save(2,6));
