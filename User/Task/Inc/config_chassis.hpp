@@ -2,8 +2,8 @@
 
 #define CHASSIS_ONLY
 
-#define JUMP_UP
-// #define STAIR_UP
+// #define JUMP_UP
+#define STAIR_UP
 
 #define TOF_DATA_SIZE 9
 
@@ -34,7 +34,7 @@
 #define F_SPRING 250.0f
 
 #define JOINT_FLAT_DELTA 2.71f
-#define JOINT_STAIR_DELTA 1.57f
+#define JOINT_STAIR_DELTA 1.80f
 #define JOINT_RECOVER_DELTA 6.28f
 
 #ifndef DEBUG

@@ -43,6 +43,7 @@ public:
         this->neutral = false;
     }
 
+    float phi;
     float alpha;
     float dalpha;
     float len;
@@ -83,7 +84,7 @@ public:
         this->dlen = xdot[0];
 
         /* alpha params */
-        float phi = this->vmc.GetPhi();
+        phi = this->vmc.GetPhi();
         this->alpha = Numeric::LoopFloatConstrain(phi-0.5f*PI+_pitch, -PI, PI);
         this->dalpha = xdot[1] + _dpitch;
 

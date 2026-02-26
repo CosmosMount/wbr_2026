@@ -40,7 +40,7 @@ __attribute__((section(".RAM_D3"))) msg_remoter_t debug_remoter;
     bool maintained_x = false;
     float yaw_maintain;
     bool maintained_yaw = false;
-    bool not_jump = true;
+    bool pre_stair = false;
 
     /* Slope Updaters */
     SLOPE yaw_updater(0.0f, 0.01f);
@@ -180,6 +180,7 @@ __attribute__((section(".RAM_D3"))) msg_remoter_t debug_remoter;
             {
                 cmd.move = true;
                 cmd.spin = false;
+                #ifdef JUMP_UP
                 if (remoter.jump_sw == None)
                 {
                     cmd.dyaw = yaw_updater.UpdateVal(-remoter.right_x*2.0f);
@@ -192,7 +193,7 @@ __attribute__((section(".RAM_D3"))) msg_remoter_t debug_remoter;
                 }
                 else
                 {
-                #ifdef JUMP_UP
+                
                     v_updater.SetPath(0.003f);
                     cmd.dyaw = yaw_updater.UpdateVal(-remoter.right_x*2.0f);//0.0f;//
                     cmd.v = v_updater.UpdateVal(remoter.left_y*1.5f);
@@ -210,18 +211,34 @@ __attribute__((section(".RAM_D3"))) msg_remoter_t debug_remoter;
                         cmd.prejump = false;
                         cmd.ifjump = false;
                     }
+                }
                 #endif
                 #ifdef STAIR_UP
-                    if (remoter.jump_sw == Prepared)
-                    {
-                        
-                        cmd.roll = 0.0f;
-                        cmd.len += remoter.right_y*0.0008f;
-                        cmd.len = FloatConstrain(cmd.len, MIN_LEG_LEN, MAX_LEG_LEN);
-                        cmd.gostair = true;
-                    }
-                #endif
+                if (remoter.jump_sw == None)
+                    cmd.gostair = false;
+
+                if ((remoter.jump_sw == Prepared || remoter.jump_sw == Jump) && !pre_stair)
+                {
+                    
+                    cmd.roll = 0.0f;
+                    cmd.len += remoter.right_y*0.0008f;
+                    cmd.len = FloatConstrain(cmd.len, MIN_LEG_LEN, MAX_LEG_LEN);
+                    cmd.gostair = true;
                 }
+                else
+                {
+                    
+                    cmd.dyaw = yaw_updater.UpdateVal(-remoter.right_x*2.0f);
+                    cmd.v = v_updater.UpdateVal(remoter.left_y*2.0f);
+                    cmd.roll = 0.0f;
+                    if (pre_stair)
+                        cmd.len = NORMAL_LEG_LEN;
+                    cmd.len += remoter.right_y*0.0008f;
+                    cmd.len = FloatConstrain(cmd.len, MIN_LEG_LEN, MAX_LEG_LEN);
+                    cmd.inair = false;
+                }
+                #endif
+                
             }
             else if (remoter.ctrl_sw == Spin)
             {
@@ -233,6 +250,8 @@ __attribute__((section(".RAM_D3"))) msg_remoter_t debug_remoter;
                 cmd.gostair = false;
                 cmd.spin = true;
             }
+
+            
         #endif
             if (!pendulum_data.neutral)
             {
@@ -279,6 +298,7 @@ __attribute__((section(".RAM_D3"))) msg_remoter_t debug_remoter;
 
         /* Publish cmd msg */
         om_publish(cmd_topic, &cmd, sizeof(msg_cmd_t), true, false);
+        pre_stair = cmd.gostair;
 
     #ifdef DEBUG
         debug_dist = tof_distance;

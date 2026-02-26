@@ -1,5 +1,6 @@
 #include "arm_math_types.h"
 #include "main.h"
+#include "slope.hpp"
 #include "tx_api.h"
 #include "om.h"
 
@@ -162,8 +163,8 @@ pid_tuning_t rollpd_tuning = {0.7f, 0.0f, 1.4f};
     float refX[10] = {0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f};
     LQR lqr(&refX[0], &observedX[0]);
     /* len */
-    PID rleg_len_pd(4000.0f, 0.0f, -2000.0f, 200.0f, 0.0f, PID_DVEL);
-    PID lleg_len_pd(4000.0f, 0.0f, -2000.0f, 200.0f, 0.0f, PID_DVEL);
+    PID rleg_len_pd(4000.0f, 0.0f, -2000.0f, 150.0f, 0.0f, PID_DVEL);
+    PID lleg_len_pd(4000.0f, 0.0f, -2000.0f, 150.0f, 0.0f, PID_DVEL);
     /* roll */
     PID roll_pd(0.7f, 0.0f, 0.04f, 3.0f, 0.0f);
     /* state machine */
@@ -175,6 +176,10 @@ pid_tuning_t rollpd_tuning = {0.7f, 0.0f, 1.4f};
     float Twr = 0.0f;
     float Fl[2] = {0.0f, 0.0f};
     float Fr[2] = {0.0f, 0.0f};
+
+    SLOPE recovery_updater(0.0f, 0.01f);
+
+    bool pre_stair = false;
 
     uint16_t recover_count = 0;
 
@@ -245,8 +250,8 @@ pid_tuning_t rollpd_tuning = {0.7f, 0.0f, 1.4f};
                 break;
             }
             
-            lpendulum.DeltaPControl(-JOINT_RECOVER_DELTA, 1.5f, 1.0f);
-            rpendulum.DeltaPControl(-JOINT_RECOVER_DELTA, 1.5f, 1.0f);
+            lpendulum.DeltaPControl(-recovery_updater.UpdateVal(JOINT_RECOVER_DELTA), 1.5f, 1.0f);
+            rpendulum.DeltaPControl(-recovery_updater.UpdateVal(JOINT_RECOVER_DELTA), 1.5f, 1.0f);
             break;
 
         case FLATTEN:
@@ -267,23 +272,27 @@ pid_tuning_t rollpd_tuning = {0.7f, 0.0f, 1.4f};
         case GOSTAIR:
         
             odom.Reset();
-            if (lpendulum.flat) 
-            {
-                lpendulum.Relax();
-            }
-            else    
-            {
-                lpendulum.DeltaPControl(JOINT_STAIR_DELTA, 2.0f, 1.0f);
-            }
-            if (rpendulum.flat) 
-            {
-                rpendulum.Relax();
-            } 
-            else    
-            {
-                rpendulum.DeltaPControl(JOINT_STAIR_DELTA, 2.0f, 1.0f);
-            }
-            if (lpendulum.flat && rpendulum.flat)   
+
+            lpendulum.DeltaPControl(JOINT_STAIR_DELTA, 3.0f, 2.0f);
+            rpendulum.DeltaPControl(JOINT_STAIR_DELTA, 3.0f, 2.0f);
+
+            if (lpendulum.phi < 1.7f && lpendulum.phi > 0.0f)
+                Twl = 0.1f;
+            else
+                Twl = 0.0f;
+            if (rpendulum.phi < 1.7f && rpendulum.phi > 0.0f)
+                Twr = 0.1f;
+            else
+                Twr = 0.0f;
+            Fl[0] = 0.0f;
+            Fl[1] = 0.0f;
+            Fr[0] = 0.0f;
+            Fr[1] = 0.0f;
+            lpendulum.TorqueControl(Fl, Twl);
+            rpendulum.TorqueControl(Fr, Twr);
+
+            if ((lpendulum.phi>-3.14f&&lpendulum.phi<-2.5f) 
+                && (rpendulum.phi>-3.14f&&rpendulum.phi<-2.5f) )   
             {
                 chassis_state = NEUTRAL;
             }
@@ -322,8 +331,8 @@ pid_tuning_t rollpd_tuning = {0.7f, 0.0f, 1.4f};
 
             if (lpendulum.len>0.18f) {Fl[1]=0.0f;}
             if (rpendulum.len>0.18f) {Fr[1]=0.0f;}
-            if (Numeric::abs(lpendulum.alpha) > 0.8f) {Twl=0.0f;}  
-            if (Numeric::abs(rpendulum.alpha) > 0.8f) {Twr=0.0f;}
+            if (Numeric::abs(lpendulum.alpha) > 0.7f) {Twl=0.0f;}  
+            if (Numeric::abs(rpendulum.alpha) > 0.7f) {Twr=0.0f;}
 
             lpendulum.TorqueControl(Fl, Twl);
             rpendulum.TorqueControl(Fr, Twr);
@@ -382,8 +391,18 @@ pid_tuning_t rollpd_tuning = {0.7f, 0.0f, 1.4f};
             rpendulum.TorqueControl(Fr, Twr);
             
             // if (lpendulum.N < 5.0f && rpendulum.N < 5.0f) { chassis_state = OFFGROUND; }
-            if (cmd.gostair) { chassis_state = GOSTAIR; }
-            if (cmd.prejump) { chassis_state = JUMP; jump_stage = START; }
+            if (cmd.gostair && !pre_stair) 
+            {
+                lpendulum.delta_init = false;
+                rpendulum.delta_init = false;
+                chassis_state = GOSTAIR; 
+            }
+            if (cmd.prejump) 
+            { 
+                chassis_state = JUMP; 
+                jump_stage = START; 
+            }
+            pre_stair = cmd.gostair;
             break;
 
         case SPIN:
