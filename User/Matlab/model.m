@@ -1,10 +1,12 @@
 clear;
 clc;
 
+%% § 符号定义
+
 % 物理常数
 syms g real
 
-% 机体常量 (去掉了公共的 Il，新增 Ill 和 Ilr)
+% 物理参数
 syms mb ml mw real
 syms Ib Ill Ilr Iw Iphi real 
 syms db thetab0 real
@@ -23,9 +25,7 @@ syms ll lr real
 % 控制力矩
 syms Tll Tlr Twl Twr real
 
-%% ========================================
-%  § 运动学约束
-%  ========================================
+%% § 运动学约束
 
 a_l_h =  ll*cos(thetall)*ddthetall-ll*sin(thetall)*dthetall^2 ...
        + lr*cos(thetalr)*ddthetalr-lr*sin(thetalr)*dthetalr^2;
@@ -37,9 +37,7 @@ ddthetawl = (ddx-Rb*ddphi+1/2*a_l_h)/Rw;
 ddthetawr = (ddx+Rb*ddphi+1/2*a_l_h)/Rw;
 
 
-%% ========================================
-%  § 动力学方程 
-%  ========================================
+%% § 动力学方程
 
 % 水平动量方程
 eqn1 = (Twl-Iw*ddthetawl+Twr-Iw*ddthetawr) - ((1/2*mb+ml+mw)*Rw*(ddthetawl+ddthetawr)+(1/2*mb+ml)*a_l_h)*Rw;
@@ -47,13 +45,13 @@ eqn1 = (Twl-Iw*ddthetawl+Twr-Iw*ddthetawr) - ((1/2*mb+ml+mw)*Rw*(ddthetawl+ddthe
 % 偏航转动方程
 eqn2 = (Iphi*ddphi) - ((Twr-Iw*ddthetawr)-(Twl-Iw*ddthetawl))*Rb/Rw;
 
-% 左腿转动方程 (替换为 Ill)
+% 左腿转动方程
 eqn3 = Tll-Twl-ml*g*dll*sin(thetall+thetall0) ...
        -((Twl-Iw*ddthetawl)/Rw-ml*Rw*ddthetawl)*ll*cos(thetall) ...
        +(1/2*mb+ml)*(g+(a_ll_v+a_lr_v)/2)*ll*sin(thetall) ...
        - Ill*ddthetall;
 
-% 右腿转动方程 (替换为 Ilr)
+% 右腿转动方程
 eqn4 = Tlr-Twr-ml*g*dlr*sin(thetalr+thetalr0) ...
        -((Twr-Iw*ddthetawr)/Rw-ml*Rw*ddthetawr)*lr*cos(thetalr) ...
        +(1/2*mb+ml)*(g+(a_ll_v+a_lr_v)/2)*lr*sin(thetalr) ...
@@ -63,16 +61,12 @@ eqn4 = Tlr-Twr-ml*g*dlr*sin(thetalr+thetalr0) ...
 eqn5 = (-Tll-Tlr+mb*g*db*cos(thetab+thetab0)) - (Ib*ddthetab);
 
 
-%% ========================================
-%  § 平衡点解算 
-%  ========================================
+%% § 平衡点解算 
 
 thetall_eq = atan2(ml*dll*sin(thetall0), (1/2*mb+ml)*ll-ml*dll*cos(thetall0));
 thetalr_eq = atan2(ml*dlr*sin(thetalr0), (1/2*mb+ml)*lr-ml*dlr*cos(thetalr0));
 
-%% ========================================
-%  § 物理参数
-%  ========================================
+%% § 物理参数
 
 % ==================== 物理常数 ====================
 g_val = 9.78;              % 重力加速度 (m/s^2)
@@ -95,7 +89,6 @@ Iw_val = 0.000207897;       % 轮转动惯量 (kg·m²)
 % ==================== 腿部参数 ====================
 ml_val = 1.62;              % 腿质量 (kg)
 
-% (由于 Ill 和 Ilr 要作为传参，这里从数值替换表中将其移除，并补上缺失的 thetab0)
 params_subs =  {
     g, g_val;
     Rb, Rb_val;
@@ -122,12 +115,12 @@ u = [Twl; Twr; Tll; Tlr];
 q = [x; phi; thetall; thetalr; thetab];
 dq = [dx; dphi; dthetall; dthetalr; dthetab];
 ddq = [ddx; ddphi; ddthetall; ddthetalr; ddthetab];
-% 将方程组组合为列向量
 eqns_vec = [eqn1; eqn2; eqn3; eqn4; eqn5];
 
-%% =======================================
-% § 提取偏导数矩阵 (相当于对隐函数 F=0 求雅可比矩阵)
-% ========================================
+%% § 提取偏导数矩阵
+
+% M*ddq + D*dq + K*q + H*u = 0
+fprintf('Solving M*ddq + D*dq + K*q + H*u = 0 ...\n');
 % 质量/惯量矩阵 M = dF / d(ddq)
 M_sym = jacobian(eqns_vec, ddq);
 
@@ -146,9 +139,8 @@ D_param = simplify(subs(D_sym, params_subs(:,1), params_subs(:,2)));
 K_param = simplify(subs(K_sym, params_subs(:,1), params_subs(:,2)));
 H_param = simplify(subs(H_sym, params_subs(:,1), params_subs(:,2)));
 
-%% =======================================
-% § 在平衡点处计算矩阵的值
-% ========================================
+%% § 在平衡点处计算矩阵的值
+
 eq_subs = {
     thetall, thetall_eq;
     thetalr, thetalr_eq;
@@ -165,11 +157,10 @@ D_eq = simplify(subs(D_param, eq_subs(:,1), eq_subs(:,2)));
 K_eq = simplify(subs(K_param, eq_subs(:,1), eq_subs(:,2)));
 H_eq = simplify(subs(H_param, eq_subs(:,1), eq_subs(:,2)));
 
-%% =======================================
-% § 构建线性化状态空间矩阵 A 和 B
-% ========================================
-n = 10; % 状态维度: [x, dx, phi, dphi, thetall, dthetall, thetalr, dthetalr, thetab, dthetab]^T
-m_ctrl = 4;
+%% § 构建线性化状态空间矩阵 A 和 B
+
+n = 10;         % [x, dx, phi, dphi, thetall, dthetall, thetalr, dthetalr, thetab, dthetab]^T
+m_ctrl = 4;     % [Twl, Twr, Tll, Tlr]^T
 
 A_num = sym(zeros(n, n));
 B_num = sym(zeros(n, m_ctrl));
@@ -199,10 +190,9 @@ A_num(2:2:10, 2:2:10) = A_dyn_D;
 % 填入 B 矩阵
 B_num(2:2:10, :) = B_dyn;
 
-% (新增传入 Ill 和 Ilr 作为外部输入变量)
-fprintf('正在生成 matrices.m...\n');
+fprintf('Generating matrices.m ...\n');
 matlabFunction(A_num, B_num, thetall_eq, thetalr_eq, ...
     'File', 'matrices', ...
     'Vars', {ll, lr, thetall0, thetalr0, dll, dlr, Ill, Ilr}, ...
     'Outputs', {'A', 'B', 'thetall_eq', 'thetalr_eq'});
-fprintf('✓ 生成完成！\n');
+fprintf('✓ Done! \n');
