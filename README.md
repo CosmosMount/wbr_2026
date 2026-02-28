@@ -130,3 +130,6 @@ $$\dot{X} = A X + B u$$
 $$A_{(2k, :)} = \text{Corresponding } [-M_{eq}^{-1}K_{eq}, -M_{eq}^{-1}D_{eq}] \text{ Coeffs}$$
 
 $$B_{(2k, :)} = -M_{eq}^{-1}H_{eq}$$
+
+## 机电连线图
+![connection](assets/connection.png)
