@@ -19,7 +19,7 @@ uint8_t FunctionThreadStack[2048] = {0};
 TX_SEMAPHORE TOFGot;
 TX_SEMAPHORE FunctionThreadSem;
 
-extern uint8_t CmdMsg[16];
+extern uint8_t CmdMsg[8];
 __attribute__((section(".RAM_D1"))) uint8_t tof_rx[TOF_DATA_SIZE];
 
 extern TX_SEMAPHORE IMUThreadSem;
@@ -164,6 +164,11 @@ __attribute__((section(".RAM_D3"))) msg_remoter_t debug_remoter;
             }
             
         #else
+            /*only for temparary test*/
+            comm_cmd_t *cmd_msg = reinterpret_cast<comm_cmd_t*>(CmdMsg);
+            // cmd.yawmotor_cur = cmd_msg->yaw_cur;
+            cmd.tri_spd = cmd_msg->tri_spd;
+
             if (remoter.ctrl_sw == Relax || remoter.offline)
             {
                 cmd.v = 0.0f;

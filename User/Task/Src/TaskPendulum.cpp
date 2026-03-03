@@ -213,8 +213,8 @@ pid_tuning_t rollpd_tuning = {0.7f, 0.0f, 1.4f};
 
         float N = lpendulum.N+rpendulum.N;
 
-        if (!cmd.move || tx_semaphore_get(&IMUThreadSem, TX_NO_WAIT) != TX_SUCCESS)
-            chassis_state = RELAX;
+        // if (!cmd.move || tx_semaphore_get(&IMUThreadSem, TX_NO_WAIT) != TX_SUCCESS)
+        chassis_state = RELAX;
 
         switch (chassis_state) 
         {

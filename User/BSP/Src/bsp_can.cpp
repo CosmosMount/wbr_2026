@@ -4,17 +4,16 @@
 #include "LKMotorHandler.hpp"
 #include "DMMotorHandler.hpp"
 
-
 #include "om.h"
 #include "magicmsgs.hpp"
-#include <cstring>
+#include "config_comm.hpp"
 
 extern FDCAN_HandleTypeDef hfdcan1;
 extern FDCAN_HandleTypeDef hfdcan2;
 extern FDCAN_HandleTypeDef hfdcan3;
 
 uint8_t UIMsg[8] = {0};
-uint8_t CmdMsg[16] = {0};
+uint8_t CmdMsg[8] = {0};
 
 void FDCAN_Init(void)
 {
