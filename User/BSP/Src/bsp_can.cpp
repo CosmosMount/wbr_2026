@@ -32,13 +32,6 @@ void FDCAN_Init(void)
     HAL_FDCAN_EnableTxDelayCompensation(&hfdcan1);
     HAL_FDCAN_ConfigTxDelayCompensation(&hfdcan1,13,13);
     HAL_FDCAN_Start(&hfdcan1);
-
-    HAL_FDCAN_ConfigFilter(&hfdcan3, &FDCAN_FilterConfig);
-    HAL_FDCAN_ConfigGlobalFilter(&hfdcan3, FDCAN_REJECT, FDCAN_REJECT, FDCAN_FILTER_REMOTE, FDCAN_FILTER_REMOTE);
-    HAL_FDCAN_ActivateNotification(&hfdcan3, FDCAN_IT_RX_FIFO1_NEW_MESSAGE, 0);
-    HAL_FDCAN_EnableTxDelayCompensation(&hfdcan3);
-    HAL_FDCAN_ConfigTxDelayCompensation(&hfdcan3,13,13);
-    HAL_FDCAN_Start(&hfdcan3);
 }
 
 void CAN_Init(void)
@@ -56,6 +49,11 @@ void CAN_Init(void)
     HAL_FDCAN_ConfigGlobalFilter(&hfdcan2, FDCAN_REJECT, FDCAN_REJECT, FDCAN_FILTER_REMOTE, FDCAN_FILTER_REMOTE);
     HAL_FDCAN_ActivateNotification(&hfdcan2, FDCAN_IT_RX_FIFO0_NEW_MESSAGE, 0);
     HAL_FDCAN_Start(&hfdcan2);
+
+    HAL_FDCAN_ConfigFilter(&hfdcan3, &FDCAN_FilterConfig);
+    HAL_FDCAN_ConfigGlobalFilter(&hfdcan3, FDCAN_REJECT, FDCAN_REJECT, FDCAN_FILTER_REMOTE, FDCAN_FILTER_REMOTE);
+    HAL_FDCAN_ActivateNotification(&hfdcan3, FDCAN_IT_RX_FIFO0_NEW_MESSAGE, 0);
+    HAL_FDCAN_Start(&hfdcan3);
 }
 
 void CAN_Transmit(FDCAN_HandleTypeDef *hfdcan, uint32_t Id, uint8_t *msg, uint16_t len)
@@ -147,6 +145,17 @@ void HAL_FDCAN_RxFifo0Callback(FDCAN_HandleTypeDef *hfdcan, uint32_t RxFifo0ITs)
             DMMotorHandler::Instance()->UpdateFeedback(hfdcan, rx_data, int(rx_header.Identifier - DM_MASTER_ID));
         }
     }
+    /*----------------------------------------------------云台数据----------------------------------------------------*/
+    else
+    {
+        if (hfdcan == &hfdcan3)
+        {
+            if (rx_header.Identifier == 0xB1)
+                memcpy(UIMsg, rx_data, 8);
+            else if (rx_header.Identifier == 0xB2)
+                memcpy(CmdMsg, rx_data, 8);
+        }
+    }  
 }
 
 void HAL_FDCAN_RxFifo1Callback(FDCAN_HandleTypeDef *hfdcan, uint32_t RxFifo1ITs)
@@ -161,17 +170,5 @@ void HAL_FDCAN_RxFifo1Callback(FDCAN_HandleTypeDef *hfdcan, uint32_t RxFifo1ITs)
         {
             DMMotorHandler::Instance()->UpdateFeedback(hfdcan, rx_data, int(rx_header.Identifier - DM_MASTER_ID));
         }
-    }
-
-    /*----------------------------------------------------云台数据----------------------------------------------------*/
-    else
-    {
-        if (hfdcan == &hfdcan3)
-        {
-            if (rx_header.Identifier == 0xB1)
-                memcpy(UIMsg, rx_data, 8);
-            else if (rx_header.Identifier == 0xB2)
-                memcpy(CmdMsg, rx_data, 8);
-        }
-    }   
+    }     
 }

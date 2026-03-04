@@ -1,3 +1,4 @@
+#include "DJIMotor.hpp"
 #include "tx_api.h"
 #include "vmc.hpp"
 #include "om.h"
@@ -14,8 +15,13 @@
 #include "config_remoter.hpp"
 #include "config_comm.hpp"
 
+#include "M2006.hpp"
+#include "M3508.hpp"
+#include "GM6020.hpp"
+#include "DJIMotorHandler.hpp"
+
 TX_THREAD FunctionThread;
-uint8_t FunctionThreadStack[2048] = {0};
+uint8_t FunctionThreadStack[4096] = {0};
 TX_SEMAPHORE TOFGot;
 TX_SEMAPHORE FunctionThreadSem;
 
@@ -29,6 +35,15 @@ float debug_temp;
 float debug_dist;
 bool debug_tof_valid;
 __attribute__((section(".RAM_D3"))) msg_remoter_t debug_remoter;
+comm_cmd_t *cmd_msg_debug;
+typedef struct
+{
+    float yawmotor_spd;
+    float yawmotor_cur;
+    float tri_spd;
+    float tri_cur;
+} debug_motor_t;
+debug_motor_t debug_motor;
 #endif
 
 [[noreturn]] void FunctionThreadFun(ULONG initial_input)
@@ -58,6 +73,15 @@ __attribute__((section(".RAM_D3"))) msg_remoter_t debug_remoter;
     msg_ins_t ins{};
     om_suber_t *pendulum_suber = om_subscribe(om_find_topic("pendulum", UINT32_MAX));
     msg_pendulum_t pendulum_data{};
+
+    GM6020 yaw_motor;
+    M2006 trigger_motor;
+    trigger_motor.controlMode = DJIMotor::SPD_MODE;
+    trigger_motor.gearBox = GearBox_None; // 使用速度×36，其实精度更高
+    trigger_motor.speedPid.kp = 100.0f;
+
+    DJIMotorHandler::Instance()->registerMotor(&yaw_motor, &hfdcan2, 0x205);
+    DJIMotorHandler::Instance()->registerMotor(&trigger_motor, &hfdcan2, 0x203);
 
     for (;;)
     {
@@ -166,6 +190,7 @@ __attribute__((section(".RAM_D3"))) msg_remoter_t debug_remoter;
         #else
             /*only for temparary test*/
             comm_cmd_t *cmd_msg = reinterpret_cast<comm_cmd_t*>(CmdMsg);
+            cmd_msg_debug = cmd_msg;
             // cmd.yawmotor_cur = cmd_msg->yaw_cur;
             cmd.tri_spd = cmd_msg->tri_spd;
 
@@ -300,6 +325,18 @@ __attribute__((section(".RAM_D3"))) msg_remoter_t debug_remoter;
                     cmd.yaw = ins.total_yaw*DegreeToRad+cmd.dyaw*0.001f;
             }           
         }
+
+
+        yaw_motor.currentSet = cmd.yawmotor_cur;
+        trigger_motor.speedSet = cmd.tri_spd*36.0f;
+        trigger_motor.setOutput();
+        DJIMotorHandler::Instance()->sendControlData();
+    #ifdef DEBUG
+        debug_motor.yawmotor_spd = yaw_motor.motorFeedback.speedFdb;
+        debug_motor.yawmotor_cur = yaw_motor.motorFeedback.currentFdb;
+        debug_motor.tri_spd = trigger_motor.motorFeedback.speedFdb;
+        debug_motor.tri_cur = trigger_motor.motorFeedback.currentFdb;
+    #endif
 
         /* Publish cmd msg */
         om_publish(cmd_topic, &cmd, sizeof(msg_cmd_t), true, false);
