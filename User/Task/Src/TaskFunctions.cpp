@@ -11,9 +11,10 @@
 #include "slope.hpp"
 #include "magicmsgs.hpp"
 
+#include "config_comm.hpp"
+#include "config_referee.hpp"
 #include "config_chassis.hpp"
 #include "config_remoter.hpp"
-#include "config_comm.hpp"
 
 #include "M2006.hpp"
 #include "M3508.hpp"
@@ -38,8 +39,10 @@ __attribute__((section(".RAM_D3"))) msg_remoter_t debug_remoter;
 comm_cmd_t *cmd_msg_debug;
 typedef struct
 {
+    bool yaw_init;
     float yawmotor_spd;
     float yawmotor_cur;
+    float yawmotor_pos;
     float tri_spd;
     float tri_cur;
 } debug_motor_t;
@@ -73,12 +76,22 @@ debug_motor_t debug_motor;
     msg_ins_t ins{};
     om_suber_t *pendulum_suber = om_subscribe(om_find_topic("pendulum", UINT32_MAX));
     msg_pendulum_t pendulum_data{};
+    om_suber_t *referee_suber = om_subscribe(om_find_topic("referee", UINT32_MAX));
+    msg_referee_t referee_data{};
 
+    /* Gimbal motors on chassis */
     GM6020 yaw_motor;
     M2006 trigger_motor;
     trigger_motor.controlMode = DJIMotor::SPD_MODE;
     trigger_motor.gearBox = GearBox_None; // 使用速度×36，其实精度更高
     trigger_motor.speedPid.kp = 100.0f;
+    constexpr float yaw_offset1 = -0.9702433935;
+    constexpr float yaw_offset2 = 2.17134926;
+    bool yaw_init = false;
+    
+    /* Communication with Gimbal */
+    uint8_t CommMsg[8] = {0};
+    comm_chassis_t chassis_msg{};
 
     DJIMotorHandler::Instance()->registerMotor(&yaw_motor, &hfdcan2, 0x205);
     DJIMotorHandler::Instance()->registerMotor(&trigger_motor, &hfdcan2, 0x203);
@@ -91,6 +104,7 @@ debug_motor_t debug_motor;
         om_suber_export(remoter_suber, &remoter, false);
         om_suber_export(ins_suber, &ins, false);
         om_suber_export(pendulum_suber, &pendulum_data, false);
+        om_suber_export(referee_suber, &referee_data, false);
 
         /* Receive and Check TOF Msg */
         bool tof_valid = false;
@@ -110,8 +124,9 @@ debug_motor_t debug_motor;
         float tof_distance = static_cast<float>(tof_raw->distance) * 1.0f; // cm
         float tof_temp = static_cast<float>(tof_raw->temp_raw) / 8.0f - 256.0f; // °C
 
-        if (tx_semaphore_get(&IMUThreadSem, TX_WAIT_FOREVER) == TX_SUCCESS)
-        {
+        comm_cmd_t *cmd_msg = reinterpret_cast<comm_cmd_t*>(CmdMsg);
+        cmd_msg_debug = cmd_msg;
+
         #ifndef CHASSIS_ONLY
 
             /* Receive Gimbal Msg */
@@ -188,155 +203,172 @@ debug_motor_t debug_motor;
             }
             
         #else
-            /*only for temparary test*/
-            comm_cmd_t *cmd_msg = reinterpret_cast<comm_cmd_t*>(CmdMsg);
-            cmd_msg_debug = cmd_msg;
-            // cmd.yawmotor_cur = cmd_msg->yaw_cur;
-            cmd.tri_spd = cmd_msg->tri_spd;
 
-            if (remoter.ctrl_sw == Relax || remoter.offline)
+        if (remoter.ctrl_sw == Relax || remoter.offline || tx_semaphore_get(&IMUThreadSem, TX_NO_WAIT) != TX_SUCCESS)
+        {
+            cmd.v = 0.0f;
+            cmd.len = 0.16f;
+            cmd.dyaw = 0.0f;
+            cmd.move = false;
+            cmd.inair = false;
+            if (pendulum_data.len > 0.17f)
+                v_updater.SetPath(0.003f-0.0154f*(pendulum_data.len-0.17f));
+            else
+                v_updater.SetPath(0.004f);
+        }
+        else if (remoter.ctrl_sw == Normal)
+        {
+            cmd.move = true;
+            cmd.spin = false;
+            #ifdef JUMP_UP
+            if (remoter.jump_sw == None)
             {
-                cmd.v = 0.0f;
-                cmd.len = 0.16f;
-                cmd.dyaw = 0.0f;
-                cmd.move = false;
-                cmd.inair = false;
-                if (pendulum_data.len > 0.17f)
-                    v_updater.SetPath(0.003f-0.0154f*(pendulum_data.len-0.17f));
-                else
-                    v_updater.SetPath(0.004f);
-            }
-            else if (remoter.ctrl_sw == Normal)
-            {
-                cmd.move = true;
-                cmd.spin = false;
-                #ifdef JUMP_UP
-                if (remoter.jump_sw == None)
-                {
-                    cmd.dyaw = yaw_updater.UpdateVal(-remoter.right_x*2.0f);
-                    cmd.v = v_updater.UpdateVal(remoter.left_y*2.0f);
-                    cmd.roll = 0.0f;
-                    cmd.len += remoter.right_y*0.0008f;
-                    cmd.len = FloatConstrain(cmd.len, MIN_LEG_LEN, MAX_LEG_LEN);
-                    cmd.inair = false;
-                    cmd.gostair = false;
-                }
-                else
-                {
-                
-                    v_updater.SetPath(0.003f);
-                    cmd.dyaw = yaw_updater.UpdateVal(-remoter.right_x*2.0f);//0.0f;//
-                    cmd.v = v_updater.UpdateVal(remoter.left_y*1.5f);
-                    if (remoter.jump_sw == Prepared)
-                    {
-                        cmd.prejump = true;
-                    }
-                    else if (remoter.jump_sw == Jump)
-                    {
-                        cmd.ifjump = true;
-                        cmd.prejump = false;
-                    }
-                    else 
-                    {
-                        cmd.prejump = false;
-                        cmd.ifjump = false;
-                    }
-                }
-                #endif
-                #ifdef STAIR_UP
-                if (remoter.jump_sw == None)
-                    cmd.gostair = false;
-
-                if ((remoter.jump_sw == Prepared || remoter.jump_sw == Jump) && !pre_stair)
-                {
-                    
-                    cmd.roll = 0.0f;
-                    cmd.len += remoter.right_y*0.0008f;
-                    cmd.len = FloatConstrain(cmd.len, MIN_LEG_LEN, MAX_LEG_LEN);
-                    cmd.gostair = true;
-                }
-                else
-                {
-                    
-                    cmd.dyaw = yaw_updater.UpdateVal(-remoter.right_x*2.0f);
-                    cmd.v = v_updater.UpdateVal(remoter.left_y*2.0f);
-                    cmd.roll = 0.0f;
-                    if (pre_stair)
-                        cmd.len = NORMAL_LEG_LEN;
-                    cmd.len += remoter.right_y*0.0008f;
-                    cmd.len = FloatConstrain(cmd.len, MIN_LEG_LEN, MAX_LEG_LEN);
-                    cmd.inair = false;
-                }
-                #endif
-                
-            }
-            else if (remoter.ctrl_sw == Spin)
-            {
-                cmd.move = true;
+                cmd.dyaw = yaw_updater.UpdateVal(-remoter.right_x*2.0f);
+                cmd.v = v_updater.UpdateVal(remoter.left_y*2.0f);
                 cmd.roll = 0.0f;
-                cmd.dyaw = yaw_updater.UpdateVal(3.0f+5.0f*remoter.right_x);
-                cmd.v = 0.0f;
+                cmd.len += remoter.right_y*0.0008f;
+                cmd.len = FloatConstrain(cmd.len, MIN_LEG_LEN, MAX_LEG_LEN);
                 cmd.inair = false;
                 cmd.gostair = false;
-                cmd.spin = true;
             }
+            else
+            {
+            
+                v_updater.SetPath(0.003f);
+                cmd.dyaw = yaw_updater.UpdateVal(-remoter.right_x*2.0f);//0.0f;//
+                cmd.v = v_updater.UpdateVal(remoter.left_y*1.5f);
+                if (remoter.jump_sw == Prepared)
+                {
+                    cmd.prejump = true;
+                }
+                else if (remoter.jump_sw == Jump)
+                {
+                    cmd.ifjump = true;
+                    cmd.prejump = false;
+                }
+                else 
+                {
+                    cmd.prejump = false;
+                    cmd.ifjump = false;
+                }
+            }
+            #endif
+            #ifdef STAIR_UP
+            if (remoter.jump_sw == None)
+                cmd.gostair = false;
 
-            
-        #endif
-            if (!pendulum_data.neutral)
+            if ((remoter.jump_sw == Prepared || remoter.jump_sw == Jump) && !pre_stair)
             {
-                maintained_x = false;
-                cmd.x = pendulum_data.x;
-                cmd.v = pendulum_data.v;
+                
+                cmd.roll = 0.0f;
+                cmd.len += remoter.right_y*0.0008f;
+                cmd.len = FloatConstrain(cmd.len, MIN_LEG_LEN, MAX_LEG_LEN);
+                cmd.gostair = true;
             }
             else
             {
-                if (fabsf(cmd.v) < 0.005f || remoter.ctrl_sw == Spin)
-                {
-                    if (!maintained_x)
-                    {
-                        x_maintain = pendulum_data.x;
-                        maintained_x = true;
-                    }
-                    cmd.x = x_maintain;
-                }
-                else
-                {   
-                    maintained_x = false;
-                    cmd.x = pendulum_data.x+cmd.v*0.001f;
-                }
+                
+                cmd.dyaw = yaw_updater.UpdateVal(-remoter.right_x*2.0f);
+                cmd.v = v_updater.UpdateVal(remoter.left_y*2.0f);
+                cmd.roll = 0.0f;
+                if (pre_stair)
+                    cmd.len = NORMAL_LEG_LEN;
+                cmd.len += remoter.right_y*0.0008f;
+                cmd.len = FloatConstrain(cmd.len, MIN_LEG_LEN, MAX_LEG_LEN);
+                cmd.inair = false;
             }
+            #endif
             
-            if (fabs(cmd.dyaw)<0.002f)
-            {
-                if (!maintained_yaw)
-                {
-                    yaw_maintain = ins.total_yaw*DegreeToRad;
-                    maintained_yaw = true;
-                }
-                cmd.yaw = yaw_maintain;
-            }
-            else
-            {
-                maintained_yaw = false;
-                if (cmd.spin)
-                    cmd.yaw = ins.total_yaw*DegreeToRad;
-                else
-                    cmd.yaw = ins.total_yaw*DegreeToRad+cmd.dyaw*0.001f;
-            }           
+        }
+        else if (remoter.ctrl_sw == Spin)
+        {
+            cmd.move = true;
+            cmd.roll = 0.0f;
+            cmd.dyaw = yaw_updater.UpdateVal(3.0f+5.0f*remoter.right_x);
+            cmd.v = 0.0f;
+            cmd.inair = false;
+            cmd.gostair = false;
+            cmd.spin = true;
         }
 
+        
+    #endif
+        if (!pendulum_data.neutral)
+        {
+            maintained_x = false;
+            cmd.x = pendulum_data.x;
+            cmd.v = pendulum_data.v;
+        }
+        else
+        {
+            if (fabsf(cmd.v) < 0.005f || remoter.ctrl_sw == Spin)
+            {
+                if (!maintained_x)
+                {
+                    x_maintain = pendulum_data.x;
+                    maintained_x = true;
+                }
+                cmd.x = x_maintain;
+            }
+            else
+            {   
+                maintained_x = false;
+                cmd.x = pendulum_data.x+cmd.v*0.001f;
+            }
+        }
+        
+        if (fabs(cmd.dyaw)<0.002f)
+        {
+            if (!maintained_yaw)
+            {
+                yaw_maintain = ins.total_yaw*DegreeToRad;
+                maintained_yaw = true;
+            }
+            cmd.yaw = yaw_maintain;
+        }
+        else
+        {
+            maintained_yaw = false;
+            if (cmd.spin)
+                cmd.yaw = ins.total_yaw*DegreeToRad;
+            else
+                cmd.yaw = ins.total_yaw*DegreeToRad+cmd.dyaw*0.001f;
+        }           
 
-        yaw_motor.currentSet = cmd.yawmotor_cur;
-        trigger_motor.speedSet = cmd.tri_spd*36.0f;
+        /* Handle Gimbal Motors */
+        float distance1 = fabs(yaw_motor.motorFeedback.positionFdb-yaw_offset1);
+        float distance2 = fabs(yaw_motor.motorFeedback.positionFdb-yaw_offset2);
+        float front_offset = distance1 < distance2 ? yaw_offset1 : yaw_offset2;
+        
+        if (!cmd_msg->ifmove)
+        {
+            yaw_init = false;
+            yaw_motor.currentSet = 0;
+            trigger_motor.speedSet = 0.0f;
+        }
+        else if (!yaw_init)
+        {
+            yaw_motor.currentSet = (yaw_offset1-yaw_motor.motorFeedback.positionFdb>0.0f ? 1 : -1)*4000.0f;
+            if (fabs(yaw_motor.motorFeedback.positionFdb-yaw_offset1)<0.1f) // pendulum_data.neutral
+                yaw_init = true;
+        }
+        else
+        {
+            yaw_motor.currentSet = cmd_msg->yaw_cur;
+            trigger_motor.speedSet = cmd_msg->tri_spd*36.0f;
+        }
+
+        
         trigger_motor.setOutput();
         DJIMotorHandler::Instance()->sendControlData();
-    #ifdef DEBUG
-        debug_motor.yawmotor_spd = yaw_motor.motorFeedback.speedFdb;
-        debug_motor.yawmotor_cur = yaw_motor.motorFeedback.currentFdb;
-        debug_motor.tri_spd = trigger_motor.motorFeedback.speedFdb;
-        debug_motor.tri_cur = trigger_motor.motorFeedback.currentFdb;
-    #endif
+
+        chassis_msg.color = referee_data.robot_status.robot_id <= 9 ? 0 : 1;
+        chassis_msg.level = referee_data.robot_status.robot_level;
+        chassis_msg.heatlimit = referee_data.robot_status.shooter_barrel_heat_limit;
+        chassis_msg.heatnow = referee_data.heat_now;
+
+        memcpy(&CommMsg, reinterpret_cast<uint8_t*>(&chassis_msg), sizeof(comm_chassis_t));
+        CAN_Transmit(&hfdcan3, 0xC1, CommMsg, 8);
 
         /* Publish cmd msg */
         om_publish(cmd_topic, &cmd, sizeof(msg_cmd_t), true, false);
@@ -347,6 +379,13 @@ debug_motor_t debug_motor;
         debug_temp = tof_temp;
         debug_tof_valid = tof_valid;
         debug_remoter = remoter;
+
+        debug_motor.yaw_init = yaw_init;
+        debug_motor.yawmotor_pos = yaw_motor.motorFeedback.positionFdb;
+        debug_motor.yawmotor_spd = yaw_motor.motorFeedback.speedFdb;
+        debug_motor.yawmotor_cur = yaw_motor.motorFeedback.currentFdb;
+        debug_motor.tri_spd = trigger_motor.motorFeedback.speedFdb;
+        debug_motor.tri_cur = trigger_motor.motorFeedback.currentFdb;
     #endif
         /* Thread periodic delay */
         tx_semaphore_put(&FunctionThreadSem);

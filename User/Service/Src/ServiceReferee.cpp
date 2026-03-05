@@ -1,10 +1,11 @@
-#include "bsp_dwt.hpp"
 #include "om.h"
 #include "main.h"
 #include "tx_api.h"
-#include "config_referee.hpp"
+
 #include "crc.hpp"
-#include <cstdint>
+#include "bsp_dwt.hpp"
+#include "magicmsgs.hpp"
+#include "config_referee.hpp"
 
 TX_THREAD RefereeThread;
 TX_SEMAPHORE RefereeThreadSem;
@@ -14,6 +15,9 @@ RefereeRingBuffer referee_fifo;
 
 [[noreturn]] void RefereeThreadFun(ULONG initial_input)
 {
+    om_topic_t *referee_pub = om_config_topic(nullptr, "ca", "referee", sizeof(msg_referee_t));
+    msg_referee_t referee_data{};
+
     for(;;)
     {
         static uint8_t rx_byte;
@@ -168,6 +172,11 @@ RefereeRingBuffer referee_fifo;
             }
         }
 
+        referee_data.robot_status = GameRobotStatus;
+        referee_data.heat_now = PowerHeatData.shoot_id1_17mm_cooling_heat;
+        referee_data.power_buffer = PowerHeatData.chassis_power_buffer;
+
+        om_publish(referee_pub, &referee_data, sizeof(msg_referee_t), true, false);
         tx_semaphore_put(&RefereeThreadSem);
         tx_thread_sleep(1);
     }

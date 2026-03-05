@@ -24,6 +24,8 @@ extern TX_SEMAPHORE RefereeThreadSem;
 extern uint8_t RefereeThreadStack[2048];
 extern void RefereeThreadFun(ULONG initial_input);
 
+extern TX_SEMAPHORE CANErrorSem;
+
 /* EKF Pool */
 TX_BYTE_POOL KFPool;
 UCHAR KF_PoolBuf[4096] = {0};
@@ -71,6 +73,7 @@ extern "C" void ServiceBooster()
         8, 8, TX_NO_TIME_SLICE, TX_AUTO_START);
 
     /* Create Semaphores */
+    tx_semaphore_create(&CANErrorSem, TX_NAME("CANErrorSem"), 0);
     tx_semaphore_create(&RemoterGot, TX_NAME("RemoterGot"), 0);
     tx_semaphore_create(&IMUThreadSem, TX_NAME("IMUThreadSem"), 0);
     tx_semaphore_create(&RefereeThreadSem, TX_NAME("RefereeThreadSem"), 0);

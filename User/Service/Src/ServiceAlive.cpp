@@ -12,6 +12,7 @@ extern TX_SEMAPHORE RefereeThreadSem;
 extern TX_SEMAPHORE FunctionThreadSem;
 extern TX_SEMAPHORE PendulumThreadSem;
 extern TX_SEMAPHORE UIThreadSem;
+extern TX_SEMAPHORE CANErrorSem;
 
 [[noreturn]] void AliveThreadFun(ULONG thread_input)
 {
@@ -19,11 +20,20 @@ extern TX_SEMAPHORE UIThreadSem;
 
     while(1)
     {
+        bool can_error = tx_semaphore_get(&CANErrorSem, TX_NO_WAIT) == TX_SUCCESS;
         bool imu_alive = tx_semaphore_get(&IMUThreadSem, TX_NO_WAIT) == TX_SUCCESS;
         bool referee_alive = tx_semaphore_get(&RefereeThreadSem, TX_NO_WAIT) == TX_SUCCESS;
         bool function_alive = tx_semaphore_get(&FunctionThreadSem, TX_NO_WAIT) == TX_SUCCESS;
         bool pendulum_alive = tx_semaphore_get(&PendulumThreadSem, TX_NO_WAIT) == TX_SUCCESS;
-        if (imu_alive)
+        if (can_error)
+        {
+            LED_blink(LED_COLOR::LED_RED);
+        }
+        else if (!imu_alive) 
+        {
+            LED_blink(LED_COLOR::LED_WHITE);        
+        }
+        else
         {
             if (function_alive && referee_alive && pendulum_alive)
             {
@@ -36,10 +46,6 @@ extern TX_SEMAPHORE UIThreadSem;
                     LED_blink(LED_COLOR::LED_BLUE);
                 }
             }
-        }
-        else 
-        {
-            LED_blink(LED_COLOR::LED_RED);
         }
         tx_thread_sleep(2);
     }

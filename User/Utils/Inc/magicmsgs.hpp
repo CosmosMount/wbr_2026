@@ -1,5 +1,8 @@
 #pragma once
 
+#include "config_referee.hpp"
+#include <cstdint>
+
 typedef enum {
     Relax = 2,
     Spin = 1,
@@ -141,4 +144,11 @@ struct msg_cmd_t
     bool inair;
     bool prejump;
     bool ifjump;
+};
+
+struct msg_referee_t
+{
+    GameRobotStatus_t robot_status;
+    uint16_t heat_now;
+    uint16_t power_buffer;
 };
