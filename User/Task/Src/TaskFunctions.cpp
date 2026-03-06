@@ -86,7 +86,7 @@ debug_motor_t debug_motor;
     trigger_motor.gearBox = GearBox_None; // 使用速度×36，其实精度更高
     trigger_motor.speedPid.kp = 100.0f;
     constexpr float yaw_offset1 = -0.9702433935;
-    constexpr float yaw_offset2 = 2.17134926;
+    constexpr float yaw_offset2 = 2.1836215575;
     bool yaw_init = false;
     
     /* Communication with Gimbal */
@@ -127,87 +127,124 @@ debug_motor_t debug_motor;
         comm_cmd_t *cmd_msg = reinterpret_cast<comm_cmd_t*>(CmdMsg);
         cmd_msg_debug = cmd_msg;
 
-        #ifndef CHASSIS_ONLY
+        /* Handle Gimbal Motors */
+        float distance1 = fabs(yaw_motor.motorFeedback.positionFdb-yaw_offset1);
+        float distance2 = fabs(yaw_motor.motorFeedback.positionFdb-yaw_offset2);
+        float front_offset = distance1 < distance2 ? yaw_offset1 : yaw_offset2;
+        float relative_angle = yaw_motor.motorFeedback.positionFdb - front_offset;
+        
+        if (!cmd_msg->ifmove)
+        {
+            yaw_init = false;
+            chassis_msg.inited = false;
+            yaw_motor.currentSet = 0;
+            trigger_motor.speedSet = 0.0f;
+        }
+        else if (!yaw_init)
+        {
+            yaw_motor.currentSet = ((yaw_motor.motorFeedback.positionFdb>yaw_offset1&&yaw_motor.motorFeedback.positionFdb<yaw_offset2) ? -1 : 1)*4000;
+            if (fabs(yaw_motor.motorFeedback.positionFdb-yaw_offset1)<0.1f) // pendulum_data.neutral
+            {
+                yaw_init = true;
+                chassis_msg.inited = true;
+            } 
+        }
+        else
+        {
+            yaw_motor.currentSet = cmd_msg->yaw_cur;
+            trigger_motor.speedSet = cmd_msg->tri_spd*36.0f;
+        }
 
-            /* Receive Gimbal Msg */
-            comm_cmd_t *cmd_msg = reinterpret_cast<comm_cmd_t*>(CmdMsg);
+        
+        trigger_motor.setOutput();
+        DJIMotorHandler::Instance()->sendControlData();
 
+    #ifndef CHASSIS_ONLY
+
+        cmd.roll = 0.0f;
+
+        if (isnan(cmd_msg->dlen) || isnan(cmd_msg->vx) || isnan(cmd_msg->vy)) // 如果出现nan错误，将速度设定值设为0
+        {
+            cmd.v = 0.0f;
+            cmd.len = NORMAL_LEG_LEN;
+            cmd.dyaw = 0.0f;
+            cmd.move = false;
+        }
+        else if (!cmd_msg->ifmove || !yaw_init)
+        {
+            cmd.v = 0.0f;
+            cmd.len = NORMAL_LEG_LEN;
+            cmd.dyaw = 0.0f;
+            cmd.move = false;
+        }
+        else
+        {
+            cmd.move = true;
+            cmd.dyaw = -relative_angle*2.0f;
+            cmd.v = cmd_msg->vx * 0.1f;
             cmd.roll = 0.0f;
-
-            if (isnan(cmd_msg->dlen) || isnan(cmd_msg->v)) // 如果出现nan错误，将速度设定值设为0
-            {
-                cmd.v = 0.0f;
-                cmd.len = 0.16f;
-                cmd.dyaw = 0.0f;
-                cmd.move = false;
-            }
-            else if (!cmd_msg->ifmove)
-            {
-                cmd.v = 0.0f;
-                cmd.len = 0.16f;
-                cmd.dyaw = 0.0f;
-                cmd.move = false;
-            }
-            else
-            {
-                cmd.move = true;
-                
-                if (cmd_msg->ifspin)
-                {
-                    cmd.move = true;
-                    cmd.roll = 0.0f;
-                    cmd.dyaw = yaw_updater.UpdateVal(3.0f+5.0f*remoter.right_x);
-                    cmd.v = 0.0f;
-                    cmd.inair = false;
-                    cmd.gostair = false;
-                    cmd.spin = true;
-                }
-                else if (cmd_msg->ifjump)
-                {
-                    v_updater.SetPath(0.003f);
-                    cmd.dyaw = yaw_updater.UpdateVal(-remoter.right_x*2.0f);//0.0f;//
-                    cmd.v = v_updater.UpdateVal(remoter.left_y*1.5f);
-                    // if ()
-                    // {
-                    //     cmd.prejump = true;
-                    // }
-                    // else if ()
-                    // {
-                    //     cmd.ifjump = true;
-                    //     cmd.prejump = false;
-                    // }
-                    // else 
-                    // {
-                    //     cmd.prejump = false;
-                    //     cmd.ifjump = false;
-                    // }
-                }
-                else if (cmd_msg->ifstair)
-                {
-                    cmd.roll = 0.0f;
-                    cmd.len += remoter.right_y*0.0008f;
-                    cmd.len = FloatConstrain(cmd.len, MIN_LEG_LEN, MAX_LEG_LEN);
-                    cmd.gostair = true;
-                }
-                else
-                {
-                    cmd.dyaw = yaw_updater.UpdateVal(-remoter.right_x*2.0f);
-                    cmd.v = v_updater.UpdateVal(remoter.left_y*2.0f);
-                    cmd.roll = 0.0f;
-                    cmd.len += remoter.right_y*0.0008f;
-                    cmd.len = FloatConstrain(cmd.len, MIN_LEG_LEN, MAX_LEG_LEN);
-                    cmd.spin = false;
-                    cmd.inair = false;
-                    cmd.gostair = false;
-                }
-            }
+            cmd.len += remoter.right_y*0.0008f;
+            cmd.len = FloatConstrain(cmd.len, MIN_LEG_LEN, MAX_LEG_LEN);
+            cmd.spin = false;
+            cmd.inair = false;
+            cmd.gostair = false;
+            
+            // if (cmd_msg->ifspin)
+            // {
+            //     cmd.move = true;
+            //     cmd.roll = 0.0f;
+            //     cmd.dyaw = yaw_updater.UpdateVal(3.0f+5.0f*remoter.right_x);
+            //     cmd.v = 0.0f;
+            //     cmd.inair = false;
+            //     cmd.gostair = false;
+            //     cmd.spin = true;
+            // }
+            // else if (cmd_msg->ifjump)
+            // {
+            //     v_updater.SetPath(0.003f);
+            //     cmd.dyaw = yaw_updater.UpdateVal(-remoter.right_x*2.0f);//0.0f;//
+            //     cmd.v = v_updater.UpdateVal(remoter.left_y*1.5f);
+            //     // if ()
+            //     // {
+            //     //     cmd.prejump = true;
+            //     // }
+            //     // else if ()
+            //     // {
+            //     //     cmd.ifjump = true;
+            //     //     cmd.prejump = false;
+            //     // }
+            //     // else 
+            //     // {
+            //     //     cmd.prejump = false;
+            //     //     cmd.ifjump = false;
+            //     // }
+            // }
+            // else if (cmd_msg->ifstair)
+            // {
+            //     cmd.roll = 0.0f;
+            //     cmd.len += remoter.right_y*0.0008f;
+            //     cmd.len = FloatConstrain(cmd.len, MIN_LEG_LEN, MAX_LEG_LEN);
+            //     cmd.gostair = true;
+            // }
+            // else
+            // {
+            //     cmd.dyaw = 0.0f;
+            //     cmd.v = 0.0f;
+            //     cmd.roll = 0.0f;
+            //     cmd.len = NORMAL_LEG_LEN;
+            //     cmd.len = FloatConstrain(cmd.len, MIN_LEG_LEN, MAX_LEG_LEN);
+            //     cmd.spin = false;
+            //     cmd.inair = false;
+            //     cmd.gostair = false;
+            // }
+        }
             
         #else
 
         if (remoter.ctrl_sw == Relax || remoter.offline || tx_semaphore_get(&IMUThreadSem, TX_NO_WAIT) != TX_SUCCESS)
         {
             cmd.v = 0.0f;
-            cmd.len = 0.16f;
+            cmd.len = NORMAL_LEG_LEN;
             cmd.dyaw = 0.0f;
             cmd.move = false;
             cmd.inair = false;
@@ -290,8 +327,6 @@ debug_motor_t debug_motor;
             cmd.gostair = false;
             cmd.spin = true;
         }
-
-        
     #endif
         if (!pendulum_data.neutral)
         {
@@ -333,34 +368,7 @@ debug_motor_t debug_motor;
                 cmd.yaw = ins.total_yaw*DegreeToRad;
             else
                 cmd.yaw = ins.total_yaw*DegreeToRad+cmd.dyaw*0.001f;
-        }           
-
-        /* Handle Gimbal Motors */
-        float distance1 = fabs(yaw_motor.motorFeedback.positionFdb-yaw_offset1);
-        float distance2 = fabs(yaw_motor.motorFeedback.positionFdb-yaw_offset2);
-        float front_offset = distance1 < distance2 ? yaw_offset1 : yaw_offset2;
-        
-        if (!cmd_msg->ifmove)
-        {
-            yaw_init = false;
-            yaw_motor.currentSet = 0;
-            trigger_motor.speedSet = 0.0f;
         }
-        else if (!yaw_init)
-        {
-            yaw_motor.currentSet = (yaw_offset1-yaw_motor.motorFeedback.positionFdb>0.0f ? 1 : -1)*4000.0f;
-            if (fabs(yaw_motor.motorFeedback.positionFdb-yaw_offset1)<0.1f) // pendulum_data.neutral
-                yaw_init = true;
-        }
-        else
-        {
-            yaw_motor.currentSet = cmd_msg->yaw_cur;
-            trigger_motor.speedSet = cmd_msg->tri_spd*36.0f;
-        }
-
-        
-        trigger_motor.setOutput();
-        DJIMotorHandler::Instance()->sendControlData();
 
         chassis_msg.color = referee_data.robot_status.robot_id <= 9 ? 0 : 1;
         chassis_msg.level = referee_data.robot_status.robot_level;

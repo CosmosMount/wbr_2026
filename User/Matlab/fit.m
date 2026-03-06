@@ -104,7 +104,6 @@ end
 % ========================================
 %  § 格式化输出
 % ========================================
-fprintf('float float LQRKLowcoeffs[40][6] =\n\t{\n')
 fprintf('\t/* Q = [%.f, %.f, %.f, %.f, %.f, %.f, %.f, %.f, %.f, %.f] \n\t   R = [%.f, %.f, %.f, %.f] */\n', ...
           Q(1,1), Q(2,2), Q(3,3), Q(4,4), Q(5,5), Q(6,6), Q(7,7), Q(8,8), Q(9,9), Q(10,10), R(1,1), R(2,2), R(3,3), R(4,4));
 fprintf('\t/* K(L, R) = a1 + a2*L_len + a3*R_len + a4*L_len^2 + a5*L_len*R_len + a6*R_len^2 */\n');
@@ -114,9 +113,11 @@ for i = 1:4
              k_coeffs_save(i, j, 1), k_coeffs_save(i, j, 2), k_coeffs_save(i, j, 3), k_coeffs_save(i, j, 4), k_coeffs_save(i, j, 5), k_coeffs_save(i, j, 6));
     end
 end
-fprintf('\t};\n\n');
 
-fprintf('/* thetall_eq(L,R) = a1 + a2*L + a3*R + a4*L^2 + a5*L*R + a6*R^2 */\n');
-fprintf('float thetall_eq = {%11.6f,%11.6f,%11.6f,%11.6f,%11.6f,%11.6f},\n', eq_coeffs_save(1,1), eq_coeffs_save(1,2), eq_coeffs_save(1,3), eq_coeffs_save(1,4), eq_coeffs_save(1,5), eq_coeffs_save(1,6));
-fprintf('/* thetalr_eq(L,R) = a1 + a2*L + a3*R + a4*L^2 + a5*L*R + a6*R^2 */\n');
-fprintf('float thetalr_eq = {%11.6f,%11.6f,%11.6f,%11.6f,%11.6f,%11.6f},\n', eq_coeffs_save(2,1), eq_coeffs_save(2,2), eq_coeffs_save(2,3), eq_coeffs_save(2,4), eq_coeffs_save(2,5), eq_coeffs_save(2,6));
+% fprintf('\n\n');
+% fprintf('/* thetall_eq(L,R) = a1 + a2*L + a3*R + a4*L^2 + a5*L*R + a6*R^2 */\n');
+% fprintf('float thetall_eq = {%11.6f,%11.6f,%11.6f,%11.6f,%11.6f,%11.6f},\n', eq_coeffs_save(1,1), eq_coeffs_save(1,2), eq_coeffs_save(1,3), eq_coeffs_save(1,4), eq_coeffs_save(1,5), eq_coeffs_save(1,6));
+% fprintf('/* thetalr_eq(L,R) = a1 + a2*L + a3*R + a4*L^2 + a5*L*R + a6*R^2 */\n');
+% fprintf('float thetalr_eq = {%11.6f,%11.6f,%11.6f,%11.6f,%11.6f,%11.6f},\n', eq_coeffs_save(2,1), eq_coeffs_save(2,2), eq_coeffs_save(2,3), eq_coeffs_save(2,4), eq_coeffs_save(2,5), eq_coeffs_save(2,6));
+% fprintf('/* theta_eq_coeff = a1 + a2*len + a3*len^2 */\n');
+% fprintf('float theta_eq_coeff[3] = {%11.6f,%11.6f,%11.6f},\n', eq_coeffs_save(1,1), eq_coeffs_save(1,3), eq_coeffs_save(1,6));

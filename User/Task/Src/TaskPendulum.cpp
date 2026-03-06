@@ -200,6 +200,7 @@ pid_tuning_t rollpd_tuning = {0.7f, 0.0f, 1.4f};
         lpendulum.Solve(pitch, dpitch, odom.az);
         rpendulum.Solve(pitch, dpitch, odom.az);
 
+        /* [x, dx, yaw, dyaw, alphal, dalphal, alphar, dalphar, theta, dtheta] */
         observedX[0] = odom.x;
         observedX[1] = odom.v;
         observedX[2] = yaw;
@@ -213,8 +214,8 @@ pid_tuning_t rollpd_tuning = {0.7f, 0.0f, 1.4f};
 
         float N = lpendulum.N+rpendulum.N;
 
-        // if (!cmd.move || tx_semaphore_get(&IMUThreadSem, TX_NO_WAIT) != TX_SUCCESS)
-        chassis_state = RELAX;
+        if (!cmd.move || tx_semaphore_get(&IMUThreadSem, TX_NO_WAIT) != TX_SUCCESS)
+            chassis_state = RELAX;
 
         switch (chassis_state) 
         {
@@ -250,8 +251,10 @@ pid_tuning_t rollpd_tuning = {0.7f, 0.0f, 1.4f};
                 break;
             }
             
-            lpendulum.DeltaPControl(-recovery_updater.UpdateVal(JOINT_RECOVER_DELTA), 1.5f, 1.0f);
-            rpendulum.DeltaPControl(-recovery_updater.UpdateVal(JOINT_RECOVER_DELTA), 1.5f, 1.0f);
+            // lpendulum.DeltaPControl(-recovery_updater.UpdateVal(JOINT_RECOVER_DELTA), 1.5f, 1.0f);
+            // rpendulum.DeltaPControl(-recovery_updater.UpdateVal(JOINT_RECOVER_DELTA), 1.5f, 1.0f);
+            lpendulum.SpdControl(-recovery_updater.UpdateVal(0.5f), 1.0f);
+            rpendulum.SpdControl(-recovery_updater.UpdateVal(0.5f), 1.0f);
             break;
 
         case FLATTEN:
@@ -260,11 +263,14 @@ pid_tuning_t rollpd_tuning = {0.7f, 0.0f, 1.4f};
             if (lpendulum.flat) 
                 lpendulum.Relax();
             else
-                lpendulum.DeltaPControl(-JOINT_FLAT_DELTA, 2.0f, 2.0f);
+                lpendulum.DeltaPControl(-JOINT_FLAT_DELTA, 1.0f, 10.0f);
+                // lpendulum.SpdControl(-1.0f, 5.0f);
+            
             if (rpendulum.flat)
                 rpendulum.Relax();
             else
-                rpendulum.DeltaPControl(-JOINT_FLAT_DELTA, 2.0f, 2.0f);
+                rpendulum.DeltaPControl(-JOINT_FLAT_DELTA, 1.0f, 10.0f);
+                // rpendulum.SpdControl(-1.0f, 5.0f);
             if (lpendulum.flat && rpendulum.flat)
                 chassis_state = NEUTRAL;
             break;
@@ -273,8 +279,8 @@ pid_tuning_t rollpd_tuning = {0.7f, 0.0f, 1.4f};
         
             odom.Reset();
 
-            lpendulum.DeltaPControl(JOINT_STAIR_DELTA, 3.0f, 2.0f);
-            rpendulum.DeltaPControl(JOINT_STAIR_DELTA, 3.0f, 2.0f);
+            lpendulum.DeltaPControl(JOINT_STAIR_DELTA, 2.0f, 6.0f);
+            rpendulum.DeltaPControl(JOINT_STAIR_DELTA, 2.0f, 6.0f);
 
             if (lpendulum.phi < 1.7f && lpendulum.phi > 0.0f)
                 Twl = 0.1f;
@@ -300,6 +306,7 @@ pid_tuning_t rollpd_tuning = {0.7f, 0.0f, 1.4f};
 
         case NEUTRAL:
 
+            /* [x, dx, yaw, dyaw, alphal, dalphal, alphar, dalphar, theta, dtheta] */
             refX[0] = cmd.x;
             refX[1] = cmd.v;
             refX[2] = cmd.yaw;
@@ -331,8 +338,8 @@ pid_tuning_t rollpd_tuning = {0.7f, 0.0f, 1.4f};
 
             if (lpendulum.len>0.18f) {Fl[1]=0.0f;}
             if (rpendulum.len>0.18f) {Fr[1]=0.0f;}
-            if (Numeric::abs(lpendulum.alpha) > 0.7f) {Twl=0.0f;}  
-            if (Numeric::abs(rpendulum.alpha) > 0.7f) {Twr=0.0f;}
+            if (Numeric::abs(lpendulum.alpha) > 0.8f) {Twl=0.0f;}  
+            if (Numeric::abs(rpendulum.alpha) > 0.8f) {Twr=0.0f;}
 
             lpendulum.TorqueControl(Fl, Twl);
             rpendulum.TorqueControl(Fr, Twr);
@@ -348,13 +355,14 @@ pid_tuning_t rollpd_tuning = {0.7f, 0.0f, 1.4f};
 
         case NORMAL:
 
+            /* [x, dx, yaw, dyaw, alphal, dalphal, alphar, dalphar, theta, dtheta] */
             refX[0] = cmd.x;
             refX[1] = cmd.v;
             refX[2] = cmd.yaw;
             refX[3] = cmd.dyaw;
-            refX[4] = 0.01f;
+            refX[4] = lpendulum.alpha_eq;
             refX[5] = 0.0f;
-            refX[6] = 0.01f;
+            refX[6] = rpendulum.alpha_eq;
             refX[7] = 0.0f;
             refX[8] = 0.0f;
             refX[9] = 0.0f;

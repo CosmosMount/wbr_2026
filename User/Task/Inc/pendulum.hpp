@@ -28,6 +28,9 @@ protected:
     float joint1_pos_init;
     float joint4_pos_init;
 
+    /* alpha_eq_coeff = a1 + a2*len + a3*len^2 */
+    float alpha_eq_coeff[3] = {0.427963,-1.622409,1.753140};
+
 public:
     Pendulum(bool _reverse, hiptype* _joint1, hiptype* _joint4, wheeltype* _wheel)
         : joint1(_joint1), joint4(_joint4), wheel(_wheel)
@@ -50,6 +53,8 @@ public:
     float dlen;
 
     float N;
+
+    float alpha_eq;
 
     bool flat;
     bool neutral;
@@ -87,6 +92,7 @@ public:
         phi = this->vmc.GetPhi();
         this->alpha = Numeric::LoopFloatConstrain(phi-0.5f*PI+_pitch, -PI, PI);
         this->dalpha = xdot[1] + _dpitch;
+        this->alpha_eq = this->alpha_eq_coeff[0] + this->alpha_eq_coeff[1]*this->len + this->alpha_eq_coeff[2]*this->len*this->len;
 
         /* inverse dynamics */
         float Treal[2] = {joint1_tor, joint4_tor};
@@ -131,7 +137,19 @@ public:
         this->joint4->torqueSet = 0.0f;
         this->joint1->positionSet = joint1_pos_init + (_pdelta * (this->reverse ? -1.0f : 1.0f));
         this->joint4->positionSet = joint4_pos_init + (_pdelta * (this->reverse ? -1.0f : 1.0f));
+        this->joint1->speedSet = 0.0f;
+        this->joint4->speedSet = 0.0f;
         this->joint1->KP = _kp; this->joint4->KP = _kp;
+        this->joint1->KD = _kd; this->joint4->KD = _kd;
+    }
+
+    void SpdControl(float _spd, float _kd)
+    {
+        this->joint1->torqueSet = 0.0f;
+        this->joint4->torqueSet = 0.0f;
+        this->joint1->speedSet = _spd * (this->reverse ? -1.0f : 1.0f);
+        this->joint4->speedSet = _spd * (this->reverse ? -1.0f : 1.0f);
+        this->joint1->KP = 0.0f; this->joint4->KP = 0.0f;
         this->joint1->KD = _kd; this->joint4->KD = _kd;
     }
 
