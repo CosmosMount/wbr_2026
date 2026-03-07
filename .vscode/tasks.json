@@ -8,17 +8,8 @@
       "args": [
         "-f", "interface/cmsis-dap.cfg",
         "-f", "target/stm32h7x.cfg",
-        "-c", "transport select swd",
-        "-c", "reset_config none",
-        "-c", "cortex_m reset_config sysresetreq",
-        "-c", "init",
-        "-c", "halt",
-        "-c", "program build/Debug/wbr_chassis.elf",
-        "-c", "soft_reset_halt",
-        "-c", "sleep 500",
-        "-c", "resume",
-        "-c", "sleep 500",
-        "-c", "exit"
+        "-c", "adapter speed 1000", 
+        "-c", "program build/Debug/wbr_chassis.elf reset exit"
       ],
       "problemMatcher": []
     }

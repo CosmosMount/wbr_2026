@@ -37,7 +37,7 @@ leg_data = [
 ];
 
 % Q: [x, dx, phi, dphi, thetall, dthetall, thetalr, dthetalr, thetab, dthetab]
-Q = diag([100, 1, 100, 1, 1000, 10, 1000, 10, 10000, 1]);
+Q = diag([100, 1, 100, 1, 1000, 5, 1000, 5, 40000, 1]);
 
 % R: [Twl, Twr, Tbl, Tbr]
 R = diag([10 10 1 1]);
@@ -114,10 +114,10 @@ for i = 1:4
     end
 end
 
-% fprintf('\n\n');
-% fprintf('/* thetall_eq(L,R) = a1 + a2*L + a3*R + a4*L^2 + a5*L*R + a6*R^2 */\n');
-% fprintf('float thetall_eq = {%11.6f,%11.6f,%11.6f,%11.6f,%11.6f,%11.6f},\n', eq_coeffs_save(1,1), eq_coeffs_save(1,2), eq_coeffs_save(1,3), eq_coeffs_save(1,4), eq_coeffs_save(1,5), eq_coeffs_save(1,6));
-% fprintf('/* thetalr_eq(L,R) = a1 + a2*L + a3*R + a4*L^2 + a5*L*R + a6*R^2 */\n');
-% fprintf('float thetalr_eq = {%11.6f,%11.6f,%11.6f,%11.6f,%11.6f,%11.6f},\n', eq_coeffs_save(2,1), eq_coeffs_save(2,2), eq_coeffs_save(2,3), eq_coeffs_save(2,4), eq_coeffs_save(2,5), eq_coeffs_save(2,6));
-% fprintf('/* theta_eq_coeff = a1 + a2*len + a3*len^2 */\n');
-% fprintf('float theta_eq_coeff[3] = {%11.6f,%11.6f,%11.6f},\n', eq_coeffs_save(1,1), eq_coeffs_save(1,3), eq_coeffs_save(1,6));
+fprintf('\n\n');
+fprintf('/* thetall_eq(L,R) = a1 + a2*L + a3*R + a4*L^2 + a5*L*R + a6*R^2 */\n');
+fprintf('float thetall_eq = {%11.6f,%11.6f,%11.6f,%11.6f,%11.6f,%11.6f},\n', eq_coeffs_save(1,1), eq_coeffs_save(1,2), eq_coeffs_save(1,3), eq_coeffs_save(1,4), eq_coeffs_save(1,5), eq_coeffs_save(1,6));
+fprintf('/* thetalr_eq(L,R) = a1 + a2*L + a3*R + a4*L^2 + a5*L*R + a6*R^2 */\n');
+fprintf('float thetalr_eq = {%11.6f,%11.6f,%11.6f,%11.6f,%11.6f,%11.6f},\n', eq_coeffs_save(2,1), eq_coeffs_save(2,2), eq_coeffs_save(2,3), eq_coeffs_save(2,4), eq_coeffs_save(2,5), eq_coeffs_save(2,6));
+fprintf('/* theta_eq_coeff = a1 + a2*len + a3*len^2 */\n');
+fprintf('float theta_eq_coeff[3] = {%11.6f,%11.6f,%11.6f},\n', eq_coeffs_save(1,1), eq_coeffs_save(1,3), eq_coeffs_save(1,6));

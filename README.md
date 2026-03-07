@@ -92,7 +92,16 @@ $$\theta_{l,l}^{eq} = \arctan\left( \frac{m_l d_{l,l} \sin(\theta_{l,l}^0)}{\lef
 
 $$\theta_{l,r}^{eq} = \arctan\left( \frac{m_l d_{l,r} \sin(\theta_{l,r}^0)}{\left( \frac{1}{2}m_b + m_l \right)l_r - m_l d_{l,r} \cos(\theta_{l,r}^0)} \right)$$
 
-机体的俯仰平衡点由设定值给出，对应 $\theta_b = \frac{\pi}{2} - \theta_{b}^0$。
+机体的俯仰平衡点由设定值给出，对应
+
+$$
+\begin{cases}
+\theta_b^{eq}=-\frac{\pi}{2}-\theta_b^0 &\text{   }\theta_b^0<0 \\
+\theta_b^{eq}=\frac{\pi}{2}-\theta_b^0 &\text{   }\theta_b^0>0 \\
+\end{cases}
+$$
+
+但是如果控制pitch到真正的平衡点，姿态会比较奇怪，所以还是控成0会好一些。
 
 ---
 

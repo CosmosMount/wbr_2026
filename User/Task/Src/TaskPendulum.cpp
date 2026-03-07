@@ -34,6 +34,8 @@ extern TX_SEMAPHORE IMUThreadSem;
 #ifdef DEBUG
 struct pendulum_debug_t
 {
+    float alphal_eq;
+    float alphar_eq;
     float alphal;
     float alphal_dot;
     float alphar;
@@ -311,9 +313,9 @@ pid_tuning_t rollpd_tuning = {0.7f, 0.0f, 1.4f};
             refX[1] = cmd.v;
             refX[2] = cmd.yaw;
             refX[3] = cmd.dyaw;
-            refX[4] = 0.0f;
+            refX[4] = lpendulum.alpha_eq;
             refX[5] = 0.0f;
-            refX[6] = 0.0f;
+            refX[6] = rpendulum.alpha_eq;
             refX[7] = 0.0f;
             refX[8] = 0.0f;
             refX[9] = 0.0f;
@@ -338,8 +340,8 @@ pid_tuning_t rollpd_tuning = {0.7f, 0.0f, 1.4f};
 
             if (lpendulum.len>0.18f) {Fl[1]=0.0f;}
             if (rpendulum.len>0.18f) {Fr[1]=0.0f;}
-            if (Numeric::abs(lpendulum.alpha) > 0.8f) {Twl=0.0f;}  
-            if (Numeric::abs(rpendulum.alpha) > 0.8f) {Twr=0.0f;}
+            if (Numeric::abs(lpendulum.alpha) > 0.75f) {Twl=0.0f;}  
+            if (Numeric::abs(rpendulum.alpha) > 0.75f) {Twr=0.0f;}
 
             lpendulum.TorqueControl(Fl, Twl);
             rpendulum.TorqueControl(Fr, Twr);
@@ -666,6 +668,8 @@ pid_tuning_t rollpd_tuning = {0.7f, 0.0f, 1.4f};
         pendulum_debug.rlen = rpendulum.len;
         pendulum_debug.alphal = lpendulum.alpha;
         pendulum_debug.alphar = rpendulum.alpha;
+        pendulum_debug.alphal_eq = lpendulum.alpha_eq;
+        pendulum_debug.alphar_eq = rpendulum.alpha_eq;
         pendulum_debug.alphal_dot = lpendulum.dalpha;
         pendulum_debug.alphar_dot = rpendulum.dalpha;
         pendulum_debug.pitch = pitch;

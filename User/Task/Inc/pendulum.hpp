@@ -29,7 +29,7 @@ protected:
     float joint4_pos_init;
 
     /* alpha_eq_coeff = a1 + a2*len + a3*len^2 */
-    float alpha_eq_coeff[3] = {0.427963,-1.622409,1.753140};
+    float alpha_eq_coeff[3] = {   0.289733,  -1.134328,   1.266979};
 
 public:
     Pendulum(bool _reverse, hiptype* _joint1, hiptype* _joint4, wheeltype* _wheel)
@@ -92,7 +92,7 @@ public:
         phi = this->vmc.GetPhi();
         this->alpha = Numeric::LoopFloatConstrain(phi-0.5f*PI+_pitch, -PI, PI);
         this->dalpha = xdot[1] + _dpitch;
-        this->alpha_eq = this->alpha_eq_coeff[0] + this->alpha_eq_coeff[1]*this->len + this->alpha_eq_coeff[2]*this->len*this->len;
+        this->alpha_eq = this->alpha_eq_coeff[0] + this->alpha_eq_coeff[1]*this->len + this->alpha_eq_coeff[2]*this->len*this->len;//0.0f;//
 
         /* inverse dynamics */
         float Treal[2] = {joint1_tor, joint4_tor};
@@ -104,7 +104,7 @@ public:
         this->N = P + wheel_mass*(_az - ddlen*arm_cos_f32(this->alpha));
 
         /* neutral and flat detection */
-        if (Numeric::abs(this->alpha) < 0.25f)
+        if (Numeric::abs(this->alpha-this->alpha_eq) < 0.15f)
             this->neutral_count++;
         else
             this->neutral_count = 0;
