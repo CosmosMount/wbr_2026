@@ -33,7 +33,7 @@
 
 #define F_SPRING 250.0f
 
-#define JOINT_FLAT_DELTA 4.71f
+#define JOINT_FLAT_DELTA 2.71f
 #define JOINT_STAIR_DELTA 1.80f
 #define JOINT_RECOVER_DELTA 6.28f
 

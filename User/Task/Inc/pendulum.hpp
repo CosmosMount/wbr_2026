@@ -98,8 +98,8 @@ public:
         float Treal[2] = {joint1_tor, joint4_tor};
         float Trev[2] = {0.0f, 0.0f};
         this->vmc.VMCRevCal(Trev, Treal);
-        float P = (Trev[0]+F_SPRING*cos(phi1-phi))*arm_cos_f32(this->alpha) 
-                + Trev[1]/this->len*arm_sin_f32(this->alpha);
+        float P = (Trev[0])*arm_cos_f32(this->alpha) 
+                + Trev[1]/this->len*arm_sin_f32(this->alpha); //+F_SPRING*cos(phi1-phi)
         float ddlen = this->dlen-this->prev_dlen;
         this->N = P + wheel_mass*(_az - ddlen*arm_cos_f32(this->alpha));
 

@@ -34,6 +34,7 @@ extern TX_SEMAPHORE IMUThreadSem;
 #ifdef DEBUG
 float debug_temp;
 float debug_dist;
+float debug_relativeangle;
 bool debug_tof_valid;
 __attribute__((section(".RAM_D3"))) msg_remoter_t debug_remoter;
 comm_cmd_t *cmd_msg_debug;
@@ -62,7 +63,7 @@ debug_motor_t debug_motor;
 
     /* Slope Updaters */
     SLOPE yaw_updater(0.0f, 0.01f);
-    SLOPE v_updater(0.0f,0.003f);
+    SLOPE v_updater(0.0f,0.03f);
     SLOPE len_updater(0.13f,LEG_NORMAL_STEP);
 
     /* om publishers */
@@ -81,6 +82,7 @@ debug_motor_t debug_motor;
 
     /* Gimbal motors on chassis */
     GM6020 yaw_motor;
+    yaw_motor.gearBox = GearBox_None;
     M2006 trigger_motor;
     trigger_motor.controlMode = DJIMotor::SPD_MODE;
     trigger_motor.gearBox = GearBox_None; // 使用速度×36，其实精度更高
@@ -142,8 +144,8 @@ debug_motor_t debug_motor;
         }
         else if (!yaw_init)
         {
-            yaw_motor.currentSet = ((yaw_motor.motorFeedback.positionFdb>yaw_offset1&&yaw_motor.motorFeedback.positionFdb<yaw_offset2) ? -1 : 1)*4000;
-            if (fabs(yaw_motor.motorFeedback.positionFdb-yaw_offset1)<0.1f) // pendulum_data.neutral
+            yaw_motor.currentSet = ((yaw_motor.motorFeedback.positionFdb>yaw_offset1&&yaw_motor.motorFeedback.positionFdb<yaw_offset2) ? -1 : 1)*5000;
+            if (fabs(yaw_motor.motorFeedback.positionFdb-yaw_offset1)<0.1f)
             {
                 yaw_init = true;
                 chassis_msg.inited = true;
@@ -181,9 +183,9 @@ debug_motor_t debug_motor;
         {
             cmd.move = true;
             cmd.dyaw = -relative_angle*2.0f;
-            cmd.v = cmd_msg->vx * 0.1f;
+            cmd.v = v_updater.UpdateVal(cmd_msg->vx*0.1f);
             cmd.roll = 0.0f;
-            cmd.len += remoter.right_y*0.0008f;
+            cmd.len += cmd_msg->vy*0.1f*0.0008f;
             cmd.len = FloatConstrain(cmd.len, MIN_LEG_LEN, MAX_LEG_LEN);
             cmd.spin = false;
             cmd.inair = false;
@@ -222,7 +224,7 @@ debug_motor_t debug_motor;
             // else if (cmd_msg->ifstair)
             // {
             //     cmd.roll = 0.0f;
-            //     cmd.len += remoter.right_y*0.0008f;
+            //     cmd.len += cmd_msg->vy*0.1f*0.0008f;
             //     cmd.len = FloatConstrain(cmd.len, MIN_LEG_LEN, MAX_LEG_LEN);
             //     cmd.gostair = true;
             // }
@@ -328,6 +330,7 @@ debug_motor_t debug_motor;
             cmd.spin = true;
         }
     #endif
+
         if (!pendulum_data.neutral)
         {
             maintained_x = false;
@@ -387,6 +390,7 @@ debug_motor_t debug_motor;
         debug_temp = tof_temp;
         debug_tof_valid = tof_valid;
         debug_remoter = remoter;
+        debug_relativeangle = relative_angle;
 
         debug_motor.yaw_init = yaw_init;
         debug_motor.yawmotor_pos = yaw_motor.motorFeedback.positionFdb;
