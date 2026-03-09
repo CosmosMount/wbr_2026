@@ -93,7 +93,7 @@ struct pid_tuning_t
 msg_ins_t debug_ins;
 pendulum_debug_t pendulum_debug;
 pid_tuning_t lenpd_tuning = {4500.0f, 0.0f, -1000.0f};
-pid_tuning_t rollpd_tuning = {0.1f, 0.0f, -0.4f};
+pid_tuning_t rollpd_tuning = {0.7f, 0.0f, -0.4f};
 #endif
 
 [[noreturn]] void PendulumThreadFun(ULONG initial_input)
@@ -342,7 +342,7 @@ pid_tuning_t rollpd_tuning = {0.1f, 0.0f, -0.4f};
                 Fr[1]=0.0f;
             }
 
-            if (Numeric::abs(lpendulum.alpha) > 0.8f || Numeric::abs(rpendulum.alpha) > 0.8f) 
+            if (Numeric::abs(lpendulum.alpha) > 0.7f || Numeric::abs(rpendulum.alpha) > 0.7f) 
             {
                 Twl=0.0f;
                 Twr=0.0f;
@@ -374,7 +374,7 @@ pid_tuning_t rollpd_tuning = {0.1f, 0.0f, -0.4f};
             refX[8] = 0.0f;
             refX[9] = 0.0f;
 
-            if ((lpendulum.len+rpendulum.len)*0.5f > 0.22f)
+            if ((lpendulum.len+rpendulum.len)*0.5f > 0.24f)
             {
                 lqr.lqr_type = LQR_HIGH;
             }

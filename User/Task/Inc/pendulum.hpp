@@ -104,7 +104,7 @@ public:
         this->N = P + wheel_mass*(_az - ddlen*arm_cos_f32(this->alpha));
 
         /* neutral and flat detection */
-        if (Numeric::abs(this->alpha-this->alpha_eq) < 0.15f)
+        if (Numeric::abs(this->alpha-this->alpha_eq) < 0.2f)
             this->neutral_count++;
         else
             this->neutral_count = 0;

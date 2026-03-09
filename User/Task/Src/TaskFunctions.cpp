@@ -63,7 +63,7 @@ debug_motor_t debug_motor;
 
     /* Slope Updaters */
     SLOPE yaw_updater(0.0f, 0.01f);
-    SLOPE v_updater(0.0f,0.03f);
+    SLOPE v_updater(0.0f,0.01f);
     SLOPE len_updater(0.13f,LEG_NORMAL_STEP);
 
     /* om publishers */
@@ -183,7 +183,7 @@ debug_motor_t debug_motor;
         {
             cmd.move = true;
             cmd.dyaw = -relative_angle*2.0f;
-            cmd.v = v_updater.UpdateVal(cmd_msg->vx*0.1f);
+            cmd.v = v_updater.UpdateVal(cmd_msg->vx*0.1f*2.0f);
             cmd.roll = 0.0f;
             cmd.len += cmd_msg->vy*0.1f*0.0008f;
             cmd.len = FloatConstrain(cmd.len, MIN_LEG_LEN, MAX_LEG_LEN);
@@ -331,28 +331,19 @@ debug_motor_t debug_motor;
         }
     #endif
 
-        if (!pendulum_data.neutral)
+        if (fabsf(cmd.v) < 0.005f || remoter.ctrl_sw == Spin)
         {
-            maintained_x = false;
-            cmd.x = pendulum_data.x;
-            cmd.v = pendulum_data.v;
+            if (!maintained_x)
+            {
+                x_maintain = pendulum_data.x;
+                maintained_x = true;
+            }
+            cmd.x = x_maintain;
         }
         else
-        {
-            if (fabsf(cmd.v) < 0.005f || remoter.ctrl_sw == Spin)
-            {
-                if (!maintained_x)
-                {
-                    x_maintain = pendulum_data.x;
-                    maintained_x = true;
-                }
-                cmd.x = x_maintain;
-            }
-            else
-            {   
-                maintained_x = false;
-                cmd.x = pendulum_data.x+cmd.v*0.001f;
-            }
+        {   
+            maintained_x = false;
+            cmd.x = pendulum_data.x+cmd.v*0.001f;
         }
         
         if (fabs(cmd.dyaw)<0.002f)
@@ -372,6 +363,11 @@ debug_motor_t debug_motor;
             else
                 cmd.yaw = ins.total_yaw*DegreeToRad+cmd.dyaw*0.001f;
         }
+
+        if (pendulum_data.len > 0.17f)
+            v_updater.SetPath(0.01f-0.05f*(pendulum_data.len-0.17f));
+        else
+            v_updater.SetPath(0.01f);
 
         chassis_msg.color = referee_data.robot_status.robot_id <= 9 ? 0 : 1;
         chassis_msg.level = referee_data.robot_status.robot_level;

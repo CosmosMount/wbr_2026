@@ -137,9 +137,11 @@ struct GameRobotStatus_t
 /**
  * @struct PowerHeatData_t
  * @brief 0x0202 实时底盘功率和枪口热量数据结构体，固定以10Hz频率发送 
+ * @param reserved1 保留位1
+ * @param reserved2 保留位2
+ * @param reserved3 保留位3 (占4字节)
  * @param chassis_power_buffer 缓冲能量（单位：J）
- * @param shoot_id1_17mm_cooling_heat 第 1 个 17mm 发射机构的枪口热量
- * @param shoot_id2_17mm_cooling_heat 第 2 个 17mm 发射机构的枪口热量
+ * @param shoot_id1_17mm_cooling_heat 17mm 发射机构的枪口热量
  * @param shoot_id1_42mm_cooling_heat 42mm 发射机构的枪口热量
  */
 struct PowerHeatData_t
@@ -149,7 +151,6 @@ struct PowerHeatData_t
     float reserved3;
     uint16_t chassis_power_buffer;
     uint16_t shoot_id1_17mm_cooling_heat;
-    uint16_t shoot_id2_17mm_cooling_heat;
     uint16_t shoot_id1_42mm_cooling_heat;
 } __attribute__((packed));
 
@@ -171,7 +172,7 @@ struct GameRobotPos_t
  * @struct Buff_t
  * @brief 0x0204 机器人增益数据结构体，固定以3Hz频率发送
  * @param recovery_buff 机器人回血增益（百分比，值为 10 表示每秒恢复血量上限的 10%）
- * @param cooling_buff 机器人枪口冷却倍率（直接值，值为
+ * @param cooling_buff 机器人枪口冷却倍率（直接值）
  * @param defence_buff 机器人防御增益（百分比，值为 50 表示 50%防御增益）
  * @param vulnerability_buff 机器人负防御增益（百分比，值为 30 表示-30%防御增益）
  * @param attack_buff 机器人攻击增益（百分比，值为 50 表示 50%攻击增益）
@@ -180,7 +181,7 @@ struct GameRobotPos_t
 struct Buff_t
 {
     uint8_t recovery_buff;
-    uint8_t cooling_buff;
+    uint16_t cooling_buff;
     uint8_t defence_buff;
     uint8_t vulnerability_buff;
     uint16_t attack_buff;
@@ -203,7 +204,7 @@ struct RobotHurt_t
  * @struct ShootData_t
  * @brief 0x0207 实时射击数据结构体
  * @param bullet_type 弹丸类型。1：17mm 弹丸，2：42mm 弹丸
- * @param shooter_id 发射机构 ID，1：第一个 17mm 发射机构，2：第二个 17mm 发射机构，3：42mm 发射机构
+ * @param shooter_id 发射机构 ID，1：17mm 发射机构，3：42mm 发射机构
  * @param bullet_freq 弹丸射频，单位：Hz
  * @param bullet_speed 弹丸射速，单位：m/s
  */
@@ -221,21 +222,26 @@ struct ShootData_t
  * @param bullet_remaining_num_17mm 17mm 弹丸剩余发射数量
  * @param bullet_remaining_num_42mm 42mm 弹丸剩余发射数量
  * @param coin_remaining_num 剩余补弹币数量
+ * @param projectile_allowance_fortress 堡垒增益点提供的储备允许发弹量
  */
 struct BulletRemaining_t
 {
     uint16_t bullet_remaining_num_17mm;
     uint16_t bullet_remaining_num_42mm;
     uint16_t coin_remaining_num;
+    uint16_t projectile_allowance_fortress;
 } __attribute__((packed));
 
 /**
  * @struct RfidStatus_t
  * @brief 0x0209 机器人 RFID 模块状态数据结构体
+ * @param rfid_status 状态位域1
+ * @param rfid_status_2 状态位域2
  */
 struct RfidStatus_t
 {
     uint32_t rfid_status;
+    uint8_t rfid_status_2;
 } __attribute__((packed));
 
 /**
@@ -256,8 +262,7 @@ struct DartClientCmd_t
 
 /**
  * @struct GroundRobotPosition_t
- * @brief 地面机器人位置数据结构体
- * 0x020B
+ * @brief 地面机器人位置数据结构体 0x020B
  */
 struct GroundRobotPosition_t
 {
@@ -275,30 +280,33 @@ struct GroundRobotPosition_t
 /**
  * @struct RadarMarkData_t
  * @brief 0x020C 雷达标记进度数据结构体
- * @param mark_hero_progress 对方英雄机器人被标记进度：0-120
- * @param mark_engineer_progress 对方工程机器人被标记进度：0-120
- * @param mark_standard_3_progress 对方步兵 3 机器人被标记进度：0-120
- * @param mark_standard_4_progress 对方步兵 4 机器人被标记进度：0-120
- * @param mark_standard_5_progress 对方步兵 5 机器人被标记进度：0-120
- * @param mark_sentry_progress 对方哨兵机器人被标记进度：0-120
+ * @param mark_progress 对方和己方机器人的标记及易伤状态位域
  */
 struct RadarMarkData_t
 {
-    uint8_t mark_hero_progress;
-    uint8_t mark_engineer_progress;
-    uint8_t mark_standard_3_progress;
-    uint8_t mark_standard_4_progress;
-    uint8_t mark_standard_5_progress;
-    uint8_t mark_sentry_progress;
+    uint16_t mark_progress;
 } __attribute__((packed));
 
 /**
  * @struct SentryInfo_t
  * @brief 0x020D，哨兵自主决策信息同步数据结构体
+ * @param sentry_info 哨兵信息位域1
+ * @param sentry_info_2 哨兵信息位域2
  */
 struct SentryInfo_t
 {
     uint32_t sentry_info;
+    uint16_t sentry_info_2;
+} __attribute__((packed));
+
+/**
+ * @struct RadarInfo_t
+ * @brief 0x020E，雷达自主决策信息同步数据结构体
+ * @param radar_info 雷达信息位域
+ */
+struct RadarInfo_t
+{
+    uint8_t radar_info;
 } __attribute__((packed));
 
 /**
@@ -375,11 +383,13 @@ enum RefereeID
     RoboInteractData = 0x0301,        // 机器人交互数据，发送方触发发，频率上限为 30Hz
     CustomController2Robot = 0x0302,  // 自定义控制器与机器人交互数据，发送方触发发送，频率上限30Hz
     MapData = 0x0303,                 // 选手端小地图交互数据，选手端触发发送
-    keyMouseData = 0x0304,            // 键鼠数据，30Hz
     RadarReceivedData = 0x0305,       // 选手端小地图接收雷达数据，频率上限为10Hz
     CustomController2Player = 0x0306, // 自定义控制器与选手端交互数据，发送方触发发送，频率上限30Hz
     SentryReceivedData = 0x0307,      // 选手端小地图接收哨兵数据，频率上限1Hz
     RobotReceivedData = 0x0308,       // 选手端小地图接收机器人数据，频率上限3Hz
+    CustomClientData = 0x0309,        // 自定义控制器接收机器人数据，频率上限10Hz
+    Robot2CustomClient = 0x0310,      // 机器人发送给自定义客户端，频率上限50Hz
+    CustomClient2Robot = 0x0311,      // 自定义客户端发送给机器人，频率上限75Hz
 };
 
 struct RefereeRingBuffer 
