@@ -29,7 +29,7 @@ protected:
     float joint4_pos_init;
 
     /* alpha_eq_coeff = a1 + a2*len + a3*len^2 */
-    float alpha_eq_coeff[3] = {   0.289733,  -1.134328,   1.266979};
+    float alpha_eq_coeff[3] = {   0.280918,  -1.101757,   1.232768};
 
 public:
     Pendulum(bool _reverse, hiptype* _joint1, hiptype* _joint4, wheeltype* _wheel)

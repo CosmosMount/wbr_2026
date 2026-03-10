@@ -214,11 +214,6 @@ pid_tuning_t rollpd_tuning = {0.7f, 0.0f, -0.7f};
         observedX[8] = pitch;
         observedX[9] = dpitch;
 
-        // if (observedX[0] < 0.3f)
-        //     observedX[0]*=1.5f;
-        if (observedX[1] < 0.3f)
-            observedX[1]*=1.3f;
-
         float N = lpendulum.N+rpendulum.N;
 
         if (!cmd.move || tx_semaphore_get(&IMUThreadSem, TX_NO_WAIT) != TX_SUCCESS)
@@ -347,7 +342,7 @@ pid_tuning_t rollpd_tuning = {0.7f, 0.0f, -0.7f};
                 Fr[1]=0.0f;
             }
 
-            if (Numeric::abs(lpendulum.alpha) > 0.7f || Numeric::abs(rpendulum.alpha) > 0.7f) 
+            if (Numeric::abs(lpendulum.alpha) > 0.8f || Numeric::abs(rpendulum.alpha) > 0.8f) 
             {
                 Twl=0.0f;
                 Twr=0.0f;
@@ -372,9 +367,9 @@ pid_tuning_t rollpd_tuning = {0.7f, 0.0f, -0.7f};
             refX[1] = cmd.v;
             refX[2] = cmd.yaw;
             refX[3] = cmd.dyaw;
-            refX[4] = lpendulum.alpha_eq+0.06f;
+            refX[4] = lpendulum.alpha_eq;
             refX[5] = 0.0f;
-            refX[6] = rpendulum.alpha_eq+0.04f;
+            refX[6] = rpendulum.alpha_eq;
             refX[7] = 0.0f;
             refX[8] = 0.0f;
             refX[9] = 0.0f;

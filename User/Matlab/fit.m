@@ -37,7 +37,7 @@ leg_data = [
 ];
 
 % Q: [x, dx, phi, dphi, thetall, dthetall, thetalr, dthetalr, thetab, dthetab]
-Q = diag([100, 1, 5000, 1, 1000, 10, 1000, 10, 30000, 1]);
+Q = diag([100, 1, 4000, 1, 1000, 10, 1000, 10, 40000, 1]);
 % Q = diag([100, 1, 1000, 1, 2000, 80, 2000, 80, 20000, 10]);
 
 % R: [Twl, Twr, Tbl, Tbr]
