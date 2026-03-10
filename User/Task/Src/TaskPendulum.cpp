@@ -93,7 +93,7 @@ struct pid_tuning_t
 msg_ins_t debug_ins;
 pendulum_debug_t pendulum_debug;
 pid_tuning_t lenpd_tuning = {4500.0f, 0.0f, -1000.0f};
-pid_tuning_t rollpd_tuning = {0.7f, 0.0f, -0.4f};
+pid_tuning_t rollpd_tuning = {0.7f, 0.0f, -0.7f};
 #endif
 
 [[noreturn]] void PendulumThreadFun(ULONG initial_input)
@@ -214,6 +214,11 @@ pid_tuning_t rollpd_tuning = {0.7f, 0.0f, -0.4f};
         observedX[8] = pitch;
         observedX[9] = dpitch;
 
+        // if (observedX[0] < 0.3f)
+        //     observedX[0]*=1.5f;
+        if (observedX[1] < 0.3f)
+            observedX[1]*=1.3f;
+
         float N = lpendulum.N+rpendulum.N;
 
         if (!cmd.move || tx_semaphore_get(&IMUThreadSem, TX_NO_WAIT) != TX_SUCCESS)
@@ -310,7 +315,7 @@ pid_tuning_t rollpd_tuning = {0.7f, 0.0f, -0.4f};
             refX[0] = cmd.x;
             refX[1] = cmd.v;
             refX[2] = cmd.yaw;
-            refX[3] = observedX[3];//;cmd.dyaw;
+            refX[3] = cmd.dyaw;
             refX[4] = lpendulum.alpha_eq;
             refX[5] = 0.0f;
             refX[6] = rpendulum.alpha_eq;
@@ -367,9 +372,9 @@ pid_tuning_t rollpd_tuning = {0.7f, 0.0f, -0.4f};
             refX[1] = cmd.v;
             refX[2] = cmd.yaw;
             refX[3] = cmd.dyaw;
-            refX[4] = lpendulum.alpha_eq;
+            refX[4] = lpendulum.alpha_eq+0.06f;
             refX[5] = 0.0f;
-            refX[6] = rpendulum.alpha_eq;
+            refX[6] = rpendulum.alpha_eq+0.04f;
             refX[7] = 0.0f;
             refX[8] = 0.0f;
             refX[9] = 0.0f;
@@ -663,6 +668,8 @@ pid_tuning_t rollpd_tuning = {0.7f, 0.0f, -0.4f};
         pendulum_debug.rjoint4_tor = RJoint4.motorFeedback.torqueFdb;
         pendulum_debug.lwheel_tor = LWheel.motorFeedback.currentFdb/1400.0f;
         pendulum_debug.rwheel_tor = RWheel.motorFeedback.currentFdb/1400.0f;
+        pendulum_debug.lwheel_spd = vlwheel;
+        pendulum_debug.rwheel_spd = vrwheel;
         
         pendulum_debug.x = odom.x;
         pendulum_debug.xref = cmd.x;
