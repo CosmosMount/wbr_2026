@@ -111,6 +111,7 @@ struct msg_pendulum_t
     float v;
     float len;
     bool neutral;
+    bool reset_len;
 };
 
 struct msg_ctrl_t

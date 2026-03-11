@@ -63,7 +63,7 @@ debug_motor_t debug_motor;
 
     /* Slope Updaters */
     SLOPE yaw_updater(0.0f, 0.01f);
-    SLOPE v_updater(0.0f,0.01f);
+    SLOPE v_updater(0.0f,0.007f);
     SLOPE len_updater(0.13f,LEG_NORMAL_STEP);
 
     /* om publishers */
@@ -155,6 +155,11 @@ debug_motor_t debug_motor;
         {
             yaw_motor.currentSet = cmd_msg->yaw_cur;
             trigger_motor.speedSet = cmd_msg->tri_spd*36.0f;
+        }
+
+        if (pendulum_data.reset_len)
+        {
+            cmd.len = NORMAL_LEG_LEN;
         }
 
         
@@ -365,9 +370,9 @@ debug_motor_t debug_motor;
         }
 
         if (pendulum_data.len > 0.17f)
-            v_updater.SetPath(0.01f-0.05f*(pendulum_data.len-0.17f));
+            v_updater.SetPath(0.007f-0.05f*(pendulum_data.len-0.17f));
         else
-            v_updater.SetPath(0.01f);
+            v_updater.SetPath(0.007f);
 
         chassis_msg.color = referee_data.robot_status.robot_id <= 9 ? 0 : 1;
         chassis_msg.level = referee_data.robot_status.robot_level;

@@ -3474,13 +3474,13 @@
 		</object>
 		<object name="ObjId0483" type="CPrjItemRS_VarInfo">
 			<member name="variable" type="CObject_ptr">ObjId0144</member>
-			<member name="visible" type="sint32">0</member>
+			<member name="visible" type="sint32">1</member>
 			<member name="y_block" type="sint32">0</member>
 			<member name="color" type="uint32">0x5870CD</member>
 		</object>
 		<object name="ObjId0484" type="CPrjItemRS_VarInfo">
 			<member name="variable" type="CObject_ptr">ObjId0145</member>
-			<member name="visible" type="sint32">0</member>
+			<member name="visible" type="sint32">1</member>
 			<member name="y_block" type="sint32">0</member>
 			<member name="color" type="uint32">0xB37FD7</member>
 		</object>
@@ -3534,13 +3534,13 @@
 		</object>
 		<object name="ObjId0493" type="CPrjItemRS_VarInfo">
 			<member name="variable" type="CObject_ptr">ObjId0218</member>
-			<member name="visible" type="sint32">0</member>
+			<member name="visible" type="sint32">1</member>
 			<member name="y_block" type="sint32">3</member>
 			<member name="color" type="uint32">0x5870CD</member>
 		</object>
 		<object name="ObjId0494" type="CPrjItemRS_VarInfo">
 			<member name="variable" type="CObject_ptr">ObjId0217</member>
-			<member name="visible" type="sint32">0</member>
+			<member name="visible" type="sint32">1</member>
 			<member name="y_block" type="sint32">3</member>
 			<member name="color" type="uint32">0x727272</member>
 		</object>
@@ -4306,7 +4306,7 @@
 		</object>
 		<object name="ObjId0356" type="CPrjItemRS_VarInfo">
 			<member name="variable" type="CObject_ptr">ObjId0187</member>
-			<member name="visible" type="sint32">0</member>
+			<member name="visible" type="sint32">1</member>
 			<member name="y_block" type="sint32">2</member>
 			<member name="color" type="uint32">0x912C66</member>
 		</object>

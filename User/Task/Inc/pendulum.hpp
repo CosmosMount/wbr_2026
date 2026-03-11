@@ -52,10 +52,14 @@ public:
     float N;
 
     float alpha_eq;
+    float Freal;
 
     bool flat;
     bool neutral;
     bool delta_init;
+
+    /* alpha_eq = a1 + a2*len + a3*len^2 */
+    float alpha_eq_coeff[3] = {   0.280918,  -1.101757,   1.232768};
 
     void Solve(float _pitch, float _dpitch, float _az)
     {
@@ -89,15 +93,17 @@ public:
         phi = this->vmc.GetPhi();
         this->alpha = Numeric::LoopFloatConstrain(phi-0.5f*PI+_pitch, -PI, PI);
         this->dalpha = xdot[1] + _dpitch;
+        this->alpha_eq = this->alpha_eq_coeff[0] + this->alpha_eq_coeff[1]*this->len + this->alpha_eq_coeff[2]*this->len*this->len;//0.0f;//
 
         /* inverse dynamics */
         float Treal[2] = {joint1_tor, joint4_tor};
         float Trev[2] = {0.0f, 0.0f};
         this->vmc.VMCRevCal(Trev, Treal);
         float P = (Trev[0])*arm_cos_f32(this->alpha) 
-                + Trev[1]/this->len*arm_sin_f32(this->alpha); //+F_SPRING*cos(phi1-phi)
+                + Trev[1]/this->len*arm_sin_f32(this->alpha);
         float ddlen = this->dlen-this->prev_dlen;
         this->N = P + wheel_mass*(_az - ddlen*arm_cos_f32(this->alpha));
+        this->Freal = Trev[0];
 
         /* neutral and flat detection */
         if (Numeric::abs(this->alpha-this->alpha_eq) < 0.2f)
