@@ -93,7 +93,7 @@ struct pid_tuning_t
 };
 msg_ins_t debug_ins;
 pendulum_debug_t pendulum_debug;
-pid_tuning_t lenpd_tuning = {4500.0f, 0.0f, -1000.0f};
+pid_tuning_t lenpd_tuning = {2000.0f, 0.0f, -500.0f};
 pid_tuning_t rollpd_tuning = {0.5f, 0.0f, -0.5f};
 #endif
 
@@ -331,11 +331,11 @@ pid_tuning_t rollpd_tuning = {0.5f, 0.0f, -0.5f};
 
             lleg_len_pd.fdb = lpendulum.len;
             lleg_len_pd.UpdateResult(lpendulum.dlen);
-            Fl[0] = lleg_len_pd.result;
+            Fl[0] = lleg_len_pd.result - GRAVITY_FF;
             
             rleg_len_pd.fdb = rpendulum.len;
             rleg_len_pd.UpdateResult(rpendulum.dlen);
-            Fr[0] = rleg_len_pd.result;
+            Fr[0] = rleg_len_pd.result - GRAVITY_FF;
 
             if (lpendulum.len>0.18f || rpendulum.len>0.18f) 
             {
@@ -406,14 +406,15 @@ pid_tuning_t rollpd_tuning = {0.5f, 0.0f, -0.5f};
             rleg_len_pd.ref = cmd.len-roll_pd.result;//-0.03f
             lleg_len_pd.fdb = lpendulum.len;
             lleg_len_pd.UpdateResult(lpendulum.dlen);
-            Fl[0] = lleg_len_pd.result;
+            Fl[0] = lleg_len_pd.result - GRAVITY_FF;
             rleg_len_pd.fdb = rpendulum.len;
             rleg_len_pd.UpdateResult(rpendulum.dlen);
-            Fr[0] = rleg_len_pd.result;
+            Fr[0] = rleg_len_pd.result - GRAVITY_FF;
 
             lpendulum.TorqueControl(Fl, Twl);
             rpendulum.TorqueControl(Fr, Twr);
             
+            pendulum_data.reset_len = false;
             if (Fl[0] < -100.0f && Fr[0] < -100.0f) 
             { 
                 chassis_state = OFFGROUND; 
@@ -457,10 +458,10 @@ pid_tuning_t rollpd_tuning = {0.5f, 0.0f, -0.5f};
             rleg_len_pd.ref = MIN_LEG_LEN;
             lleg_len_pd.fdb = lpendulum.len;
             lleg_len_pd.UpdateResult(lpendulum.dlen);
-            Fl[0] = lleg_len_pd.result;
+            Fl[0] = lleg_len_pd.result - GRAVITY_FF;
             rleg_len_pd.fdb = rpendulum.len;
             rleg_len_pd.UpdateResult(rpendulum.dlen);
-            Fr[0] = rleg_len_pd.result;
+            Fr[0] = rleg_len_pd.result - GRAVITY_FF;
 
             lpendulum.TorqueControl(Fl, Twl);
             rpendulum.TorqueControl(Fr, Twr);
@@ -476,9 +477,9 @@ pid_tuning_t rollpd_tuning = {0.5f, 0.0f, -0.5f};
             refX[1] = observedX[1];
             refX[2] = observedX[2];
             refX[3] = observedX[3];
-            refX[4] = 0.15f;
+            refX[4] = pitch;
             refX[5] = 0.0f;
-            refX[6] = 0.15f;
+            refX[6] = pitch;
             refX[7] = 0.0f;
             refX[8] = observedX[8];
             refX[9] = observedX[9];
@@ -489,14 +490,14 @@ pid_tuning_t rollpd_tuning = {0.5f, 0.0f, -0.5f};
             Twr = 0.0f;
             Fl[1] = lqr.Tout[2];
             Fr[1] = lqr.Tout[3];
-            // lleg_len_pd.ref = 0.30f;
-            // rleg_len_pd.ref = 0.30f;
+            lleg_len_pd.ref = 0.27f;
+            rleg_len_pd.ref = 0.27f;
             lleg_len_pd.fdb = lpendulum.len;
             lleg_len_pd.UpdateResult(lpendulum.dlen);
-            Fl[0] = 0.0f;//lleg_len_pd.result;
+            Fl[0] = lleg_len_pd.result - GRAVITY_FF;
             rleg_len_pd.fdb = rpendulum.len;
             rleg_len_pd.UpdateResult(rpendulum.dlen);
-            Fr[0] = 0.0f;//rleg_len_pd.result;
+            Fr[0] = rleg_len_pd.result - GRAVITY_FF;
             lpendulum.TorqueControl(Fl, Twl);
             rpendulum.TorqueControl(Fr, Twr);
 
@@ -539,10 +540,10 @@ pid_tuning_t rollpd_tuning = {0.5f, 0.0f, -0.5f};
                 rleg_len_pd.ref = NORMAL_LEG_LEN;
                 lleg_len_pd.fdb = lpendulum.len;
                 lleg_len_pd.UpdateResult(lpendulum.dlen);
-                Fl[0] = lleg_len_pd.result;
+                Fl[0] = lleg_len_pd.result - GRAVITY_FF;
                 rleg_len_pd.fdb = rpendulum.len;
                 rleg_len_pd.UpdateResult(rpendulum.dlen);
-                Fr[0] = rleg_len_pd.result;
+                Fr[0] = rleg_len_pd.result - GRAVITY_FF;
 
 
                 if (cmd.ifjump)

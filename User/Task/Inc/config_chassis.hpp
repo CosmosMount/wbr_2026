@@ -37,6 +37,8 @@
 #define JOINT_STAIR_DELTA 1.80f
 #define JOINT_RECOVER_DELTA 6.28f
 
+#define GRAVITY_FF 67.865f
+
 #ifndef DEBUG
 #define DEBUG
 #endif
