@@ -308,8 +308,8 @@ pid_tuning_t rollpd_tuning = {0.5f, 0.0f, -0.5f};
         case NEUTRAL:
 
             /* [x, dx, yaw, dyaw, alphal, dalphal, alphar, dalphar, theta, dtheta] */
-            refX[0] = cmd.x;
-            refX[1] = cmd.v;
+            refX[0] = observedX[0];//cmd.x;
+            refX[1] = observedX[1];//cmd.v;
             refX[2] = cmd.yaw;
             refX[3] = cmd.dyaw;
             refX[4] = 0.0f;

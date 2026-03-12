@@ -190,7 +190,7 @@ debug_motor_t debug_motor;
             cmd.dyaw = -relative_angle*2.5f;
             cmd.v = v_updater.UpdateVal(cmd_msg->vx*0.1f*2.0f);
             cmd.roll = 0.0f;
-            cmd.len = NORMAL_LEG_LEN; //cmd_msg->vy*0.1f*0.0008f;
+            cmd.len += cmd_msg->vy*0.1f*0.0008f;//NORMAL_LEG_LEN; //
             cmd.len = FloatConstrain(cmd.len, MIN_LEG_LEN, MAX_LEG_LEN);
             cmd.spin = false;
             cmd.inair = false;
