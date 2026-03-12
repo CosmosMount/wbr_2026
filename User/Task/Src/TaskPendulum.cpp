@@ -68,7 +68,7 @@ float debug_alpha_dot = 0.0f;
     PID lleg_len_pd(5000.0f, 0.0f, -8000.0f, 200.0f, 0.0f, PID_DVEL);
 
     /* Roll Params Initialization */
-    PID roll_pd(0.7f, 0.0f, 0.01f, 3.0f, 0.0f);
+    PID roll_pd(0.5f, 0.0f, -0.5f, 3.0f, 0.0f);
     SLOPE roll_updater(0.0f,0.0002f);
 
     /* LQR Initialization */

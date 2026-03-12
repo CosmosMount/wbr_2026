@@ -29,7 +29,7 @@
 #define LEG_NORMAL_STEP 0.001f
 #define LEG_JUMP_STEP 0.007f
 
-#define LEG_NORMAL_LEN 0.21f
+#define LEG_NORMAL_LEN 0.18f
 #define LEG_JUMP_START_LEN 0.370f
 #define LEG_JUMP_AIR_LEN 0.140f
 
