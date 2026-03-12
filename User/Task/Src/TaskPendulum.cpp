@@ -347,7 +347,7 @@ pid_tuning_t rollpd_tuning = {0.5f, 0.0f, -0.5f};
             {
                 Twl=0.0f;
                 Twr=0.0f;
-            } 
+            }
 
             lpendulum.TorqueControl(Fl, Twl);
             rpendulum.TorqueControl(Fr, Twr);
@@ -415,7 +415,7 @@ pid_tuning_t rollpd_tuning = {0.5f, 0.0f, -0.5f};
             rpendulum.TorqueControl(Fr, Twr);
             
             pendulum_data.reset_len = false;
-            if (Fl[0] < -100.0f && Fr[0] < -100.0f) 
+            if (Fl[0] < -120.0f && Fr[0] < -120.0f) 
             { 
                 chassis_state = OFFGROUND; 
             }
