@@ -92,7 +92,8 @@ public:
         phi = this->vmc.GetPhi();
         this->alpha = Numeric::LoopFloatConstrain(phi-0.5f*PI+_pitch, -PI, PI);
         this->dalpha = xdot[1] + _dpitch;
-        this->alpha_eq = 0.0f;// this->alpha_eq_coeff[0] + this->alpha_eq_coeff[1]*this->len + this->alpha_eq_coeff[2]*this->len*this->len;//
+        this->alpha_eq = this->alpha_eq_coeff[0] + this->alpha_eq_coeff[1]*this->len + this->alpha_eq_coeff[2]*this->len*this->len;//0.0f;//
+        this->alpha_eq *= 0.75f;
 
         /* inverse dynamics */
         float Treal[2] = {joint1_tor, joint4_tor};
