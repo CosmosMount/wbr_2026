@@ -211,6 +211,9 @@ __attribute__((section(".RAM_D3"))) force_debug_t force_debug;
         float Nr = Pr + WHEEL_MASS*(odom_data.a_z - ddlenr*arm_cos_f32(solverfdb.ralpha));
         solverfdb.N = Nl + Nr;
 
+        if (solverfdb.N < 20.0f)
+            odom.Reset();
+
         om_publish(solverfdb_topic, &solverfdb, sizeof(msg_solver_t), true, false);
         om_publish(odom_pub, &odom_data, sizeof(msg_odometry_t), true, false);
 

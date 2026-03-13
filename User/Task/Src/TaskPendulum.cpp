@@ -151,37 +151,75 @@ float debug_alpha_dot = 0.0f;
             }
             else 
             {
-                roll_pd.ref = cmd.roll;
-                roll_pd.fdb = ins.roll*DegreeToRad;
-                roll_pd.UpdateResult(ins.gyro_r);
-
-                lleg_len_pd.ref = cmd.len+0.03f+roll_pd.result;
-                lleg_len_pd.fdb = solver_fdb.llen;
-                lleg_len_pd.UpdateResult(solver_fdb.llen_dot);
-                pendulum_ctrl.Tl[0] = lleg_len_pd.result;//0.0f;//
-
-                rleg_len_pd.ref = cmd.len+0.03f-roll_pd.result;
-                rleg_len_pd.fdb = solver_fdb.rlen;
-                rleg_len_pd.UpdateResult(solver_fdb.rlen_dot);
-                pendulum_ctrl.Tr[0] = rleg_len_pd.result;//0.0f;//
                 
-                refX[0] = cmd.x;
-                refX[1] = cmd.v;
-                refX[2] = ins.total_yaw*DegreeToRad+cmd.dyaw*0.001f;
-                refX[3] = cmd.w+cmd.dyaw;
-                refX[4] = 0.0f;
-                refX[5] = 0.0f;
-                refX[6] = 0.0f;
-                refX[7] = 0.0f;
-                refX[8] = 0.0f;
-                refX[9] = 0.0f;
+                if (solver_fdb.N < 20.0f)
+                {
+                    roll_pd.ref = cmd.roll;
+                    roll_pd.fdb = ins.roll*DegreeToRad;
+                    roll_pd.UpdateResult(ins.gyro_r);
 
-                lqr_controller.refreshLQRK(solver_fdb.llen, solver_fdb.rlen,((solver_fdb.N<20.0f)||cmd.inair));
-                lqr_controller.LQRCal(Tout);
-                pendulum_ctrl.Twl = Tout[0];
-                pendulum_ctrl.Twr = Tout[1];
-                pendulum_ctrl.Tl[1] = Tout[2];//0.0f;//
-                pendulum_ctrl.Tr[1] = Tout[3];//0.0f;//
+                    lleg_len_pd.ref = 0.27f;
+                    lleg_len_pd.fdb = solver_fdb.llen;
+                    lleg_len_pd.UpdateResult(solver_fdb.llen_dot);
+                    pendulum_ctrl.Tl[0] = lleg_len_pd.result;//0.0f;//
+
+                    rleg_len_pd.ref = 0.27f;
+                    rleg_len_pd.fdb = solver_fdb.rlen;
+                    rleg_len_pd.UpdateResult(solver_fdb.rlen_dot);
+                    pendulum_ctrl.Tr[0] = rleg_len_pd.result;//0.0f;//
+
+                    refX[0] = observedX[0];
+                    refX[1] = observedX[1];
+                    refX[2] = observedX[2];
+                    refX[3] = observedX[3];
+                    refX[4] = observedX[8];
+                    refX[5] = 0.0f;
+                    refX[6] = observedX[8];
+                    refX[7] = 0.0f;
+                    refX[8] = observedX[8];
+                    refX[9] = observedX[9];
+
+                    lqr_controller.refreshLQRK(solver_fdb.llen, solver_fdb.rlen,((solver_fdb.N<20.0f)||cmd.inair));
+                    lqr_controller.LQRCal(Tout);
+                    pendulum_ctrl.Twl = 0.0f;//Tout[0];
+                    pendulum_ctrl.Twr = 0.0f;//Tout[1];
+                    pendulum_ctrl.Tl[1] = Tout[2];
+                    pendulum_ctrl.Tr[1] = Tout[3];
+                }
+                else
+                {
+                    roll_pd.ref = cmd.roll;
+                    roll_pd.fdb = ins.roll*DegreeToRad;
+                    roll_pd.UpdateResult(ins.gyro_r);
+
+                    lleg_len_pd.ref = cmd.len+0.03f+roll_pd.result;
+                    lleg_len_pd.fdb = solver_fdb.llen;
+                    lleg_len_pd.UpdateResult(solver_fdb.llen_dot);
+                    pendulum_ctrl.Tl[0] = lleg_len_pd.result;//0.0f;//
+
+                    rleg_len_pd.ref = cmd.len+0.03f-roll_pd.result;
+                    rleg_len_pd.fdb = solver_fdb.rlen;
+                    rleg_len_pd.UpdateResult(solver_fdb.rlen_dot);
+                    pendulum_ctrl.Tr[0] = rleg_len_pd.result;//0.0f;//
+
+                    refX[0] = cmd.x;
+                    refX[1] = cmd.v;
+                    refX[2] = ins.total_yaw*DegreeToRad+cmd.dyaw*0.001f;
+                    refX[3] = cmd.w+cmd.dyaw;
+                    refX[4] = 0.0f;
+                    refX[5] = 0.0f;
+                    refX[6] = 0.0f;
+                    refX[7] = 0.0f;
+                    refX[8] = 0.0f;
+                    refX[9] = 0.0f;
+
+                    lqr_controller.refreshLQRK(solver_fdb.llen, solver_fdb.rlen,((solver_fdb.N<20.0f)||cmd.inair));
+                    lqr_controller.LQRCal(Tout);
+                    pendulum_ctrl.Twl = Tout[0];
+                    pendulum_ctrl.Twr = Tout[1];
+                    pendulum_ctrl.Tl[1] = Tout[2];
+                    pendulum_ctrl.Tr[1] = Tout[3];
+                }
             }
         }
 
