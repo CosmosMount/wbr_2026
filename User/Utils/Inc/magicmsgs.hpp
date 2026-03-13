@@ -112,6 +112,7 @@ struct msg_pendulum_t
     float len;
     bool neutral;
     bool reset_len;
+    bool recovered;
 };
 
 struct msg_ctrl_t

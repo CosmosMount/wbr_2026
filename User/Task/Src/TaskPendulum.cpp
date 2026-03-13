@@ -228,11 +228,15 @@ pid_tuning_t rollpd_tuning = {0.5f, 0.0f, -0.5f};
             lpendulum.Relax();
             rpendulum.Relax();
             odom.Reset();
+            pendulum_data.recovered = true;
             pendulum_data.neutral = false;
             if (cmd.move)
             {
                 if (ins.accel[2] < 0.0f)
+                {
+                    pendulum_data.recovered = false;
                     chassis_state = RECOVER;
+                }
                 else
                     chassis_state = FLATTEN;
             }
@@ -241,23 +245,27 @@ pid_tuning_t rollpd_tuning = {0.5f, 0.0f, -0.5f};
 
         case RECOVER:
 
-            if (ins.accel[2] > 0.0f)
+            if (ins.accel[2] > 5.0f)
             {
                 recover_count++;
             }
+            else 
+            {
+                recover_count = 0;
+            }
 
-            if (recover_count >= 100)
+            if (recover_count >= 1000)
             {
                 lpendulum.delta_init = false;
                 rpendulum.delta_init = false;
-                chassis_state = FLATTEN;
+                chassis_state = RELAX;
                 break;
             }
             
-            // lpendulum.DeltaPControl(-recovery_updater.UpdateVal(JOINT_RECOVER_DELTA), 1.5f, 1.0f);
-            // rpendulum.DeltaPControl(-recovery_updater.UpdateVal(JOINT_RECOVER_DELTA), 1.5f, 1.0f);
-            lpendulum.SpdControl(-recovery_updater.UpdateVal(0.5f), 1.0f);
-            rpendulum.SpdControl(-recovery_updater.UpdateVal(0.5f), 1.0f);
+            lpendulum.DeltaPControl(-recovery_updater.UpdateVal(JOINT_RECOVER_DELTA), 3.0f, 3.0f);
+            rpendulum.DeltaPControl(-recovery_updater.UpdateVal(JOINT_RECOVER_DELTA), 3.0f, 3.0f);
+            // lpendulum.SpdControl(-0.5f, 4.0f);
+            // rpendulum.SpdControl(-0.5f, 4.0f);
             break;
 
         case FLATTEN:
@@ -308,8 +316,8 @@ pid_tuning_t rollpd_tuning = {0.5f, 0.0f, -0.5f};
         case NEUTRAL:
 
             /* [x, dx, yaw, dyaw, alphal, dalphal, alphar, dalphar, theta, dtheta] */
-            refX[0] = cmd.x;
-            refX[1] = cmd.v;
+            refX[0] = observedX[0];//cmd.x;
+            refX[1] = observedX[1];//cmd.v;
             refX[2] = cmd.yaw;
             refX[3] = cmd.dyaw;
             refX[4] = 0.0f;
