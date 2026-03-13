@@ -354,6 +354,7 @@ pid_tuning_t rollpd_tuning = {0.5f, 0.0f, -0.5f};
 
             if (lpendulum.neutral && rpendulum.neutral)
             {
+                odom.Reset();
                 pendulum_data.neutral = true;
                 chassis_state = NORMAL;
                 lpendulum.delta_init = false;
@@ -364,8 +365,8 @@ pid_tuning_t rollpd_tuning = {0.5f, 0.0f, -0.5f};
         case NORMAL:
 
             /* [x, dx, yaw, dyaw, alphal, dalphal, alphar, dalphar, theta, dtheta] */
-            refX[0] = cmd.x;
-            refX[1] = cmd.v;
+            refX[0] = observedX[0];//cmd.x;
+            refX[1] = observedX[1];//cmd.v;
             refX[2] = cmd.yaw;
             refX[3] = cmd.dyaw;
             refX[4] = lpendulum.alpha_eq;
@@ -707,8 +708,8 @@ pid_tuning_t rollpd_tuning = {0.5f, 0.0f, -0.5f};
         pendulum_debug.Tpr = lqr.Tout[3];
         pendulum_debug.Fl = Fl[0];
         pendulum_debug.Fr = Fr[0];
-        pendulum_debug.Flreal = lpendulum.Freal;
-        pendulum_debug.Frreal = rpendulum.Freal;
+        // pendulum_debug.Flreal = lpendulum.Freal;
+        // pendulum_debug.Frreal = rpendulum.Freal;
         pendulum_debug.lneutral = lpendulum.neutral;
         pendulum_debug.rneutral = rpendulum.neutral;
         pendulum_debug.lflat = lpendulum.flat;

@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>Linearization Matrix Reconstruction (LaTeX Style)</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+    
+    <style>
+        :root {
+            --latex-font: "Latin Modern Roman", "Times New Roman", serif;
+        }
+        body {
+            background-color: #ffffff;
+            color: #1a1a1a;
+            font-family: var(--latex-font);
+            line-height: 1.7;
+            max-width: 1050px;
+            margin: 50px auto;
+            padding: 0 30px;
+        }
+        h2 { text-align: center; font-weight: normal; font-variant: small-caps; letter-spacing: 1px; }
+        
+        .card {
+            background: white;
+            padding: 25px;
+            border: 1px solid #efefef;
+            margin-bottom: 40px;
+        }
+
+        .formula-box {
+            text-align: center;
+            padding: 20px;
+            margin-bottom: 20px;
+            font-size: 1.1em;
+        }
+
+        textarea {
+            width: 100%;
+            height: 160px;
+            font-family: "Fira Code", "Courier New", monospace;
+            padding: 12px;
+            border: 1px solid #ddd;
+            background: #fafafa;
+            font-size: 12px;
+            resize: vertical;
+        }
+
+        .inputs {
+            display: flex;
+            justify-content: center;
+            gap: 40px;
+            margin: 30px 0;
+            align-items: center;
+        }
+
+        .input-group { display: flex; align-items: center; gap: 10px; }
+        input[type="number"] {
+            width: 70px;
+            padding: 4px 8px;
+            border: 1px solid #bbb;
+            font-family: var(--latex-font);
+            font-size: 15px;
+        }
+
+        button {
+            display: block;
+            margin: 20px auto;
+            padding: 8px 30px;
+            background: #1a1a1a;
+            color: white;
+            border: 1px solid #000;
+            cursor: pointer;
+            font-family: var(--latex-font);
+            font-size: 15px;
+            transition: all 0.2s;
+        }
+        button:hover { background: #444; }
+
+        /* 三线表样式 */
+        .table-wrapper { overflow-x: auto; margin: 20px 0; }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13.5px;
+        }
+        th, td {
+            padding: 12px 4px;
+            text-align: center;
+        }
+        /* Top line */
+        thead tr:first-child th { border-top: 2px solid #000; border-bottom: 1px solid #000; }
+        /* Bottom line */
+        tbody tr:last-child td { border-bottom: 2px solid #000; }
+        th { font-weight: normal; }
+
+        .code-title { 
+            font-size: 0.9em; 
+            margin-top: 30px; 
+            border-left: 3px solid #666; 
+            padding-left: 10px;
+            font-style: italic;
+        }
+        .code-output {
+            background: #f9f9f9;
+            padding: 15px;
+            font-family: "Fira Code", monospace;
+            font-size: 12px;
+            white-space: pre;
+            border: 1px solid #eee;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+
+    <h2 id="main-title"></h2>
+
+    <div class="card">
+        <div class="formula-box" id="eq-main"></div>
+
+        <textarea id="inputData" placeholder="Paste C-style coefficient array here..."></textarea>
+
+        <div class="inputs">
+            <div class="input-group">
+                <span id="lab-llen"></span>
+                <input type="number" id="llen" value="0.23" step="0.01" min="0.15" max="0.31">
+            </div>
+            <div class="input-group">
+                <span id="lab-rlen"></span>
+                <input type="number" id="rlen" value="0.23" step="0.01" min="0.15" max="0.31">
+            </div>
+            <button onclick="calculate()">Compute Matrix</button>
+        </div>
+    </div>
+
+    <div id="resultSection" style="display:none;">
+        <div class="card">
+            <div id="res-title" style="text-align: center; margin-bottom: 20px;"></div>
+            <div class="table-wrapper" id="tableContainer"></div>
+            
+            <div class="code-title">C++ Header Format Output:</div>
+            <div class="code-output" id="rawOutput"></div>
+        </div>
+    </div>
+
+    <script>
+        const render = (id, tex, display = false) => {
+            katex.render(tex, document.getElementById(id), {
+                throwOnError: false,
+                displayMode: display
+            });
+        };
+
+        // 初始化所有 LaTeX 文本
+        window.onload = function() {
+            render("main-title", "\\text{Linearization Gain Matrix Reconstruction}", false);
+            render("eq-main", "K(L, R) = a_1 + a_2 L_{len} + a_3 R_{len} + a_4 L_{len}^2 + a_5 L_{len}R_{len} + a_6 R_{len}^2", true);
+            render("lab-llen", "L_{len}:", false);
+            render("lab-rlen", "R_{len}:", false);
+        };
+
+        function calculate() {
+            const rawText = document.getElementById('inputData').value;
+            const L = parseFloat(document.getElementById('llen').value);
+            const R = parseFloat(document.getElementById('rlen').value);
+            
+            const regex = /\{([^}]+)\}/g;
+            let match, coeffs = [];
+            while ((match = regex.exec(rawText)) !== null) {
+                const nums = match[1].split(',').map(n => parseFloat(n.trim()));
+                if (nums.length === 6) coeffs.push(nums);
+            }
+
+            if (coeffs.length !== 40) {
+                alert(`Error: Found ${coeffs.length} sets. Expected 40.`); return;
+            }
+
+            const flat = coeffs.map(c => c[0] + c[1]*L + c[2]*R + c[3]*L*L + c[4]*L*R + c[5]*R*R);
+            const mat = [];
+            for (let i = 0; i < 4; i++) mat.push(flat.slice(i * 10, (i + 1) * 10));
+
+            // 渲染结果标题
+            render("res-title", `\\text{Reconstructed Matrix } \\mathbf{K} \\in \\mathbb{R}^{4 \\times 10} \\text{ for } L_{len}=${L}, R_{len}=${R}`, true);
+            
+            renderTable(mat);
+            document.getElementById('resultSection').style.display = 'block';
+        }
+
+        function renderTable(mat) {
+            const headers = ["x", "\\dot{x}", "\\phi", "\\dot{\\phi}", "\\theta_{ll}", "\\dot{\\theta}_{ll}", "\\theta_{lr}", "\\dot{\\theta}_{lr}", "\\theta_{b}", "\\dot{\\theta}_{b}"];
+            const rows = ["T_{wl}", "T_{wr}", "T_{bl}", "T_{br}"];
+            
+            let html = "<table><thead><tr><th></th>";
+            headers.forEach((h, i) => html += `<th id="th-${i}"></th>`);
+            html += "</tr></thead><tbody>";
+
+            mat.forEach((row, i) => {
+                html += `<tr><td style="font-weight:bold" id="tr-${i}"></td>`;
+                row.forEach(val => html += `<td>${val.toFixed(5)}</td>`);
+                html += "</tr>";
+            });
+            html += "</tbody></table>";
+            document.getElementById('tableContainer').innerHTML = html;
+
+            headers.forEach((h, i) => render(`th-${i}`, h));
+            rows.forEach((r, i) => render(`tr-${i}`, r));
+
+            let code = "const double K_matrix[4][10] = {\n";
+            mat.forEach((row, i) => {
+                code += "    {" + row.map(v => v.toFixed(6).padStart(10, ' ')).join(", ") + "}" + (i < 3 ? ",\n" : "\n");
+            });
+            code += "};";
+            document.getElementById('rawOutput').innerText = code;
+        }
+    </script>
+</body>
+</html>
