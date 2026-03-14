@@ -58,6 +58,8 @@ struct pendulum_debug_t
     float Fr;
     float Flreal;
     float Frreal;
+    float Flmodel;
+    float Frmodel;
     float Nl;
     float Nr;
     float N;
@@ -71,7 +73,8 @@ struct pendulum_debug_t
     bool rflat;
     bool lneutral;
     bool rneutral;
-    bool offground;
+    bool lair;
+    bool rair;
     float lwheel_tor;
     float rwheel_tor;
     float ljoint4_tor;
@@ -94,7 +97,7 @@ struct pid_tuning_t
 msg_ins_t debug_ins;
 pendulum_debug_t pendulum_debug;
 pid_tuning_t lenpd_tuning = {2000.0f, 0.0f, -500.0f};
-pid_tuning_t rollpd_tuning = {0.5f, 0.0f, -0.5f};
+pid_tuning_t rollpd_tuning = {0.5f, 0.001f, -0.5f};
 #endif
 
 [[noreturn]] void PendulumThreadFun(ULONG initial_input)
@@ -169,7 +172,7 @@ pid_tuning_t rollpd_tuning = {0.5f, 0.0f, -0.5f};
     PID rleg_len_pd(6000.0f, 0.0f, -1000.0f, 125.0f, 0.0f, PID_DVEL);
     PID lleg_len_pd(6000.0f, 0.0f, -1000.0f, 125.0f, 0.0f, PID_DVEL);
     /* roll */
-    PID roll_pd(0.7f, 0.0f, 1.4f, 3.0f, 0.0f);
+    PID roll_pd(0.7f, 0.0001f, 1.4f, 3.0f, 0.05f);
     /* state machine */
     chassis_state_e chassis_state = RELAX;
     jump_stage_e jump_stage = DONT;
@@ -185,6 +188,7 @@ pid_tuning_t rollpd_tuning = {0.5f, 0.0f, -0.5f};
     bool pre_stair = false;
 
     uint16_t recover_count = 0;
+    uint32_t airland_cnt = 0;
 
     for (;;)
     {
@@ -228,6 +232,7 @@ pid_tuning_t rollpd_tuning = {0.5f, 0.0f, -0.5f};
             lpendulum.Relax();
             rpendulum.Relax();
             odom.Reset();
+            pendulum_data.reset_len = true;
             pendulum_data.recovered = true;
             pendulum_data.neutral = false;
             if (cmd.move)
@@ -316,8 +321,8 @@ pid_tuning_t rollpd_tuning = {0.5f, 0.0f, -0.5f};
         case NEUTRAL:
 
             /* [x, dx, yaw, dyaw, alphal, dalphal, alphar, dalphar, theta, dtheta] */
-            refX[0] = observedX[0];//cmd.x;
-            refX[1] = observedX[1];//cmd.v;
+            refX[0] = cmd.x;
+            refX[1] = cmd.v;
             refX[2] = cmd.yaw;
             refX[3] = cmd.dyaw;
             refX[4] = 0.0f;
@@ -351,7 +356,7 @@ pid_tuning_t rollpd_tuning = {0.5f, 0.0f, -0.5f};
                 Fr[1]=0.0f;
             }
 
-            if (Numeric::abs(lpendulum.alpha) > 0.7f || Numeric::abs(rpendulum.alpha) > 0.7f) 
+            if (Numeric::abs(lpendulum.alpha) > 0.6f || Numeric::abs(rpendulum.alpha) > 0.6f) 
             {
                 Twl=0.0f;
                 Twr=0.0f;
@@ -411,8 +416,8 @@ pid_tuning_t rollpd_tuning = {0.5f, 0.0f, -0.5f};
             roll_pd.fdb = ins.roll*DegreeToRad;
             roll_pd.UpdateResult(ins.gyro_r);
 
-            lleg_len_pd.ref = cmd.len+roll_pd.result;//-0.03f
-            rleg_len_pd.ref = cmd.len-roll_pd.result;//-0.03f
+            lleg_len_pd.ref = cmd.len+roll_pd.result;
+            rleg_len_pd.ref = cmd.len-roll_pd.result;
             lleg_len_pd.fdb = lpendulum.len;
             lleg_len_pd.UpdateResult(lpendulum.dlen);
             Fl[0] = lleg_len_pd.result - GRAVITY_FF;
@@ -424,10 +429,14 @@ pid_tuning_t rollpd_tuning = {0.5f, 0.0f, -0.5f};
             rpendulum.TorqueControl(Fr, Twr);
             
             pendulum_data.reset_len = false;
-            if (Fl[0] < -120.0f && Fr[0] < -120.0f) 
-            { 
+
+            airland_cnt ++;
+            
+            if (lpendulum.airborne && rpendulum.airborne && airland_cnt > 600) 
+            {
                 chassis_state = OFFGROUND; 
             }
+
             if (cmd.gostair && !pre_stair) 
             {
                 lpendulum.delta_init = false;
@@ -510,8 +519,9 @@ pid_tuning_t rollpd_tuning = {0.5f, 0.0f, -0.5f};
             lpendulum.TorqueControl(Fl, Twl);
             rpendulum.TorqueControl(Fr, Twr);
 
-            if (ins.accel[2] > 20.0f) 
+            if ((!lpendulum.airborne && !rpendulum.airborne) || ins.accel[2] > 20.0f)
             {
+                airland_cnt = 0;
                 pendulum_data.reset_len = true;
                 chassis_state = NORMAL; 
             }
@@ -716,8 +726,12 @@ pid_tuning_t rollpd_tuning = {0.5f, 0.0f, -0.5f};
         pendulum_debug.Tpr = lqr.Tout[3];
         pendulum_debug.Fl = Fl[0];
         pendulum_debug.Fr = Fr[0];
-        // pendulum_debug.Flreal = lpendulum.Freal;
-        // pendulum_debug.Frreal = rpendulum.Freal;
+        pendulum_debug.Flreal = lpendulum.Freal;
+        pendulum_debug.Frreal = rpendulum.Freal;
+        pendulum_debug.Flmodel = lpendulum.Freal_model;
+        pendulum_debug.Frmodel = rpendulum.Freal_model;
+        pendulum_debug.lair = lpendulum.airborne;
+        pendulum_debug.rair = rpendulum.airborne;
         pendulum_debug.lneutral = lpendulum.neutral;
         pendulum_debug.rneutral = rpendulum.neutral;
         pendulum_debug.lflat = lpendulum.flat;
@@ -725,7 +739,6 @@ pid_tuning_t rollpd_tuning = {0.5f, 0.0f, -0.5f};
         pendulum_debug.Nl = lpendulum.N;
         pendulum_debug.Nr = rpendulum.N;
         pendulum_debug.N = N;
-        pendulum_debug.offground = (chassis_state == OFFGROUND);
         lleg_len_pd.Tuning(lenpd_tuning.kp, lenpd_tuning.ki, lenpd_tuning.kd);
         rleg_len_pd.Tuning(lenpd_tuning.kp, lenpd_tuning.ki, lenpd_tuning.kd);
         roll_pd.Tuning(rollpd_tuning.kp, rollpd_tuning.ki, rollpd_tuning.kd);

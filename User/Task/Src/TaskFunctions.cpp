@@ -60,11 +60,12 @@ debug_motor_t debug_motor;
     float yaw_maintain;
     bool maintained_yaw = false;
     bool pre_stair = false;
+    float target_len;
 
     /* Slope Updaters */
     SLOPE yaw_updater(0.0f, 0.01f);
     SLOPE v_updater(0.0f,0.006f);
-    SLOPE len_updater(0.13f,LEG_NORMAL_STEP);
+    SLOPE len_updater(0.15f,LEG_NORMAL_STEP);
 
     /* om publishers */
     om_topic_t *cmd_topic = om_config_topic(nullptr, "ca", "cmd", sizeof(msg_cmd_t));
@@ -164,11 +165,6 @@ debug_motor_t debug_motor;
             trigger_motor.speedSet = cmd_msg->tri_spd*36.0f;
         }
 
-        if (pendulum_data.reset_len)
-        {
-            cmd.len = NORMAL_LEG_LEN;
-        }
-
         
         trigger_motor.setOutput();
         DJIMotorHandler::Instance()->sendControlData();
@@ -211,8 +207,21 @@ debug_motor_t debug_motor;
             cmd.dyaw = -relative_angle*2.5f;
             cmd.v = v_updater.UpdateVal(cmd_msg->vx*0.1f*2.0f);
             cmd.roll = 0.0f;
-            cmd.len += cmd_msg->vy*0.1f*0.0008f;//NORMAL_LEG_LEN; //
-            cmd.len = FloatConstrain(cmd.len, MIN_LEG_LEN, MAX_LEG_LEN);
+
+            if (pendulum_data.reset_len)
+            {
+                cmd.len = NORMAL_LEG_LEN;
+                // target_len = NORMAL_LEG_LEN;
+            }
+            else 
+            {
+                // target_len = cmd.len + cmd_msg->vy * 0.1f * 0.0008f;
+                // target_len = FloatConstrain(target_len, MIN_LEG_LEN, MAX_LEG_LEN);
+                // cmd.len = len_updater.UpdateVal(target_len);
+                cmd.len += cmd_msg->vy * 0.1f * 0.0008f;
+                cmd.len = FloatConstrain(cmd.len, MIN_LEG_LEN, MAX_LEG_LEN);
+            }
+            
             cmd.spin = false;
             cmd.inair = false;
             cmd.gostair = false;
@@ -267,7 +276,7 @@ debug_motor_t debug_motor;
             // }
         }
             
-        #else
+    #else
 
         if (remoter.ctrl_sw == Relax || remoter.offline || tx_semaphore_get(&IMUThreadSem, TX_NO_WAIT) != TX_SUCCESS)
         {
@@ -298,7 +307,6 @@ debug_motor_t debug_motor;
             }
             else
             {
-            
                 v_updater.SetPath(0.003f);
                 cmd.dyaw = yaw_updater.UpdateVal(-remoter.right_x*2.0f);//0.0f;//
                 cmd.v = v_updater.UpdateVal(remoter.left_y*1.5f);
@@ -391,7 +399,7 @@ debug_motor_t debug_motor;
         }
 
         if (pendulum_data.len > 0.17f)
-            v_updater.SetPath(0.006f-0.06f*(pendulum_data.len-0.17f));
+            v_updater.SetPath(0.006f-0.04f*(pendulum_data.len-0.17f));
         else
             v_updater.SetPath(0.006f);
 

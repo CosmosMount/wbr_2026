@@ -7,7 +7,7 @@
 
 #define TOF_DATA_SIZE 9
 
-#define NORMAL_LEG_LEN    0.17f
+#define NORMAL_LEG_LEN    0.20f
 #define MIN_LEG_LEN       0.15f//true:14
 #define MID_LEG_LEN       0.24f
 #define MAX_LEG_LEN       0.30f//true:30
@@ -28,7 +28,7 @@
 #define MAX_HIP_TOR 40.0f
 #define MAX_WHEEL_TOR 15.0f
 
-#define LEG_NORMAL_STEP 0.001f
+#define LEG_NORMAL_STEP 0.005f
 #define LEG_JUMP_STEP 0.01f
 
 #define F_SPRING 250.0f
@@ -51,6 +51,13 @@ typedef enum
     INAIR,
     LANDING
 }jump_stage_e;
+
+typedef enum
+{
+    NONE,
+    AIR,
+    AIRLAND
+}air_stage_e;
 
 typedef enum
 {
