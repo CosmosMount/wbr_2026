@@ -320,10 +320,14 @@ pid_tuning_t rollpd_tuning = {0.5f, 0.001f, -0.5f};
             lpendulum.TorqueControl(Fl, Twl);
             rpendulum.TorqueControl(Fr, Twr);
 
-            if ((lpendulum.phi>-3.14f&&lpendulum.phi<-2.5f) 
-                && (rpendulum.phi>-3.14f&&rpendulum.phi<-2.5f) )   
+            if (((lpendulum.phi>-3.14f&&lpendulum.phi<-2.0f) 
+                && (rpendulum.phi>-3.14f&&rpendulum.phi<-2.0f))
+                || ((lpendulum.phi>=2.4f&&lpendulum.phi<=3.1f)
+                && (rpendulum.phi>=2.4f&&rpendulum.phi<=3.1f))
+                )   
             {
                 chassis_state = NEUTRAL;
+                pendulum_data.reset_len = true;
             }
             break;
         }
@@ -715,16 +719,8 @@ pid_tuning_t rollpd_tuning = {0.5f, 0.001f, -0.5f};
                 if (ins.accel[2] > 40.0f)
                 {
                     airland_cnt = 0;
-                    if (first_jump)
-                    {
-                        jump_stage = BACK;
-                    }
-                    else 
-                    {
-                        pendulum_data.reset_len = true;
-                        chassis_state = NORMAL; 
-                        jump_stage = DONT;
-                    }
+                    pendulum_data.reset_len = true;
+                    jump_stage = BACK;
                 }
                 break;
             }
@@ -732,8 +728,8 @@ pid_tuning_t rollpd_tuning = {0.5f, 0.001f, -0.5f};
             case BACK:
             {
                 /* [x, dx, yaw, dyaw, alphal, dalphal, alphar, dalphar, theta, dtheta] */
-                refX[0] = observedX[0]+0.001f;
-                refX[1] = observedX[1]+0.1f;
+                refX[0] = observedX[0]+0.0015f;
+                refX[1] = observedX[1]+0.15f;
                 refX[2] = maintain_yaw;
                 refX[3] = 0.0f;
                 refX[4] = lpendulum.alpha_eq;
@@ -755,8 +751,8 @@ pid_tuning_t rollpd_tuning = {0.5f, 0.001f, -0.5f};
                 roll_pd.fdb = ins.roll*DegreeToRad;
                 roll_pd.UpdateResult(ins.gyro_r);
 
-                lleg_len_pd.ref = NORMAL_LEG_LEN+roll_pd.result;
-                rleg_len_pd.ref = NORMAL_LEG_LEN-roll_pd.result;
+                lleg_len_pd.ref = MAX_LEG_LEN+roll_pd.result;
+                rleg_len_pd.ref = MAX_LEG_LEN-roll_pd.result;
                 lleg_len_pd.fdb = lpendulum.len;
                 lleg_len_pd.UpdateResult(lpendulum.dlen);
                 Fl[0] = lleg_len_pd.result - GRAVITY_FF;
@@ -771,10 +767,10 @@ pid_tuning_t rollpd_tuning = {0.5f, 0.001f, -0.5f};
 
                 airland_cnt ++;
                 
-                if (first_jump && airland_cnt > 300)
+                if (first_jump && airland_cnt > 800)
                 {
                     first_jump = false;
-                    jump_stage = EXTENDING;
+                    chassis_state = GOSTAIR;
                     airland_cnt = 0;
                 }
                 break;

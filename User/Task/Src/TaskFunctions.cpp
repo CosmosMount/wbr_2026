@@ -294,7 +294,7 @@ debug_motor_t debug_motor;
             if (remoter.jump_sw == None)
             {
                 cmd.dyaw = yaw_updater.UpdateVal(-remoter.right_x*2.0f);
-                cmd.v = v_updater.UpdateVal(-remoter.left_y*0.9f);
+                cmd.v = v_updater.UpdateVal(-remoter.left_y*0.7f);
                 cmd.roll = 0.0f;
                 
                 if (pendulum_data.reset_len)
