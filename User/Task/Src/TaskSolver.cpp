@@ -162,6 +162,8 @@ __attribute__((section(".RAM_D3"))) force_debug_t force_debug;
         om_suber_export(ins_suber, &ins, false);
         om_suber_export(cmd_suber, &cmd, false);
         om_suber_export(pendulumctrl_suber, &pendulumctrl, false);
+    
+    #ifndef HORIZON_ONLY
 
         /* 将反馈值转化到模型对应角度，传入VMC */
         Lsolver.Resolve(PI-LJoint1.motorFeedback.positionFdb, -LJoint4.motorFeedback.positionFdb);
@@ -230,57 +232,62 @@ __attribute__((section(".RAM_D3"))) force_debug_t force_debug;
 
         LWheel.currentSet = Numeric::FloatConstrain(pendulumctrl.Twl, -MAX_WHEEL_TOR, MAX_WHEEL_TOR) * Tk_LK9025;
         RWheel.currentSet = -Numeric::FloatConstrain(pendulumctrl.Twr, -MAX_WHEEL_TOR, MAX_WHEEL_TOR) * Tk_LK9025;
-
-    #ifdef DEBUG
-        solver_debug.llength = solverfdb.llen;
-        solver_debug.rlength = solverfdb.rlen;
-        solver_debug.lphi = solverfdb.lphi;
-        solver_debug.rphi = solverfdb.rphi;
-        solver_debug.llength_dot = solverfdb.llen_dot;
-        solver_debug.rlength_dot = solverfdb.rlen_dot;
-        solver_debug.lphi_dot = solverfdb.lphi_dot;
-        solver_debug.rphi_dot = solverfdb.rphi_dot;
-        
-        solver_debug.lphi1 = Lsolver.GetPhi1();
-        solver_debug.lphi4 = Lsolver.GetPhi4();
-        solver_debug.rphi1 = Rsolver.GetPhi1();
-        solver_debug.rphi4 = Rsolver.GetPhi4();
-
-        solver_debug.ljoint1_tor = LTp[0];
-        solver_debug.ljoint4_tor = LTp[1];
-        solver_debug.rjoint1_tor = RTp[0];
-        solver_debug.rjoint4_tor = RTp[1];
-        
-        solver_debug.rwheel_tor_ref = -pendulumctrl.Twr;
-        solver_debug.lwheel_tor_ref = pendulumctrl.Twl;
-        solver_debug.rwheel_tor_fdb = RWheel.motorFeedback.torqueFdb;
-        solver_debug.lwheel_tor_fdb = LWheel.motorFeedback.torqueFdb;
-
-        solver_debug.ljoint4_pos = LJoint4.motorFeedback.positionFdb;
-        solver_debug.ljoint1_pos = LJoint1.motorFeedback.positionFdb;
-        solver_debug.rjoint4_pos = RJoint4.motorFeedback.positionFdb;
-        solver_debug.rjoint1_pos = RJoint1.motorFeedback.positionFdb;
-
-        solver_debug.lphi1dot = Lqdot[0];
-        solver_debug.lphi4dot = Lqdot[1];
-        solver_debug.rphi1dot = Rqdot[0];
-        solver_debug.rphi4dot = Rqdot[1];
-
-        // solver_debug = solverfdb;
-        force_debug.Flreal = TlRev[0];
-        force_debug.Frreal = TrRev[0];
-        force_debug.Tleal = TlRev[1];
-        force_debug.Treal = TrRev[1];
-        force_debug.Pl = Pl;
-        force_debug.Pr = Pr;
-        force_debug.Nl = Nl;
-        force_debug.Nr = Nr;
-        force_debug.Tljoint4 = -LJoint4.motorFeedback.torqueFdb;
-        force_debug.Tljoint1 = -LJoint1.motorFeedback.torqueFdb;
-        force_debug.Trjoint4 = RJoint4.motorFeedback.torqueFdb;
-        force_debug.Trjoint1 = RJoint1.motorFeedback.torqueFdb;
-        force_debug.N = solverfdb.N;
+    
+    #else
+        LWheel.currentSet = Numeric::FloatConstrain(cmd.v, -MAX_WHEEL_TOR, MAX_WHEEL_TOR) * Tk_LK9025;
+        RWheel.currentSet = -Numeric::FloatConstrain(cmd.v, -MAX_WHEEL_TOR, MAX_WHEEL_TOR) * Tk_LK9025;
     #endif
+
+    // #ifdef DEBUG
+    //     solver_debug.llength = solverfdb.llen;
+    //     solver_debug.rlength = solverfdb.rlen;
+    //     solver_debug.lphi = solverfdb.lphi;
+    //     solver_debug.rphi = solverfdb.rphi;
+    //     solver_debug.llength_dot = solverfdb.llen_dot;
+    //     solver_debug.rlength_dot = solverfdb.rlen_dot;
+    //     solver_debug.lphi_dot = solverfdb.lphi_dot;
+    //     solver_debug.rphi_dot = solverfdb.rphi_dot;
+        
+    //     solver_debug.lphi1 = Lsolver.GetPhi1();
+    //     solver_debug.lphi4 = Lsolver.GetPhi4();
+    //     solver_debug.rphi1 = Rsolver.GetPhi1();
+    //     solver_debug.rphi4 = Rsolver.GetPhi4();
+
+    //     solver_debug.ljoint1_tor = LTp[0];
+    //     solver_debug.ljoint4_tor = LTp[1];
+    //     solver_debug.rjoint1_tor = RTp[0];
+    //     solver_debug.rjoint4_tor = RTp[1];
+        
+    //     solver_debug.rwheel_tor_ref = -pendulumctrl.Twr;
+    //     solver_debug.lwheel_tor_ref = pendulumctrl.Twl;
+    //     solver_debug.rwheel_tor_fdb = RWheel.motorFeedback.torqueFdb;
+    //     solver_debug.lwheel_tor_fdb = LWheel.motorFeedback.torqueFdb;
+
+    //     solver_debug.ljoint4_pos = LJoint4.motorFeedback.positionFdb;
+    //     solver_debug.ljoint1_pos = LJoint1.motorFeedback.positionFdb;
+    //     solver_debug.rjoint4_pos = RJoint4.motorFeedback.positionFdb;
+    //     solver_debug.rjoint1_pos = RJoint1.motorFeedback.positionFdb;
+
+    //     solver_debug.lphi1dot = Lqdot[0];
+    //     solver_debug.lphi4dot = Lqdot[1];
+    //     solver_debug.rphi1dot = Rqdot[0];
+    //     solver_debug.rphi4dot = Rqdot[1];
+
+    //     // solver_debug = solverfdb;
+    //     force_debug.Flreal = TlRev[0];
+    //     force_debug.Frreal = TrRev[0];
+    //     force_debug.Tleal = TlRev[1];
+    //     force_debug.Treal = TrRev[1];
+    //     force_debug.Pl = Pl;
+    //     force_debug.Pr = Pr;
+    //     force_debug.Nl = Nl;
+    //     force_debug.Nr = Nr;
+    //     force_debug.Tljoint4 = -LJoint4.motorFeedback.torqueFdb;
+    //     force_debug.Tljoint1 = -LJoint1.motorFeedback.torqueFdb;
+    //     force_debug.Trjoint4 = RJoint4.motorFeedback.torqueFdb;
+    //     force_debug.Trjoint1 = RJoint1.motorFeedback.torqueFdb;
+    //     force_debug.N = solverfdb.N;
+    // #endif
 
         if (!cmd.move)
         {

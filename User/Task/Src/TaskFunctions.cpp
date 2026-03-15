@@ -114,7 +114,7 @@ __attribute__((section(".RAM_D3"))) msg_remoter_t debug_remoter;
             {
                 cmd.v = 0.0f;
                 cmd.w = 0.0f;
-                cmd.dlen = 0.0f;
+                // cmd.dlen = 0.0f;
                 cmd.dyaw = 0.0f;
                 relativeangle = 0.0f;
                 cmd.move = false;
@@ -126,23 +126,23 @@ __attribute__((section(".RAM_D3"))) msg_remoter_t debug_remoter;
             {
                 cmd.v = 0.0f;
                 cmd.w = 0.0f;
-                cmd.dlen = 0.0f;
+                // cmd.dlen = 0.0f;
                 cmd.dyaw = 0.0f;
                 cmd.move = false;
             }
             else if (mode.chassis_mode == NORMAL_MOVING_MODE)
             {
                 cmd.move = true;
-                if (fabsf(cmd.dlen) < 0.0005f)
-                    cmd.dlen = 0.0f;
+                // if (fabsf(cmd.dlen) < 0.0005f)
+                //     cmd.dlen = 0.0f;
                 if (fabsf(cmd.v) < 0.0005f)
                     cmd.v = 0.0f;
                 if (fabsf(relativeangle) < 0.0001f)
                     relativeangle = 0.0f;
 
                 /* v, dlen [0,60000] -> [-2,2] */
-                cmd.dlen = len_updater.UpdateVal(((float)dlen_rx) / 15000.0f - 2.0f);
-                cmd.v = v_updater.UpdateVal(((float)v_rx) / 15000.0f - 2.0f);
+                // cmd.dlen = len_updater.UpdateVal(((float)dlen_rx) / 15000.0f - 2.0f);
+                cmd.v = ((float)v_rx) / 15000.0f - 2.0f;
                 
                 if (mode.rotate_type == SPIN_ROTATE)
                 {

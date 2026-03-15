@@ -1,7 +1,8 @@
 #pragma once
 
 #define SJTU_MODEL
-#define CHASSIS_ONLY
+// #define CHASSIS_ONLY
+#define HORIZON_ONLY
 
 #define TOF_DATA_SIZE 9
 
