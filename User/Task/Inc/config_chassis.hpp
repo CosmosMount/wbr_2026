@@ -1,9 +1,9 @@
 #pragma once
 
-// #define CHASSIS_ONLY
+#define CHASSIS_ONLY
 
-// #define JUMP_UP
-#define STAIR_UP
+#define JUMP_UP
+// #define STAIR_UP
 
 #define TOF_DATA_SIZE 9
 

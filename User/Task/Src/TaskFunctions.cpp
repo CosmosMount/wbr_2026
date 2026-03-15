@@ -130,6 +130,8 @@ debug_motor_t debug_motor;
         comm_cmd_t *cmd_msg = reinterpret_cast<comm_cmd_t*>(CmdMsg);
         cmd_msg_debug = cmd_msg;
 
+    #ifndef CHASSIS_ONLY
+
         /* Handle Gimbal Motors */
         float distance1 = fabs(yaw_motor.motorFeedback.positionFdb-yaw_offset1);
         float distance2 = fabs(yaw_motor.motorFeedback.positionFdb-yaw_offset2);
@@ -168,8 +170,6 @@ debug_motor_t debug_motor;
         
         trigger_motor.setOutput();
         DJIMotorHandler::Instance()->sendControlData();
-
-    #ifndef CHASSIS_ONLY
 
         cmd.roll = 0.0f;
 
@@ -285,25 +285,32 @@ debug_motor_t debug_motor;
             cmd.dyaw = 0.0f;
             cmd.move = false;
             cmd.inair = false;
-            if (pendulum_data.len > 0.17f)
-                v_updater.SetPath(0.003f-0.0154f*(pendulum_data.len-0.17f));
-            else
-                v_updater.SetPath(0.004f);
         }
         else if (remoter.ctrl_sw == Normal)
         {
             cmd.move = true;
             cmd.spin = false;
-            #ifdef JUMP_UP
+        #ifdef JUMP_UP
             if (remoter.jump_sw == None)
             {
                 cmd.dyaw = yaw_updater.UpdateVal(-remoter.right_x*2.0f);
                 cmd.v = v_updater.UpdateVal(remoter.left_y*2.0f);
                 cmd.roll = 0.0f;
-                cmd.len += remoter.right_y*0.0008f;
-                cmd.len = FloatConstrain(cmd.len, MIN_LEG_LEN, MAX_LEG_LEN);
+                
+                if (pendulum_data.reset_len)
+                {
+                    cmd.len = NORMAL_LEG_LEN;
+                }
+                else 
+                {
+                    cmd.len += remoter.right_y*0.0008f;
+                    cmd.len = FloatConstrain(cmd.len, MIN_LEG_LEN, MAX_LEG_LEN);
+                }
+                
                 cmd.inair = false;
                 cmd.gostair = false;
+                cmd.prejump = false;
+                cmd.ifjump = false;
             }
             else
             {
@@ -325,8 +332,8 @@ debug_motor_t debug_motor;
                     cmd.ifjump = false;
                 }
             }
-            #endif
-            #ifdef STAIR_UP
+        #endif
+        #ifdef STAIR_UP
             if (remoter.jump_sw == None)
                 cmd.gostair = false;
 
@@ -350,8 +357,7 @@ debug_motor_t debug_motor;
                 cmd.len = FloatConstrain(cmd.len, MIN_LEG_LEN, MAX_LEG_LEN);
                 cmd.inair = false;
             }
-            #endif
-            
+        #endif   
         }
         else if (remoter.ctrl_sw == Spin)
         {
@@ -363,6 +369,7 @@ debug_motor_t debug_motor;
             cmd.gostair = false;
             cmd.spin = true;
         }
+
     #endif
 
         if (fabsf(cmd.v) < 0.005f || remoter.ctrl_sw == Spin)
@@ -420,7 +427,7 @@ debug_motor_t debug_motor;
         debug_temp = tof_temp;
         debug_tof_valid = tof_valid;
         debug_remoter = remoter;
-        debug_relativeangle = relative_angle;
+        // debug_relativeangle = relative_angle;
 
         debug_motor.yaw_init = yaw_init;
         debug_motor.yawmotor_pos = yaw_motor.motorFeedback.positionFdb;
