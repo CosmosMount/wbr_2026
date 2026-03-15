@@ -294,7 +294,7 @@ debug_motor_t debug_motor;
             if (remoter.jump_sw == None)
             {
                 cmd.dyaw = yaw_updater.UpdateVal(-remoter.right_x*2.0f);
-                cmd.v = v_updater.UpdateVal(remoter.left_y*2.0f);
+                cmd.v = v_updater.UpdateVal(-remoter.left_y*0.9f);
                 cmd.roll = 0.0f;
                 
                 if (pendulum_data.reset_len)
@@ -316,7 +316,7 @@ debug_motor_t debug_motor;
             {
                 v_updater.SetPath(0.003f);
                 cmd.dyaw = yaw_updater.UpdateVal(-remoter.right_x*2.0f);//0.0f;//
-                cmd.v = v_updater.UpdateVal(remoter.left_y*1.5f);
+                cmd.v = v_updater.UpdateVal(-remoter.left_y*0.9f);
                 if (remoter.jump_sw == Prepared)
                 {
                     cmd.prejump = true;
@@ -349,7 +349,7 @@ debug_motor_t debug_motor;
             {
                 
                 cmd.dyaw = yaw_updater.UpdateVal(-remoter.right_x*2.0f);
-                cmd.v = v_updater.UpdateVal(remoter.left_y*2.0f);
+                cmd.v = v_updater.UpdateVal(-remoter.left_y*0.7f);
                 cmd.roll = 0.0f;
                 if (pre_stair)
                     cmd.len = NORMAL_LEG_LEN;

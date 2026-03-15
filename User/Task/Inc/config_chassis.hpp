@@ -49,7 +49,8 @@ typedef enum
     START,
     EXTENDING,
     INAIR,
-    LANDING
+    LANDING,
+    BACK
 }jump_stage_e;
 
 typedef enum
