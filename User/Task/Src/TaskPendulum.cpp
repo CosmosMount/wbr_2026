@@ -18,6 +18,7 @@
 #include "pendulum.hpp"
 #include "magicmsgs.hpp"
 #include "config_chassis.hpp"
+#include <cstdint>
 
 using namespace Numeric;
 
@@ -87,6 +88,7 @@ struct pendulum_debug_t
     float rjoint1_pos;
     float lwheel_spd;
     float rwheel_spd;
+    uint8_t stage;
 };
 struct pid_tuning_t 
 {
@@ -765,6 +767,7 @@ pid_tuning_t rollpd_tuning = {0.5f, 0.001f, -0.5f};
         pendulum_debug.Nl = lpendulum.N;
         pendulum_debug.Nr = rpendulum.N;
         pendulum_debug.N = N;
+        pendulum_debug.stage = jump_stage;
         lleg_len_pd.Tuning(lenpd_tuning.kp, lenpd_tuning.ki, lenpd_tuning.kd);
         rleg_len_pd.Tuning(lenpd_tuning.kp, lenpd_tuning.ki, lenpd_tuning.kd);
         roll_pd.Tuning(rollpd_tuning.kp, rollpd_tuning.ki, rollpd_tuning.kd);
