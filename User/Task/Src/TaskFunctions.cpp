@@ -187,7 +187,7 @@ __attribute__((section(".RAM_D3"))) msg_remoter_t debug_remoter;
                 if (remoter.jump_sw == None)
                 {
                     cmd.dyaw = yaw_updater.UpdateVal(-remoter.right_x*1.5f);
-                    cmd.v = v_updater.UpdateVal(remoter.left_y*3.0f);
+                    cmd.v = v_updater.UpdateVal(remoter.left_y*4.0f);
                     cmd.roll = 0.0f;//remoter.right_x*0.1f;
                     cmd.len += remoter.left_x*0.0008f;
                     cmd.len = FloatConstrain(cmd.len, 0.14f, 0.34f);
@@ -251,14 +251,14 @@ __attribute__((section(".RAM_D3"))) msg_remoter_t debug_remoter;
                 #else
                     if (remoter.jump_sw == Prepared)
                     {
-                        cmd.len = LQR_MAX_LEN_CTRL;
+                        cmd.len = LEG_NORMAL_LEN;
                         cmd.v = v_updater.UpdateVal(remoter.left_y);
                     }
-                    else if (remoter.jump_sw == Jump)
-                    {
-                        cmd.v = v_updater.UpdateVal(remoter.left_y);
-                        cmd.len = LQR_MIN_LEN_CTRL;
-                    }
+                    // else if (remoter.jump_sw == Jump)
+                    // {
+                    //     cmd.v = v_updater.UpdateVal(remoter.left_y);
+                    //     cmd.len = LQR_MIN_LEN_CTRL;
+                    // }
                 #endif
                 }
             }
