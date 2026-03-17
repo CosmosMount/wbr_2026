@@ -6,7 +6,7 @@
 #define RM26_H7_IMU_HPP
 
 #include "pid.hpp"
-#include "frequencyfilter.hpp"
+#include "filter.hpp"
 
 using namespace Filter;
 
@@ -57,6 +57,17 @@ typedef struct imu_error_t
     bool CALIBRATE_ERR = false;        // 标定错误则为true
     bool TEMP_CTRL_ERR = true;         // 温度控制错误则为true
 } imu_error_t;
+
+#define IMU_ACCEL_3G_SEN 0.0008974358974f
+#define IMU_ACCEL_6G_SEN 0.00179443359375f
+#define IMU_ACCEL_12G_SEN 0.0035888671875f
+#define IMU_ACCEL_24G_SEN 0.007177734375f
+
+#define IMU_GYRO_2000_SEN 0.00106526443603169529841533860381f
+#define IMU_GYRO_1000_SEN 0.00053263221801584764920766930190693f
+#define IMU_GYRO_500_SEN 0.00026631610900792382460383465095346f
+#define IMU_GYRO_250_SEN 0.00013315805450396191230191732547673f
+#define IMU_GYRO_125_SEN 0.000066579027251980956150958662738366f
 
 class cIMU
 {

@@ -20,7 +20,7 @@ namespace Numeric
 
     constexpr float Pi = 3.14159265358979f;    ///< 圆周率
     constexpr float PiX2 = 6.283185307f;       ///< 2倍圆周率
-    constexpr float Gravity = 9.78f;           ///< 重力加速度
+    constexpr float Gravity = 9.81f;           ///< 重力加速度
     constexpr float DegreeToRad = Pi / 180.0f; ///< 角度转弧度
     constexpr float RadToDegree = 180.0f / Pi; ///< 弧度转角度
 

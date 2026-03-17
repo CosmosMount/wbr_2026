@@ -84,7 +84,7 @@ namespace Numeric
         i = 0x5f3759df - (i >> 1);      // 初始猜测
         x = *(float *)&i;               // 将位转换回浮点数
         x = x * (1.5f - xhalf * x * x); // 牛顿迭代步骤
-        return x;
+        return 1.0f / x;
     }
 
     float Sqrt(float x)

@@ -315,7 +315,7 @@ void UI::TransmitStringObject(uint8_t index, UIOperation op)
     auto header = getFrameHeader();
     header->DataLength = 51;
     Append_CRC8_Check_Sum(reinterpret_cast<unsigned char*>(header), 5);
-    header->ContentId = 0x0110; // 字符串创建对象内容ID为0x0110
+    header->ContentId = 0x0110;
 
     auto meta = getBufferNthUiObject(0);
     meta->Dword1.detailDword1 = obj.detailDword1.dw;
@@ -333,14 +333,12 @@ void UI::TransmitStringObject(uint8_t index, UIOperation op)
 
 void UI::TransmitOtherObjects(uint8_t count) 
 {
-    // 根据发送数量查找对应的数据包包含元素数量 (例如发送3个对象，实际需要发送包含5个对象的数据包)
     uint8_t elementCount = elementCountInPacketTable[count];
     auto header = getFrameHeader();
     header->DataLength = 6 + elementCount * 15;
     Append_CRC8_Check_Sum(reinterpret_cast<unsigned char*>(header), 5);
     header->ContentId = contentIdTable[count];
 
-    // 将未使用的槽位填充为空操作 (Noop)
     for (uint8_t i = count; i < elementCount; i++) 
     {
         getBufferNthUiObject(i)->Dword1.detailDword1Internal.operation = static_cast<uint32_t>(UIOperation::Noop);
@@ -358,14 +356,13 @@ void UI::Update()
 RestartForStringProcessing:
 
     bool alreadySentStringOnce = false;
-    // 处理字符串对象 (字符串对象需要单独发送，占用一个完整数据包)
+    // 处理字符串对象
     if (UIPendingUpdateIsString)
     {
         auto& obj = UIObjectList[UIPendingStringIndex];
         obj.metadata.dirty = false;
         alreadySentStringOnce = true;
 
-        // 如果可见性发生变化且当前可见，则发送添加操作；否则发送修改操作
         if (obj.metadata.dirtyVisibility && obj.metadata.visible)
         {
             obj.metadata.dirtyVisibility = false;
@@ -379,14 +376,14 @@ RestartForStringProcessing:
         loopIncrement(UIPendingStringIndex);
         UIPendingUpdateIsString = false;
 
-        // 查找下一个需要更新的字符串对象
+        // 查找下一个字符串对象
         auto checkStr = [&](size_t i, UIObject& o) -> bool
         {
             if (o.detailDword1.type == static_cast<uint8_t>(UIObjectType::Str))
             {
                 UIPendingStringIndex = i;
                 UIPendingUpdateIsString = true;
-                return false; // 找到后停止扫描
+                return false;
             }
             return true;
         };
@@ -396,17 +393,15 @@ RestartForStringProcessing:
     else 
     {
         uint8_t itemProcessed  = 0;
-        // 处理非字符串对象 (普通图形对象可以打包发送，最多7个)
+        // 处理非字符串对象
         auto processObj = [&](size_t i, UIObject& obj) -> bool
         {
             loopIncrement(UIScanOffset);
             if (!obj.metadata.valid) 
                 return true;
-            // 如果对象没有变化，跳过
             if (!obj.metadata.dirty && !obj.metadata.dirtyVisibility && !obj.metadata.deleted) 
                 return true;
 
-            // 写入缓冲区辅助lambda
             auto writeBufferObj = [&](UIOperation op)
             {
                 auto bufferObj = getBufferNthUiObject(itemProcessed);
@@ -418,7 +413,6 @@ RestartForStringProcessing:
                 itemProcessed++;
             };
 
-            // 状态机处理：删除 > 可见性变化 > 属性修改
             if (obj.metadata.deleted)
             {
                 obj.metadata.valid = false;
@@ -428,7 +422,6 @@ RestartForStringProcessing:
             {
                 if (obj.metadata.visible)
                 {
-                    // 如果是字符串对象变为可见，需要转交给字符串处理逻辑
                     if (obj.detailDword1.type == static_cast<uint8_t>(UIObjectType::Str) && !UIPendingUpdateIsString)
                     {
                         UIPendingUpdateIsString = true;
@@ -448,7 +441,6 @@ RestartForStringProcessing:
             }
             else if (obj.metadata.dirty)
             {
-                // 如果是字符串对象属性修改，需要转交给字符串处理逻辑
                 if (obj.detailDword1.type == static_cast<uint8_t>(UIObjectType::Str) && !UIPendingUpdateIsString)
                 {
                     UIPendingUpdateIsString = true;
@@ -468,9 +460,8 @@ RestartForStringProcessing:
 
         if (itemProcessed > 0)
             TransmitOtherObjects(itemProcessed);
-        // 如果没有处理普通对象，但发现了待处理的字符串，且本轮还没发送过字符串，则跳转处理
         else if (itemProcessed == 0 && UIPendingUpdateIsString && !alreadySentStringOnce)
-            goto RestartForStringProcessing; 
+            goto RestartForStringProcessing; // 如果没有处理简单图形项但是出现了需要处理的字符串，就跳到函数开头重新开始
     }
 }
 

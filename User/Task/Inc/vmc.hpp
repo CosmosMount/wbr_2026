@@ -38,10 +38,10 @@ protected:
 
 public:
 
-    void Resolve(float phi1_fdb, float phi4_fdb)
+    void Resolve(float phi4_fdb, float phi1_fdb)
     {
+        this->phi4 = phi4_fdb;
         this->phi1 = phi1_fdb;
-        this->phi4 = phi4_fdb;       
 
         float SIN1 = arm_sin_f32(this->phi1);
         float COS1 = arm_cos_f32(this->phi1);
@@ -102,8 +102,8 @@ public:
 
         JT_inv_mat[0] = -cos02 / (sin12 * VMC_L1);
         JT_inv_mat[1] = cos03 / (sin34 * VMC_L1);
-        JT_inv_mat[2] = sin02 * PendulumLength / (sin12 * VMC_L1);
-        JT_inv_mat[3] = -sin03 * PendulumLength / (sin34 * VMC_L1);
+        JT_inv_mat[2] = sin02 / (sin12 * VMC_L1);
+        JT_inv_mat[3] = -sin03 / (sin34 * VMC_L1);
     }
 
     void VMCCal(float *F, float *T)

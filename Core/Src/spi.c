@@ -47,7 +47,7 @@ void MX_SPI2_Init(void)
   hspi2.Init.CLKPolarity = SPI_POLARITY_HIGH;
   hspi2.Init.CLKPhase = SPI_PHASE_2EDGE;
   hspi2.Init.NSS = SPI_NSS_SOFT;
-  hspi2.Init.BaudRatePrescaler = SPI_BAUDRATEPRESCALER_16;
+  hspi2.Init.BaudRatePrescaler = SPI_BAUDRATEPRESCALER_32;
   hspi2.Init.FirstBit = SPI_FIRSTBIT_MSB;
   hspi2.Init.TIMode = SPI_TIMODE_DISABLE;
   hspi2.Init.CRCCalculation = SPI_CRCCALCULATION_DISABLE;
@@ -155,14 +155,14 @@ void HAL_SPI_MspInit(SPI_HandleTypeDef* spiHandle)
     GPIO_InitStruct.Pin = GPIO_PIN_1|GPIO_PIN_2;
     GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
     GPIO_InitStruct.Pull = GPIO_NOPULL;
-    GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_VERY_HIGH;
+    GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
     GPIO_InitStruct.Alternate = GPIO_AF5_SPI2;
     HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
 
     GPIO_InitStruct.Pin = GPIO_PIN_13;
     GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
     GPIO_InitStruct.Pull = GPIO_NOPULL;
-    GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_VERY_HIGH;
+    GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
     GPIO_InitStruct.Alternate = GPIO_AF5_SPI2;
     HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
 
@@ -176,7 +176,7 @@ void HAL_SPI_MspInit(SPI_HandleTypeDef* spiHandle)
     hdma_spi2_rx.Init.PeriphDataAlignment = DMA_PDATAALIGN_BYTE;
     hdma_spi2_rx.Init.MemDataAlignment = DMA_MDATAALIGN_BYTE;
     hdma_spi2_rx.Init.Mode = DMA_NORMAL;
-    hdma_spi2_rx.Init.Priority = DMA_PRIORITY_LOW;
+    hdma_spi2_rx.Init.Priority = DMA_PRIORITY_VERY_HIGH;
     hdma_spi2_rx.Init.FIFOMode = DMA_FIFOMODE_DISABLE;
     if (HAL_DMA_Init(&hdma_spi2_rx) != HAL_OK)
     {
@@ -194,7 +194,7 @@ void HAL_SPI_MspInit(SPI_HandleTypeDef* spiHandle)
     hdma_spi2_tx.Init.PeriphDataAlignment = DMA_PDATAALIGN_BYTE;
     hdma_spi2_tx.Init.MemDataAlignment = DMA_MDATAALIGN_BYTE;
     hdma_spi2_tx.Init.Mode = DMA_NORMAL;
-    hdma_spi2_tx.Init.Priority = DMA_PRIORITY_LOW;
+    hdma_spi2_tx.Init.Priority = DMA_PRIORITY_HIGH;
     hdma_spi2_tx.Init.FIFOMode = DMA_FIFOMODE_DISABLE;
     if (HAL_DMA_Init(&hdma_spi2_tx) != HAL_OK)
     {

@@ -210,8 +210,7 @@ VOID usbx_cdc_acm_read_thread_entry(ULONG thread_input)
   * @param  thread_input: Not used
   * @retval none
   */
-VOID usbx_cdc_acm_write_thread_entry(ULONG thread_input) 
-{
+VOID usbx_cdc_acm_write_thread_entry(ULONG thread_input) {
   ULONG actual_length, buffsize, buffptr;
   UX_SLAVE_DEVICE *device = &_ux_system_slave->ux_system_slave_device;
 

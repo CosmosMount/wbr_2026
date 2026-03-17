@@ -1,10 +1,64 @@
-#pragma once
+//
+// Created by cosmosmount on 2025/8/29.
+//
+
+#ifndef RM26_FILTER_HPP
+#define RM26_FILTER_HPP
 
 #include "math.hpp"
 #include <vector>
 
 namespace Filter
 {
+    /**
+     * @brief 一阶卡尔曼滤波器
+     * @note 简单的卡尔曼滤波实现，仅作用于一阶简单系统
+     */
+    class KalmanFilter
+    {
+        float LastP;    // 上次估算协方差		--e(ESTk-1)     上次协方差
+        float NowP;     // 当前估算协方差		--预测e(ESTk)	当前估算协方差
+        float result;   // 卡尔曼滤波器输出
+        float Kg;       // 卡尔曼增益		    --Kk
+        float Q;        // 过程噪声协方差
+        float R;        // 观测噪声协方差		--e(MEAk)       测量误差
+    public:
+        /**
+         * @brief 构造函数，简单复制初始化，避免出现未知错误
+         */
+        KalmanFilter();
+
+        /**
+         * @brief 清空卡尔曼滤波器
+         */
+        void Clear();
+
+        /**
+         * @brief 设置卡尔曼滤波器的增益
+         * @param kg 卡尔曼滤波器的增益
+         * @return void
+         */
+        void SetKg(float kg);
+
+        /**
+         * @brief 设置卡尔曼滤波器的过程噪声协方差
+         * @param q 过程噪声协方差
+         */
+        void SetQ(float q);
+
+        /**
+         * @brief 设置卡尔曼滤波器的观测噪声协方差
+         */
+        void SetR(float r);
+
+        /**
+         * @brief 更新卡尔曼滤波器的输出
+         * @param input 卡尔曼滤波器的输入
+         * @return 卡尔曼滤波器的输出
+         */
+        float Update(float input);
+    };
+
     constexpr float FILTER_DEFAULT_SAMPLING_FREQUENCY = 1000.0f;
 
     /**
@@ -53,7 +107,7 @@ namespace Filter
          * @param _freq_high 高频（非低通有效）
          */
         explicit FIRFilter(
-            uint8_t _order = 50,
+            uint32_t _order = 50,
             float _constrain_low = 0.0f,
             float _constrain_high = 0.0f,
             Filter_Mode _mode = LOWPASS,
@@ -82,7 +136,7 @@ namespace Filter
          * @note 请修改构造函数以引入现在不存在的阶数、模式
          */
         explicit IIRFilter(
-            uint8_t _order = 2,
+            uint32_t _order = 2,
             Filter_Mode _mode = LOWPASS,
             int _freq_low = 1,
             int _freq_high = 500);
@@ -112,3 +166,4 @@ namespace Filter
     };
 
 }
+#endif //RM26_FILTER_HPP

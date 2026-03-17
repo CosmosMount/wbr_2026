@@ -1,7 +1,10 @@
+//
+// Created by cosmosmount on 2025/9/2.
+//
+
 #include "BMI088.hpp"
 #include "bsp_spi.hpp"
 
-#include "stm32h7xx_hal_spi.h"
 #include "tx_api.h"
 #include "bsp_pwm.hpp"
 #include "bsp_dwt.hpp"
@@ -24,44 +27,108 @@ namespace BMI088
      */
     void cBMI088::Calibrate()
     {
-        const int calib_samples = 4000; // 采样次数
-        float gyro_sum[3] = {0.0f, 0.0f, 0.0f};
-        gyro_data_t temp_gyro;
+        Acc_coef = IMU_ACCEL_3G_SEN; // 标定完后要乘以9.805/gNorm，注意这里需要和配置的范围对应
 
-        // 1. 清除旧的 Offset，防止叠加
-        Gyro_offset[0] = 0.0f;
-        Gyro_offset[1] = 0.0f;
-        Gyro_offset[2] = 0.0f;
+        // 一次性参数用完就丢,不用static
+        float startTime;                     // 开始标定时间,用于确定是否超时
+        uint16_t CaliTimes = 20;           // 标定次数(6s)
+        float gyroMax[3], gyroMin[3];        // 保存标定过程中读取到的数据最大值判断是否满足标定环境
+        float gNormTemp, gNormMax, gNormMin; // 同上,计算矢量范数(模长)
+        float gyroDiff[3], gNormDiff;        // 每个轴的最大角速度跨度及其模长
 
-        // 2. 循环采样
-        for (int i = 0; i < calib_samples; i++)
-        {
-            ReadGyroData(&temp_gyro); // 这里读取的是原始值（因为Offset已清零）
-            gyro_sum[0] += temp_gyro.x;
-            gyro_sum[1] += temp_gyro.y;
-            gyro_sum[2] += temp_gyro.z;
-            
-            tx_thread_sleep(1); // 间隔 1ms，总耗时约 1s
-        }
 
-        // 3. 计算平均值作为零偏
-        Gyro_offset[0] = gyro_sum[0] / calib_samples;
-        Gyro_offset[1] = gyro_sum[1] / calib_samples;
-        Gyro_offset[2] = gyro_sum[2] / calib_samples;
-        
-        // 如果零偏过大（例如超过 0.1 rad/s），可能是在运动中标定的，应报错或丢弃
-        if (fabs(Gyro_offset[0]) > 0.1f || fabs(Gyro_offset[1]) > 0.1f || fabs(Gyro_offset[2]) > 0.1f)
+        startTime = DWT_GetTimeline_s();
+        // 循环继续的条件为标定环境不满足
+        do // 用do while至少执行一次,省得对上面的参数进行初始化
+        {  // 标定超时,直接使用预标定参数(如果有)
+            if (DWT_GetTimeline_s() - startTime > 2.01)
+            { // 两次都没有成功就切换标定模式,丢给下一个if处理,使用预标定参数
+                self_test.CALIBRATE_ERR = true;
+                break;
+            }
+
+            DWT_Delay(0.0005);
+            gNorm = 0;
+            for (uint8_t i = 0; i < 3; i++) // 重置gNorm和零飘
+                Gyro_offset[i] = 0;
+
+            // @todo : 这里也有获取bmi088数据的操作,后续与BMI088Acquire合并.注意标定时的工作模式是阻塞,且offset和acc_coef要初始化成0和1,标定完成后再设定为标定值
+            for (uint16_t i = 0; i < CaliTimes; ++i) // 提前计算,优化
+            {
+                ReadAccData(&acc_data);
+                ReadGyroData(&gyro_data);
+
+				gNormTemp = Sqrt(acc_data.x * acc_data.x +
+                         acc_data.y * acc_data.y +
+                         acc_data.z * acc_data.z); // 计算加速度范数
+
+                gNorm += gNormTemp; // 计算范数并累加,最后除以calib times获取单次值
+
+                Gyro_offset[0] += gyro_data.x; // 因为标定时传感器静止,所以采集到的值就是漂移,累加当前值,最后除以calib times获得零飘
+                Gyro_offset[1] += gyro_data.y;
+                Gyro_offset[2] += gyro_data.z;
+
+                if (i == 0) // 避免未定义的行为(else中)
+                {
+                    // 初始化成当前的重力加速度模长
+                    gNormMax = gNormMin = gNormTemp;
+
+                    // 初始化成当前的陀螺仪数据
+                    gyroMax[0] = gyro_data.x;
+                    gyroMax[1] = gyro_data.y;
+                    gyroMax[2] = gyro_data.z;
+
+                    gyroMin[0] = gyro_data.x;
+                    gyroMin[1] = gyro_data.y;
+                    gyroMin[2] = gyro_data.z;
+                }
+                else // 更新gNorm的Min Max和gyro的minmax
+                {
+                    gNormMax = gNormMax > gNormTemp ? gNormMax : gNormTemp;
+                    gNormMin = gNormMin < gNormTemp ? gNormMin : gNormTemp;
+
+                    gyroMax[0] = gyroMax[0] > gyro_data.x ? gyroMax[0] : gyro_data.x;
+                    gyroMin[0] = gyroMin[0] < gyro_data.x ? gyroMin[0] : gyro_data.x;
+
+                    gyroMax[1] = gyroMax[1] > gyro_data.y ? gyroMax[1] : gyro_data.y;
+                    gyroMin[1] = gyroMin[1] < gyro_data.y ? gyroMin[1] : gyro_data.y;
+
+                    gyroMax[2] = gyroMax[2] > gyro_data.z ? gyroMax[2] : gyro_data.z;
+                    gyroMin[2] = gyroMin[2] < gyro_data.z ? gyroMin[2] : gyro_data.z;
+                }
+
+                gNormDiff = gNormMax - gNormMin; // 最大值和最小值的差
+                for (uint8_t j = 0; j < 3; ++j)
+                    gyroDiff[j] = gyroMax[j] - gyroMin[j]; // 分别计算三轴
+                if (gNormDiff > 0.5f ||
+                    gyroDiff[0] > 0.15f ||
+                    gyroDiff[1] > 0.15f ||
+                    gyroDiff[2] > 0.15f)
+                    break;         // 超出范围了,重开! remake到while循环,外面还有一层
+                DWT_Delay(0.0005); // 休息一会再开始下一轮数据获取,IMU准备数据需要时间
+            }
+            gNorm /= (float)CaliTimes; // 加速度范数重力
+            for (uint8_t i = 0; i < 3; ++i)
+                Gyro_offset[i] /= (float)CaliTimes; // 三轴零飘
+            // 这里直接存到temperature,可以另外增加BMI088Instance的成员变量TempWhenCalib
+            // temperature = raw_data.temperature * BMI088_TEMP_FACTOR + BMI088_TEMP_OFFSET; // 保存标定时的温度,如果已知温度和零飘的关系
+        } while (gNormDiff > 0.5f ||
+                 fabsf(gNorm - 9.8f) > 0.5f ||
+                 gyroDiff[0] > 0.15f ||
+                 gyroDiff[1] > 0.15f ||
+                 gyroDiff[2] > 0.15f ||
+                 fabsf(Gyro_offset[0]) > 0.01f ||
+                 fabsf(Gyro_offset[1]) > 0.01f ||
+                 fabsf(Gyro_offset[2]) > 0.01f); // 满足条件说明标定环境不好
+
+        if (self_test.CALIBRATE_ERR == true) // 如果标定失败，使用预标定参数
         {
-            self_test.CALIBRATE_ERR = true;
-            // 恢复默认值或保留上次值
-            Gyro_offset[0] = BMI088_GYRO_PRE_CALI_OFFSET_X; 
-            Gyro_offset[1] = BMI088_GYRO_PRE_CALI_OFFSET_Y;
-            Gyro_offset[2] = BMI088_GYRO_PRE_CALI_OFFSET_Z;
+            Gyro_offset[0] = BMI088_PRE_CALI_ACC_X_OFFSET;
+            Gyro_offset[1] = BMI088_PRE_CALI_ACC_Y_OFFSET;
+            Gyro_offset[2] = BMI088_PRE_CALI_ACC_Z_OFFSET;
+            gNorm = BMI088_PRE_CALI_G_NORM;
         }
-        else
-        {
-            self_test.CALIBRATE_ERR = false;
-        }
+        Acc_coef *= 9.805 / gNorm;
     }
 
     void cBMI088::TemperatureControl(float target_temp)
@@ -131,11 +198,11 @@ namespace BMI088
         HAL_SPI_Transmit(&BMI088_SPI, &pTxData, 1, 1000); //< 发送地址
         HAL_SPI_Transmit(&BMI088_SPI, data, len, 1000);   //< 发送数据
 
+        // 理论上，这里不需要延时，但是如果数据出现问题，请尝试增加延时
         if (self_test.INIT_ERR == true)
         {
             DWT_Delay(0.001);
         }
-        
         //< 取消片选
         if (cs == BMI088_CS_ACC)
             HAL_GPIO_WritePin(BMI088_ACC_GPIOx, BMI088_ACC_GPIOp, GPIO_PIN_SET);
@@ -165,31 +232,29 @@ namespace BMI088
     void cBMI088::Config()
     {
         tx_thread_sleep(10); //< 等待系统稳定
-
-        /*-------------------------------------加速度计初始化-------------------------------------*/
-        
+        //< 加速度计初始化
         //< 先软重启，清空所有寄存器
         uint8_t pTxData;
         pTxData = ACC_SOFTRESET_VAL;
         WriteReg(BMI088_CS_ACC, ACC_SOFTRESET_ADDR, &pTxData, 1);
         tx_thread_sleep(100); //< 延时100ms,重启需要时间
 
-        //< 加速度计变成正常模式
-        pTxData = ACC_PWR_CONF_ACT;
-        WriteReg(BMI088_CS_ACC, ACC_PWR_CONF_ADDR, &pTxData, 1);
-        tx_thread_sleep(10); //
-
         //< 打开加速度计电源
         pTxData = ACC_PWR_CTRL_ON;
         WriteReg(BMI088_CS_ACC, ACC_PWR_CTRL_ADDR, &pTxData, 1);
         tx_thread_sleep(10); //
 
+        //< 加速度计变成正常模式
+        pTxData = ACC_PWR_CONF_ACT;
+        WriteReg(BMI088_CS_ACC, ACC_PWR_CONF_ADDR, &pTxData, 1);
+        tx_thread_sleep(10); //
+
         //< 测量范围
-        pTxData = ACC_RANGE_6G;
+        pTxData = ACC_RANGE_3G;
         WriteReg(BMI088_CS_ACC, ACC_RANGE_ADDR, &pTxData, 1);
         tx_thread_sleep(5); //< 延时5ms
 
-        pTxData = 0xAB;
+        pTxData = 0xAC;
         WriteReg(BMI088_CS_ACC, ACC_CONF_ADDR, &pTxData, 1);
         tx_thread_sleep(5); //< 延时5ms
 
@@ -207,11 +272,11 @@ namespace BMI088
         WriteReg(BMI088_CS_GYRO, GYRO_SOFTRESET_ADDR, &pTxData, 1);
         tx_thread_sleep(100); //< 延时100ms,重启需要时间
 
-        pTxData = GYRO_RANGE_2000_DEG_S;
+        pTxData = GYRO_RANGE_1000_DEG_S;
         WriteReg(BMI088_CS_GYRO, GYRO_RANGE_ADDR, &pTxData, 1);
         tx_thread_sleep(5); //< 延时5ms
 
-        pTxData = GYRO_ODR_2000Hz_BANDWIDTH_230Hz | GYRO_LPM1_SUS;//0x02;//
+        pTxData = 0x02;//GYRO_ODR_1000Hz_BANDWIDTH_116Hz | GYRO_LPM1_SUS;
         WriteReg(BMI088_CS_GYRO, GYRO_BANDWIDTH_ADDR, &pTxData, 1);
         tx_thread_sleep(5); //< 延时5ms
 
@@ -219,11 +284,11 @@ namespace BMI088
         WriteReg(BMI088_CS_GYRO, GYRO_LPM1_ADDR, &pTxData, 1);
         tx_thread_sleep(5); //< 延时5ms
 
-        pTxData = GYRO_DRDY_ON;
+        pTxData = 0x80;
         WriteReg(BMI088_CS_GYRO, GYRO_INT_CTRL_ADDR, &pTxData, 1);
         tx_thread_sleep(5); //< 延时5ms
 
-        pTxData = 0x00;
+        pTxData = 0x0C;
         WriteReg(BMI088_CS_GYRO, GYRO_INT3_INT4_IO_CONF_ADDR, &pTxData, 1);
         tx_thread_sleep(5); //< 延时5ms
 
@@ -242,9 +307,9 @@ namespace BMI088
         acc[0] = ((int16_t)buf[1 + 1] << 8) + (int16_t)buf[0 + 1];
         acc[1] = ((int16_t)buf[3 + 1] << 8) + (int16_t)buf[2 + 1];
         acc[2] = ((int16_t)buf[5 + 1] << 8) + (int16_t)buf[4 + 1];
-        data->x = (float)acc[0] * IMU_ACCEL_6G_SEN + BMI088_ACCEL_PRE_CALI_OFFSET_X; //sensor_filter[0].Update((float)acc[0] * Acc_coef);
-        data->y = (float)acc[1] * IMU_ACCEL_6G_SEN + BMI088_ACCEL_PRE_CALI_OFFSET_Y; //sensor_filter[1].Update((float)acc[1] * Acc_coef);
-        data->z = (float)acc[2] * IMU_ACCEL_6G_SEN + BMI088_ACCEL_PRE_CALI_OFFSET_Z; //sensor_filter[2].Update((float)acc[2] * Acc_coef);
+        data->x = sensor_filter[0].Update((float)acc[0] * Acc_coef);
+        data->y = sensor_filter[1].Update((float)acc[1] * Acc_coef);
+        data->z = sensor_filter[2].Update((float)acc[2] * Acc_coef);
     }
 
     void cBMI088::ReadGyroData(gyro_data_t *data)
@@ -259,9 +324,9 @@ namespace BMI088
         gyro[2] = ((int16_t)buf[5] << 8) + (int16_t)buf[4];
 
         //< 为了减少摩擦轮抖动带来的影响，加入333Hz滤波滤除
-        data->x = (float)gyro[0] * IMU_GYRO_2000_SEN - Gyro_offset[0]; // comment when calibration;//sensor_filter[3].Update((float)gyro[0] * IMU_GYRO_1000_SEN);
-        data->y = (float)gyro[1] * IMU_GYRO_2000_SEN - Gyro_offset[1]; // ;//sensor_filter[4].Update((float)gyro[1] * IMU_GYRO_1000_SEN);
-        data->z = (float)gyro[2] * IMU_GYRO_2000_SEN - Gyro_offset[2]; //sensor_filter[5].Update((float)gyro[2] * IMU_GYRO_1000_SEN);
+        data->x = sensor_filter[3].Update((float)gyro[0] * IMU_GYRO_1000_SEN);
+        data->y = sensor_filter[4].Update((float)gyro[1] * IMU_GYRO_1000_SEN);
+        data->z = sensor_filter[5].Update((float)gyro[2] * IMU_GYRO_1000_SEN);
     }
 
 

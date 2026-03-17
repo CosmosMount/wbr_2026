@@ -1,14 +1,15 @@
-#include "fast_math_functions.h"
 #include "tx_api.h"
 #include "om.h"
 
 #include "bsp_dwt.hpp"
 #include "bsp_pwm.hpp"
-#include "quaternion_ekf.hpp"
+#include "AHRS.hpp"
 #include "BMI088.hpp"
+#include "QuaternionEKF.h"
 #include "magicmsgs.hpp"
 
 using namespace BMI088;
+using namespace AHRS;
 using namespace Numeric;
 using namespace Matrix;
 
@@ -16,13 +17,39 @@ cBMI088 bmi088;
 cIMU *imu_handler = &bmi088;
 
 TX_THREAD IMUThread;
-uint8_t IMUThreadStack[4096] = {0};
+uint8_t IMUThreadStack[1024] = {0};
 TX_SEMAPHORE IMUThreadSem;
+ULONG IMU_time;
+
+static void InitQuaternion(float *init_q4)
+{
+    float acc_init[3] = {0};
+    float gravity_norm[3] = {0, 0, 1}; // 导航系重力加速度矢量,归一化后为(0,0,1)
+    float axis_rot[3] = {0};           // 旋转轴
+    // 读取100次加速度计数据,取平均值作为初始值
+    for (uint8_t i = 0; i < 100; ++i)
+    {
+        acc_init[X] += imu_handler->acc_data.x;
+        acc_init[Y] += imu_handler->acc_data.y;
+        acc_init[Z] += imu_handler->acc_data.z;
+        DWT_Delay(0.001);
+    }
+    for (uint8_t i = 0; i < 3; ++i)
+        acc_init[i] /= 100;
+    Norm3d(acc_init);
+    // 计算原始加速度矢量和导航系重力加速度矢量的夹角
+    float angle = acosf(Dot3d(acc_init, gravity_norm));
+    Cross3d(acc_init, gravity_norm, axis_rot);
+    Norm3d(axis_rot);
+    init_q4[0] = cosf(angle / 2.0f);
+    for (uint8_t i = 0; i < 2; ++i)
+        init_q4[i + 1] = axis_rot[i] * sinf(angle / 2.0f); // 轴角公式,第三轴为0(没有z轴分量)
+}
 
 [[noreturn]] void IMUThreadFun(ULONG initial_input) 
 {
     UNUSED(initial_input);
-    float thread_start_time;
+    IMU_time = tx_time_get();
 
     /* INS Topic */
     om_topic_t *ins_topic = om_config_topic(nullptr, "ca", "ins", sizeof(msg_ins_t));
@@ -36,46 +63,49 @@ TX_SEMAPHORE IMUThreadSem;
     imu_handler->self_test.CALIBRATE_ERR = false; // BMI088标定错误则为true
     imu_handler->self_test.TEMP_CTRL_ERR = false; // BMI088温度控制错误则为true
 
-    imu_handler->Config();              //< 初始化配置
-    imu_handler->VerifyAccChipID();     //< 验证加速度计ID
-    imu_handler->VerifyGyroChipID();    //< 验证陀螺仪ID
+    imu_handler->Config(); //< 初始化配置
+
+    imu_handler->VerifyAccChipID();  //< 验证加速度计ID
+    imu_handler->VerifyGyroChipID(); //< 验证陀螺仪ID
 
     while (imu_handler->acc_data.temperature < 45.0f) 
     {
         tx_thread_sleep(100);
     }
-    // tx_thread_sleep(2000);
+    tx_thread_sleep(2000);
+
+    imu_handler->Calibrate(); //< 标定IMU
     imu_handler->self_test.INIT_ERR = false;
 
-    imu_handler->Calibrate();          //< 标定陀螺仪
-    QuaternionEKF qekf;
-
     uint32_t INS_Count = 0;
+    float init_quaternion[4] = {0};
+    InitQuaternion(init_quaternion);
+    IMU_QuaternionEKF_Init(init_quaternion, 10, 0.001, 1000000, 1, 0);
     DWT_GetDeltaT(&INS_Count);
 
-    for (;;) 
-    {
-        thread_start_time = tx_time_get();
+    for (;;) {
+        IMU_time = tx_time_get();
 
-        if (!imu_handler->self_test.INIT_ERR) 
-        {
+        if (!imu_handler->self_test.INIT_ERR) {
             imu_handler->ReadAccData(&imu_handler->acc_data);
             imu_handler->ReadGyroData(&imu_handler->gyro_data);
-            qekf.UpdateKalman(
-                imu_handler->gyro_data.x, imu_handler->gyro_data.y, imu_handler->gyro_data.z,
+            if (fabs(imu_handler->acc_data.x) <= 0.1f && fabs(imu_handler->acc_data.y) <= 0.1f && fabs(imu_handler->acc_data.z) <= 0.1f &&
+                fabs(imu_handler->gyro_data.x) <= 0.01f && fabs(imu_handler->gyro_data.y) <= 0.01f && fabs(imu_handler->gyro_data.z) <= 0.01f)
+            {
+                imu_handler->gyro_data.z = 0;
+            }
+            IMU_QuaternionEKF_Update(imu_handler->gyro_data.x, imu_handler->gyro_data.y, imu_handler->gyro_data.z,
                 imu_handler->acc_data.x, imu_handler->acc_data.y, imu_handler->acc_data.z,
-                DWT_GetDeltaT(&INS_Count)
-            );
-            
+                DWT_GetDeltaT(&INS_Count));
         }
 
         tx_semaphore_put(&IMUThreadSem);
 
-        memcpy(msg_ins.quaternion, qekf.q, sizeof(qekf.q));
-        msg_ins.yaw = qekf.yaw;
-        msg_ins.pitch = qekf.pitch;
-        msg_ins.roll = qekf.roll;
-        msg_ins.total_yaw = qekf.total_yaw;
+        memcpy(msg_ins.quaternion, QEKF_INS.q, sizeof(QEKF_INS.q));
+        msg_ins.yaw = QEKF_INS.Yaw;
+        msg_ins.pitch = QEKF_INS.Pitch;
+        msg_ins.roll = QEKF_INS.Roll;
+        msg_ins.total_yaw = QEKF_INS.YawTotalAngle;
         msg_ins.gyro_r = imu_handler->gyro_data.x;
         msg_ins.gyro_p = imu_handler->gyro_data.y;
         msg_ins.gyro_y = imu_handler->gyro_data.z;
@@ -85,16 +115,17 @@ TX_SEMAPHORE IMUThreadSem;
 
         om_publish(ins_topic, &msg_ins, sizeof(msg_ins), true, false);
 
-        tx_thread_sleep(MIN(1, 1-(tx_time_get()-thread_start_time)));
-
+        uint8_t time_to_delay = tx_time_get() - IMU_time;
+        if (time_to_delay < 1) {
+            tx_thread_sleep(1 - time_to_delay);
+        }
     }
 }
 
 TX_THREAD IMUTempThread;
 uint8_t IMUTempThreadStack[1024] = {0};
 
-[[noreturn]] void IMUTempThreadFun(ULONG initial_input) 
-{
+[[noreturn]] void IMUTempThreadFun(ULONG initial_input) {
     UNUSED(initial_input);
 
     imu_handler->TempPid.mode = PID_POSITION | PID_Integral_Limit | PID_Changing_Integral_Rate | PID_Derivative_On_Measurement; // 位置式PID，积分限幅
@@ -106,8 +137,8 @@ uint8_t IMUTempThreadStack[1024] = {0};
     imu_handler->TempPid.ScalarA = 3.5f;
     imu_handler->TempPid.ScalarB = 0.08f;
 
-    imu_handler->TargetTemp = 45.0f;                                    //< 设置目标温度，一般为40度以上
-    PWM_Start(&HEATING_RESISTANCE_TIM, TIM_CHANNEL_4);    //< 启动加热电阻PWM
+    imu_handler->TargetTemp = 45.0f;                              //< 设置目标温度，一般为40度以上
+    PWM_Start(&HEATING_RESISTANCE_TIM, TIM_CHANNEL_4); //< 启动加热电阻PWM
 
     float tmp_last = imu_handler->acc_data.temperature;
     tx_thread_sleep(1000);
@@ -120,9 +151,13 @@ uint8_t IMUTempThreadStack[1024] = {0};
 
     for (;;) 
     {
-
         imu_handler->ReadAccTemperature(&imu_handler->acc_data.temperature);
         imu_handler->TemperatureControl(imu_handler->TargetTemp);
-        tx_thread_sleep(125);
+
+        uint8_t time_to_delay = tx_time_get() - IMU_time;
+        if (time_to_delay < 1) 
+        {
+            tx_thread_sleep(1 - time_to_delay);
+        }
     }
 }

@@ -1,5 +1,6 @@
 # pragma once
 
+#include "stdint.h"
 #include <cstdint>
 
 /* 通信协议内容: 常规链路由裁判系统服务器和主控模块进行数据转发，从电源管理模块的User串口收发数据 */
@@ -382,33 +383,37 @@ enum RefereeID
     RobotReceivedData = 0x0308,       // 选手端小地图接收机器人数据，频率上限3Hz
 };
 
-struct RefereeRingBuffer 
-{
-    uint8_t _buffer[256];
-    volatile uint16_t head = 0; // 写入位置
-    volatile uint16_t tail = 0; // 读取位置
-    
-    void push(const uint8_t* data, uint16_t len) 
-    {
-        for(uint16_t i=0; i<len; i++) 
-        {
-            _buffer[head] = data[i];
-            head = (head + 1) % 256;
-        }
-    }
-    
-    bool pop(uint8_t& byte) 
-    {
-        if(head == tail) return false;
-        byte = _buffer[tail];
-        tail = (tail + 1) % 256;
-        return true;
-    }
-};
+#define REFEREE_RX_BUF_LEN 128
 
-enum UnpackState
+class Referee
 {
-    STEP_HEADER_SOF = 0,
-    STEP_LENGTH_SEQ,
-    STEP_DATA_CRC16,
+public:
+    void ProcessData();
+    void HandleMsg(uint8_t *_Msgptr);
+    uint8_t RxBuffer[128];
+
+    GameStatus_t          GameStatus;
+    GameResult_t          GameResult;
+    RobotHP_t             RobotHP;
+    EventData_t           EventData;
+    RefereeWarning_t      RefereeWarning;
+    DartInfo_t            DartInfo;
+    GameRobotStatus_t     GameRobotStatus;
+    PowerHeatData_t       PowerHeatData;
+    GameRobotPos_t        GameRobotPos;
+    Buff_t                Buff;
+    RobotHurt_t           RobotHurt;
+    ShootData_t           ShootData;
+    RfidStatus_t          RfidStatus;
+    DartClientCmd_t      DartClientCmd;
+    RoboInteractData_t    RoboInteractData;
+
+    uint32_t              GameRobotStatusTick = 0;
+    uint32_t              PowerHeatTick = 0;
+
+    static Referee& Instance()
+    {
+        static Referee instance;
+        return instance;
+    }
 };

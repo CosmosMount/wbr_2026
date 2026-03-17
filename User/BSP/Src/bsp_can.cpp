@@ -2,8 +2,6 @@
 
 #include "DJIMotorHandler.hpp"
 #include "LKMotorHandler.hpp"
-#include "DMMotorHandler.hpp"
-
 
 #include "om.h"
 #include "magicmsgs.hpp"
@@ -12,8 +10,8 @@ extern FDCAN_HandleTypeDef hfdcan1;
 extern FDCAN_HandleTypeDef hfdcan2;
 extern FDCAN_HandleTypeDef hfdcan3;
 
-uint8_t xyAndRefAngleMsg[8] = {0};
-uint8_t StateAnduiMsg[8] = {0};
+extern uint8_t xyAndRefAngleMsg[8];
+extern uint8_t chassisStateMsg[8];
 
 /**
  * @brief 初始化CAN滤波器配置。
@@ -88,7 +86,6 @@ void HAL_FDCAN_RxFifo0Callback(FDCAN_HandleTypeDef *hfdcan, uint32_t RxFifo0ITs)
             DJIMotorHandler::Instance()->updateFeedback(hfdcan, rx_data, int(rx_header.Identifier - 0x201));
         }
     }
-
     /*--------------------------------------------------LK电机数据--------------------------------------------------*/
     else if (rx_header.Identifier >= 0x140 && rx_header.Identifier <= 0x160)
     {
@@ -105,30 +102,16 @@ void HAL_FDCAN_RxFifo0Callback(FDCAN_HandleTypeDef *hfdcan, uint32_t RxFifo0ITs)
             LKMotorHandler::Instance()->updateFeedback(hfdcan, rx_data, int(rx_header.Identifier - 0x141));
         }
     }
-
-    /*--------------------------------------------------达妙电机数据--------------------------------------------------*/
-    else if (rx_header.Identifier >= 0x05 && rx_header.Identifier <= 0x08)//Master ID 数值范围，自己在上位机定义
+    /*--------------------------------------------------云台消息--------------------------------------------------*/
+    else if (rx_header.Identifier >= 0xB1 && rx_header.Identifier <= 0xB8)
     {
-        if (hfdcan == &hfdcan1)
-        {
-            DMMotorHandler::Instance()->UpdateFeedback(hfdcan, rx_data, int(rx_header.Identifier - 0x05));
-        }
-        else if (hfdcan == &hfdcan2) // 处理CAN2的数据
-        {
-            DMMotorHandler::Instance()->UpdateFeedback(hfdcan, rx_data, int(rx_header.Identifier - 0x05));
-        }
-    }
-    
-    /*----------------------------------------------------云台数据----------------------------------------------------*/
-    else if (rx_header.Identifier >= 0xB1 && rx_header.Identifier <= 0xB4)
-    {
-        if (rx_header.Identifier == 0xB1)
-        {
-            memcpy(xyAndRefAngleMsg, rx_data, 8);
-        }
-        else if (rx_header.Identifier == 0xB2)
-        {
-            memcpy(StateAnduiMsg, rx_data, 8);
-        }
+        // if (rx_header.Identifier == 0xB1)
+        // {
+        //     memcpy(xyAndRefAngleMsg, rx_data, 8);
+        // }
+        // else if (rx_header.Identifier == 0xB2)
+        // {
+        //     memcpy(chassisStateMsg, rx_data, 8);
+        // }
     }
 }

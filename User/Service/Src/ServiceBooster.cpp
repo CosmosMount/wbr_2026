@@ -14,26 +14,22 @@ TX_THREAD my_thread2;
 uint8_t my_thread_stack2[512];
 
 extern TX_THREAD RemoterThread;
-extern TX_SEMAPHORE RemoterGot;
+extern TX_SEMAPHORE RemoterThreadSem;
 extern uint8_t RemoterThreadStack[1024];
 extern void RemoterThreadFun(ULONG initial_input);
 
 extern TX_THREAD IMUThread;
 extern TX_SEMAPHORE IMUThreadSem;
-extern uint8_t IMUThreadStack[4096];
+extern uint8_t IMUThreadStack[1024];
 extern void IMUThreadFun(ULONG initial_input);
 
 extern TX_THREAD IMUTempThread;
 extern uint8_t IMUTempThreadStack[1024];
 extern void IMUTempThreadFun(ULONG initial_input);
 
-extern TX_THREAD RefereeThread;
-extern uint8_t RefereeThreadStack[2048];
-extern void RefereeThreadFun(ULONG initial_input);
-
 /*EKF pool*/
-TX_BYTE_POOL KFPool;
-UCHAR KF_PoolBuf[4096] = {0};
+TX_BYTE_POOL MathPool;
+UCHAR Math_PoolBuf[14336] = {0};
 
 /*OneMessage pool*/
 TX_BYTE_POOL MsgPool;
@@ -73,10 +69,10 @@ extern "C" void ServiceBooster()
 {
     /*Math pool in ccram*/
     tx_byte_pool_create(
-            &KFPool,
-            (CHAR *) "KF_Pool",
-            KF_PoolBuf,
-            sizeof(KF_PoolBuf));
+            &MathPool,
+            (CHAR *) "Math_Pool",
+            Math_PoolBuf,
+            sizeof(Math_PoolBuf));
 
     tx_byte_pool_create(
             &MsgPool,
@@ -99,7 +95,7 @@ extern "C" void ServiceBooster()
         RemoterThreadFun, 0x1234, RemoterThreadStack, sizeof(RemoterThreadStack),
         2, 2, TX_NO_TIME_SLICE, TX_AUTO_START);
 
-    tx_semaphore_create(&RemoterGot, TX_NAME("RemoterGot"), 0);
+    tx_semaphore_create(&RemoterThreadSem, TX_NAME("RemoterThreadSem"), 0);
 
     tx_thread_create(&IMUThread, TX_NAME("IMUThread"),
         IMUThreadFun, 0x1234, IMUThreadStack, sizeof(IMUThreadStack),
@@ -110,8 +106,4 @@ extern "C" void ServiceBooster()
     tx_thread_create(&IMUTempThread, TX_NAME("IMUTempThread"),
         IMUTempThreadFun, 0x1234, IMUTempThreadStack, sizeof(IMUTempThreadStack),
         4, 4, TX_NO_TIME_SLICE, TX_AUTO_START);
-
-    tx_thread_create(&RefereeThread, TX_NAME("RefereeThread"),
-        RefereeThreadFun, 0x1234, RefereeThreadStack, sizeof(RefereeThreadStack),
-        8, 8, TX_NO_TIME_SLICE, TX_AUTO_START);
 }

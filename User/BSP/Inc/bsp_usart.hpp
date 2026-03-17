@@ -6,7 +6,10 @@
 #include "stm32h7xx.h"
 #include "usart.h"
 #include "dma.h"
-#include "adc.h"
+#include "bsp_cache.hpp"
+
+#define SBUS_RX_BUF_NUM 18u
+
 
 enum USART_Mode
 {
@@ -16,6 +19,9 @@ enum USART_Mode
   };
 
 void USART_Init(void);
+
+extern uint8_t SBUS_MultiRx_Buf[2][18u];
+
 
 
 #endif //  __BSP_USART_H
