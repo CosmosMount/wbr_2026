@@ -199,6 +199,7 @@ __attribute__((section(".RAM_D3"))) msg_remoter_t debug_remoter;
                     static uint16_t delay_timer;
                     cmd.dyaw = 0.0f;
                     cmd.w = 0.0f;
+                #ifndef STAIRUP
                     if (remoter.jump_sw == Prepared)
                     {
                         cmd.len = LEG_NORMAL_LEN;
@@ -247,6 +248,18 @@ __attribute__((section(".RAM_D3"))) msg_remoter_t debug_remoter;
                             }
                         }
                     }
+                #else
+                    if (remoter.jump_sw == Prepared)
+                    {
+                        cmd.len = LQR_MAX_LEN_CTRL;
+                        cmd.v = v_updater.UpdateVal(remoter.left_y);
+                    }
+                    else if (remoter.jump_sw == Jump)
+                    {
+                        cmd.v = v_updater.UpdateVal(remoter.left_y);
+                        cmd.len = LQR_MIN_LEN_CTRL;
+                    }
+                #endif
                 }
             }
             else if (remoter.ctrl_sw == Spin)

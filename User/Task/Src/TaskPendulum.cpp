@@ -117,14 +117,14 @@ float debug_alpha_dot = 0.0f;
         {
             observedX[0] = odom.x;//0.0f;//
             observedX[1] = odom.v;//0.0f;//
-            observedX[2] = 0.0f;//ins.total_yaw*DegreeToRad;//
-            observedX[3] = 0.0f;//ins.gyro_y;//
-            observedX[4] = 0.0f;//solver_fdb.lalpha;//
-            observedX[5] = 0.0f;//solver_fdb.lalpha_dot;
-            observedX[6] = 0.0f;//solver_fdb.ralpha;//
-            observedX[7] = 0.0f;//solver_fdb.ralpha_dot;
-            observedX[8] = 0.0f;//ins.pitch*DegreeToRad;
-            observedX[9] = 0.0f;//ins.gyro_p;
+            observedX[2] = ins.total_yaw*DegreeToRad;//0.0f;//
+            observedX[3] = ins.gyro_y;//0.0f;//
+            observedX[4] = solver_fdb.lalpha;//0.0f;//
+            observedX[5] = solver_fdb.lalpha_dot;
+            observedX[6] = solver_fdb.ralpha;//0.0f;//
+            observedX[7] = solver_fdb.ralpha_dot;
+            observedX[8] = ins.pitch*DegreeToRad;
+            observedX[9] = ins.gyro_p;
             
             if (!cmd.move)
             {
@@ -151,7 +151,7 @@ float debug_alpha_dot = 0.0f;
             }
             else 
             {
-            #ifndef HORIZON_ONLY
+                
                 if (solver_fdb.N < 20.0f)
                 {
                     roll_pd.ref = cmd.roll;
@@ -220,25 +220,6 @@ float debug_alpha_dot = 0.0f;
                     pendulum_ctrl.Tl[1] = Tout[2];
                     pendulum_ctrl.Tr[1] = Tout[3];
                 }
-            #else
-                refX[0] = cmd.x;
-                refX[1] = cmd.v;
-                refX[2] = 0.0f;//ins.total_yaw*DegreeToRad+cmd.dyaw*0.001f;
-                refX[3] = 0.0f;//cmd.w+cmd.dyaw;
-                refX[4] = 0.0f;
-                refX[5] = 0.0f;
-                refX[6] = 0.0f;
-                refX[7] = 0.0f;
-                refX[8] = 0.0f;
-                refX[9] = 0.0f;
-
-                lqr_controller.refreshLQRK(0.14f, 0.14f, false);
-                lqr_controller.LQRCal(Tout);
-                pendulum_ctrl.Twl = Tout[0];
-                pendulum_ctrl.Twr = Tout[1];
-                // pendulum_ctrl.Tl[1] = Tout[2];
-                // pendulum_ctrl.Tr[1] = Tout[3];
-            #endif
             }
         }
 
