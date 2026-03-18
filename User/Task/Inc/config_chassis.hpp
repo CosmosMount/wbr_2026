@@ -48,6 +48,13 @@ typedef enum
     LANDING
 }jump_stage_e;
 
+typedef enum
+{
+    NORMAL,
+    PRESTAIR,
+    STAIR
+}chassis_stage_e;
+
 /*底盘运动模式*/
 typedef enum
 {

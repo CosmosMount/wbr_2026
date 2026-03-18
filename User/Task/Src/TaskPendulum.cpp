@@ -206,10 +206,21 @@ float debug_alpha_dot = 0.0f;
                     refX[1] = cmd.v;
                     refX[2] = ins.total_yaw*DegreeToRad+cmd.dyaw*0.001f;
                     refX[3] = cmd.w+cmd.dyaw;
-                    refX[4] = 0.0f;
-                    refX[5] = 0.0f;
-                    refX[6] = 0.0f;
-                    refX[7] = 0.0f;
+                    if (cmd.prestair)
+                    {
+                        refX[4] = 0.2f;
+                        refX[5] = 0.05f;
+                        refX[6] = 0.2f;
+                        refX[7] = 0.05f;
+                    }
+                    else 
+                    {
+                        refX[4] = 0.0f;
+                        refX[5] = 0.0f;
+                        refX[6] = 0.0f;
+                        refX[7] = 0.0f;
+                    }
+                    
                     refX[8] = 0.0f;
                     refX[9] = 0.0f;
 

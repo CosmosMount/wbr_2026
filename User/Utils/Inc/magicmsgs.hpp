@@ -144,4 +144,6 @@ struct msg_cmd_t
     bool move;
     bool inair;
     bool ifflip;
+    bool prestair;
+    bool stair;
 };
