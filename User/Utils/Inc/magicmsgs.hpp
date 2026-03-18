@@ -146,4 +146,5 @@ struct msg_cmd_t
     bool ifflip;
     bool prestair;
     bool stair;
+    bool extending;
 };

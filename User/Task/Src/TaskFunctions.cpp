@@ -193,6 +193,8 @@ __attribute__((section(".RAM_D3"))) msg_remoter_t debug_remoter;
                     cmd.len = FloatConstrain(cmd.len, 0.14f, 0.34f);
                     cmd.w = 0.0f;
                     cmd.inair = false;
+                    cmd.stair = false;
+                    cmd.prestair = false;
                 }
                 else
                 {
@@ -204,6 +206,8 @@ __attribute__((section(".RAM_D3"))) msg_remoter_t debug_remoter;
                     {
                         cmd.len = LEG_NORMAL_LEN;
                         cmd.v = v_updater.UpdateVal(remoter.left_y*2.5f);
+                        cmd.dyaw = yaw_updater.UpdateVal(-remoter.right_x*1.5f);
+                        cmd.roll = 0.0f;
                         cmd.inair = false;
                         jump_stage = START_JUMP;
                         delay_timer = 0;
@@ -220,18 +224,20 @@ __attribute__((section(".RAM_D3"))) msg_remoter_t debug_remoter;
                         }
                         else if (jump_stage == EXTEND_LEGS)
                         {
-                            cmd.len = len_updater.UpdateVal(LEG_JUMP_START_LEN);
-                            if (++delay_timer == 70)
+                            cmd.len = LEG_JUMP_START_LEN;
+                            cmd.extending = true;
+                            if ((solver_fdb.llen+solver_fdb.rlen)*0.5f > 0.32f)
                             {
                                 delay_timer = 0;
                                 jump_stage = IN_AIR;
+                                cmd.extending = false;
                             }                                
                         }
                         else if (jump_stage == IN_AIR)
                         {
                             cmd.inair = true;
-                            cmd.len = len_updater.UpdateVal(LEG_JUMP_AIR_LEN);
-                            if (++delay_timer == 150)
+                            cmd.len = LEG_JUMP_AIR_LEN;
+                            if ((solver_fdb.llen+solver_fdb.rlen)*0.5f < 0.14f)
                             {
                                 delay_timer = 0;
                                 jump_stage = LANDING;

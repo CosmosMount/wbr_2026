@@ -3,7 +3,7 @@
 #define SJTU_MODEL
 #define CHASSIS_ONLY
 // #define HORIZON_ONLY
-#define STAIRUP
+// #define STAIRUP
 
 #define TOF_DATA_SIZE 9
 
@@ -31,7 +31,7 @@
 #define LEG_NORMAL_STEP 0.001f
 #define LEG_JUMP_STEP 0.007f
 
-#define LEG_NORMAL_LEN 0.21f
+#define LEG_NORMAL_LEN 0.17f
 #define LEG_JUMP_START_LEN 0.370f
 #define LEG_JUMP_AIR_LEN 0.140f
 

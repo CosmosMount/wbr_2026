@@ -202,6 +202,17 @@ float debug_alpha_dot = 0.0f;
                     rleg_len_pd.UpdateResult(solver_fdb.rlen_dot);
                     pendulum_ctrl.Tr[0] = rleg_len_pd.result;//0.0f;//
 
+                    if (cmd.extending)
+                    {
+                        pendulum_ctrl.Tl[0] = 400.0f;
+                        pendulum_ctrl.Tr[0] = 400.0f;
+                    }
+                    else if (cmd.inair)
+                    {
+                        pendulum_ctrl.Tl[0] = -200.0f;
+                        pendulum_ctrl.Tr[0] = -200.0f;
+                    }
+
                     refX[0] = cmd.x;
                     refX[1] = cmd.v;
                     refX[2] = ins.total_yaw*DegreeToRad+cmd.dyaw*0.001f;
