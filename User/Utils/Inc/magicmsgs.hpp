@@ -92,7 +92,8 @@ struct msg_remoter_t
 /**
  * @brief AHRS消息结构
  */
-struct msg_ins_t {
+struct msg_ins_t 
+{
     float quaternion[4];    ///< 四元数
     float roll;             ///< 横滚角, deg
     float pitch;            ///< 俯仰角, deg

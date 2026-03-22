@@ -130,6 +130,21 @@ debug_motor_t debug_motor;
         comm_cmd_t *cmd_msg = reinterpret_cast<comm_cmd_t*>(CmdMsg);
         cmd_msg_debug = cmd_msg;
 
+    #ifdef GIMBAL_ONLY
+        if (!cmd_msg->ifmove)
+        {
+            yaw_motor.currentSet = 0;
+            trigger_motor.speedSet = 0.0f;
+        }
+        else 
+        {
+            yaw_motor.currentSet = cmd_msg->yaw_cur;
+            trigger_motor.speedSet = cmd_msg->tri_spd*36.0f;
+            trigger_motor.setOutput();
+            DJIMotorHandler::Instance()->sendControlData();
+        }
+        
+    #else
     #ifndef CHASSIS_ONLY
 
         /* Handle Gimbal Motors */
@@ -204,9 +219,6 @@ debug_motor_t debug_motor;
         else
         {
             cmd.move = true;
-            cmd.dyaw = -relative_angle*2.5f;
-            cmd.v = v_updater.UpdateVal(cmd_msg->vx*0.1f*2.0f);
-            cmd.roll = 0.0f;
 
             if (pendulum_data.reset_len)
             {
@@ -225,6 +237,19 @@ debug_motor_t debug_motor;
             cmd.spin = false;
             cmd.inair = false;
             cmd.gostair = false;
+
+            if (cmd_msg->ifspin)
+            {
+                cmd.dyaw = yaw_updater.UpdateVal(3.0f);
+                cmd.v = 0.0f;
+                cmd.roll = 0.0f;
+            }
+            else 
+            {
+                cmd.dyaw = -relative_angle*2.5f;
+                cmd.v = v_updater.UpdateVal(cmd_msg->vx*0.1f*2.0f);
+                cmd.roll = 0.0f;
+            }
             
             // if (cmd_msg->ifspin)
             // {
@@ -435,6 +460,7 @@ debug_motor_t debug_motor;
         debug_motor.yawmotor_cur = yaw_motor.motorFeedback.currentFdb;
         debug_motor.tri_spd = trigger_motor.motorFeedback.speedFdb;
         debug_motor.tri_cur = trigger_motor.motorFeedback.currentFdb;
+    #endif
     #endif
         /* Thread periodic delay */
         tx_semaphore_put(&FunctionThreadSem);
