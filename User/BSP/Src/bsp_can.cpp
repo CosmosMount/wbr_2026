@@ -8,6 +8,8 @@
 #include "magicmsgs.hpp"
 #include "config_comm.hpp"
 
+#include "supercap.hpp"
+
 extern FDCAN_HandleTypeDef hfdcan1;
 extern FDCAN_HandleTypeDef hfdcan2;
 extern FDCAN_HandleTypeDef hfdcan3;
@@ -161,7 +163,7 @@ void HAL_FDCAN_RxFifo0Callback(FDCAN_HandleTypeDef *hfdcan, uint32_t RxFifo0ITs)
             DMMotorHandler::Instance()->UpdateFeedback(hfdcan, rx_data, int(rx_header.Identifier - DM_MASTER_ID));
         }
     }
-    /*----------------------------------------------------云台数据----------------------------------------------------*/
+    /*----------------------------------------------------云台及超电数据----------------------------------------------------*/
     else
     {
         if (hfdcan == &hfdcan3)
@@ -170,6 +172,8 @@ void HAL_FDCAN_RxFifo0Callback(FDCAN_HandleTypeDef *hfdcan, uint32_t RxFifo0ITs)
                 memcpy(UIMsg, rx_data, 8);
             else if (rx_header.Identifier == 0xB2)
                 memcpy(CmdMsg, rx_data, 8);
+            else if (rx_header.Identifier == 0xB4)
+                SuperCap::Instance()->ReceiveCapData(rx_data, 8);
         }
     }  
 }

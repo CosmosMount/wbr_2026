@@ -1,6 +1,4 @@
 #include "supercap.hpp"
-#include "bsp_can.hpp"
-#include "fdcan.h"
 
 void SuperCap::Init()
 {
@@ -35,6 +33,12 @@ void SuperCap::SetPowerLimit(float power)
 void SuperCap::SendCapData()
 {
     CAN_Transmit(&hfdcan3, 0xC5, supercap_set._data, 8);
+}
+
+void SuperCap::ReceiveCapData(uint8_t *data, uint16_t len)
+{
+    if (len != 8) return;
+    memcpy(supercap_fdb._data, data, 8);
 }
 
 SuperCap::SuperCapState SuperCap::GetCapState()

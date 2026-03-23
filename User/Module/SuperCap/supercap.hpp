@@ -1,7 +1,8 @@
 #pragma once
 
 #include "main.h"
-
+#include <cstring>
+#include "fdcan.h"
 #include "bsp_can.hpp"
 
 struct supercap_set_t
@@ -59,5 +60,11 @@ public:
     float GetCapInPower();
     float GetCapEnergy();
     void SendCapData();
-    void ReceiveCapData();
+    void ReceiveCapData(uint8_t *data, uint16_t len);
+
+    static SuperCap* Instance()
+    {
+        static SuperCap instance;
+        return &instance;
+    }
 };
