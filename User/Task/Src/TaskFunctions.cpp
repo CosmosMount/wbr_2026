@@ -1,4 +1,5 @@
 #include "DJIMotor.hpp"
+#include "fast_math_functions.h"
 #include "tx_api.h"
 #include "vmc.hpp"
 #include "om.h"
@@ -9,6 +10,7 @@
 #include "pid.hpp"
 #include "lqr.hpp"
 #include "slope.hpp"
+#include "supercap.hpp"
 #include "magicmsgs.hpp"
 
 #include "config_comm.hpp"
@@ -48,6 +50,7 @@ typedef struct
     float tri_cur;
 } debug_motor_t;
 debug_motor_t debug_motor;
+SuperCap* debug_supercap = SuperCap::Instance();
 #endif
 
 [[noreturn]] void FunctionThreadFun(ULONG initial_input)
@@ -81,6 +84,8 @@ debug_motor_t debug_motor;
     om_suber_t *referee_suber = om_subscribe(om_find_topic("referee", UINT32_MAX));
     msg_referee_t referee_data{};
 
+    SuperCap::Instance()->Init();
+
     /* Gimbal motors on chassis */
     GM6020 yaw_motor;
     yaw_motor.gearBox = GearBox_None;
@@ -90,7 +95,8 @@ debug_motor_t debug_motor;
     trigger_motor.speedPid.kp = 100.0f;
     constexpr float yaw_offset1 = -0.9702433935;
     constexpr float yaw_offset2 = 2.1836215575;
-    bool yaw_init = false;
+    bool yaw_init = false, spin_offset_init = false;
+    float distance1, distance2, front_offset, relative_angle; 
     
     /* Communication with Gimbal */
     uint8_t CommMsg[8] = {0};
@@ -148,10 +154,13 @@ debug_motor_t debug_motor;
     #ifndef CHASSIS_ONLY
 
         /* Handle Gimbal Motors */
-        float distance1 = fabs(yaw_motor.motorFeedback.positionFdb-yaw_offset1);
-        float distance2 = fabs(yaw_motor.motorFeedback.positionFdb-yaw_offset2);
-        float front_offset = distance1 < distance2 ? yaw_offset1 : yaw_offset2;
-        float relative_angle = yaw_motor.motorFeedback.positionFdb - front_offset;
+        distance1 = fabs(yaw_motor.motorFeedback.positionFdb-yaw_offset1);
+        distance2 = fabs(yaw_motor.motorFeedback.positionFdb-yaw_offset2);
+        if (!spin_offset_init)
+        {
+            front_offset = distance1 < distance2 ? yaw_offset1 : yaw_offset2;
+        }
+        relative_angle = yaw_motor.motorFeedback.positionFdb - front_offset;
         
         if (!cmd_msg->ifmove)
         {
@@ -240,12 +249,22 @@ debug_motor_t debug_motor;
 
             if (cmd_msg->ifspin)
             {
-                cmd.dyaw = yaw_updater.UpdateVal(3.0f);
-                cmd.v = 0.0f;
+                spin_offset_init = true;
+                if (cmd_msg->vx < 0.05f)
+                {
+                    cmd.dyaw = yaw_updater.UpdateVal(10.0f);
+                    cmd.v = 0.0f;
+                }
+                else 
+                {
+                    cmd.dyaw = yaw_updater.UpdateVal(10.0f);
+                    cmd.v = v_updater.UpdateVal(-cmd_msg->vx*0.1f*2.0f)*arm_sin_f32(relative_angle);
+                }
                 cmd.roll = 0.0f;
             }
             else 
             {
+                spin_offset_init = false;
                 cmd.dyaw = -relative_angle*2.5f;
                 cmd.v = v_updater.UpdateVal(cmd_msg->vx*0.1f*2.0f);
                 cmd.roll = 0.0f;
@@ -439,6 +458,8 @@ debug_motor_t debug_motor;
         chassis_msg.level = referee_data.robot_status.robot_level;
         chassis_msg.heatlimit = referee_data.robot_status.shooter_barrel_heat_limit;
         chassis_msg.heatnow = referee_data.heat_now;
+
+        SuperCap::Instance()->SendCapData();
 
         memcpy(&CommMsg, reinterpret_cast<uint8_t*>(&chassis_msg), sizeof(comm_chassis_t));
         CAN_Transmit(&hfdcan3, 0xC1, CommMsg, 8);

@@ -97,8 +97,9 @@ public:
         arm_quaternion_product_f32(_quaternion, _acc, temp, 1);
         arm_quaternion_product_f32(temp, _quaternion_conj, a_world, 1);
 
-        float a_x = sqrtf(a_world[1] * a_world[1] + a_world[2] * a_world[2]) *
-                    arm_cos_f32(atan2f(a_world[2], a_world[1]) - _yaw);
+        // float a_x = sqrtf(a_world[1] * a_world[1] + a_world[2] * a_world[2]) *
+        //             arm_cos_f32(atan2f(a_world[2], a_world[1]) - _yaw);
+        float a_x = a_world[1] * arm_cos_f32(_yaw) + a_world[2] * arm_sin_f32(_yaw);
 
         vel_kf.UpdateKalman(_vel, a_x);
 

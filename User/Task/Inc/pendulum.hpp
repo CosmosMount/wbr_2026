@@ -205,8 +205,8 @@ public:
                        + this->alpha_eq_coeff[1] * this->len
                        + this->alpha_eq_coeff[2] * this->len * this->len;
 
-        if (this->len < 0.17f)
-            this->alpha_eq *= 0.75f;
+        // if (this->len < 0.17f)
+        //     this->alpha_eq *= 0.75f;
 
         /* ── 逆动力学 ────────────────────────────────────────────────────── */
         float Treal[2] = {joint1_tor, joint4_tor};

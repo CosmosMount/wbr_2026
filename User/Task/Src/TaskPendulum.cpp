@@ -47,6 +47,8 @@ struct pendulum_debug_t
     float llen;
     float rlen;
     float l_ref;
+    float llenref;
+    float rlenref;
     float pitch;
     float pitch_dot;
     float Cl;
@@ -98,8 +100,8 @@ struct pid_tuning_t
 };
 msg_ins_t debug_ins;
 pendulum_debug_t pendulum_debug;
-pid_tuning_t lenpd_tuning = {2000.0f, 0.0f, -500.0f};
-pid_tuning_t rollpd_tuning = {0.5f, 0.001f, -0.5f};
+pid_tuning_t lenpd_tuning = {5000.0f, 0.0f, -700.0f};
+pid_tuning_t rollpd_tuning = {0.7f, 0.001f, -0.1f};
 #endif
 
 [[noreturn]] void PendulumThreadFun(ULONG initial_input)
@@ -174,7 +176,7 @@ pid_tuning_t rollpd_tuning = {0.5f, 0.001f, -0.5f};
     PID rleg_len_pd(6000.0f, 0.0f, -1000.0f, 125.0f, 0.0f, PID_DVEL);
     PID lleg_len_pd(6000.0f, 0.0f, -1000.0f, 125.0f, 0.0f, PID_DVEL);
     /* roll */
-    PID roll_pd(0.7f, 0.0001f, 1.4f, 3.0f, 0.05f);
+    PID roll_pd(0.7f, 0.0001f, 1.4f, 3.0f, 0.005f);
     /* state machine */
     chassis_state_e chassis_state = RELAX;
     jump_stage_e jump_stage = DONT;
@@ -345,7 +347,7 @@ pid_tuning_t rollpd_tuning = {0.5f, 0.001f, -0.5f};
             refX[7] = 0.0f;
             refX[8] = 0.0f;
             refX[9] = 0.0f;
-            lqr.lqr_type = LQR_LOW;
+            lqr.lqr_type = LQR_STANDUP;
             lqr.Update(lpendulum.len, rpendulum.len, false);
 
             Twl = lqr.Tout[0];
@@ -402,7 +404,7 @@ pid_tuning_t rollpd_tuning = {0.5f, 0.001f, -0.5f};
             refX[5] = 0.0f;
             refX[6] = rpendulum.alpha_eq;
             refX[7] = 0.0f;
-            refX[8] = 0.0f;
+            refX[8] = 0.005f;
             refX[9] = 0.0f;
 
             if ((lpendulum.len+rpendulum.len)*0.5f > 0.23f)
@@ -436,10 +438,10 @@ pid_tuning_t rollpd_tuning = {0.5f, 0.001f, -0.5f};
             rleg_len_pd.ref = cmd.len-roll_pd.result;
             lleg_len_pd.fdb = lpendulum.len;
             lleg_len_pd.UpdateResult(lpendulum.dlen);
-            Fl[0] = lleg_len_pd.result - GRAVITY_FF;
+            Fl[0] = lleg_len_pd.result - GRAVITY_FF;// + 7.0f*lpendulum.len/WHEEL_DIST*odom.v*dyaw;
             rleg_len_pd.fdb = rpendulum.len;
             rleg_len_pd.UpdateResult(rpendulum.dlen);
-            Fr[0] = rleg_len_pd.result - GRAVITY_FF;
+            Fr[0] = rleg_len_pd.result - GRAVITY_FF;// - 7.0f*rpendulum.len/WHEEL_DIST*odom.v*dyaw;
 
             lpendulum.TorqueControl(Fl, Twl);
             rpendulum.TorqueControl(Fr, Twr);
@@ -817,6 +819,8 @@ pid_tuning_t rollpd_tuning = {0.5f, 0.001f, -0.5f};
         pendulum_debug.v = odom.v;
         pendulum_debug.vref = cmd.v;
         pendulum_debug.l_ref = cmd.len;
+        pendulum_debug.llenref = lleg_len_pd.ref;
+        pendulum_debug.rlenref = rleg_len_pd.ref;
         pendulum_debug.llen = lpendulum.len;
         pendulum_debug.rlen = rpendulum.len;
         pendulum_debug.alphal = lpendulum.alpha;

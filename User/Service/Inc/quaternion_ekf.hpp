@@ -143,6 +143,15 @@ public:
         this->Q_data[28] = Q2 * dt;
         this->Q_data[35] = Q2 * dt;
 
+        // 计算yaw角速度
+        float yaw_rate = fabsf(gz - GyroBias[2]); // 绕z轴
+        
+        // 动态调整R
+        float r_scale = 1.0f + yaw_rate * yaw_rate; // 旋转越快越不信加速度计
+        this->R_data[0] = 100000.0f * r_scale;
+        this->R_data[4] = 100000.0f * r_scale;
+        this->R_data[8] = 100000.0f * r_scale;
+
         // Call base Update
         this->Update();
 
