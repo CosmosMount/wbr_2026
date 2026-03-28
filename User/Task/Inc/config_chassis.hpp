@@ -11,7 +11,7 @@
 #define NORMAL_LEG_LEN    0.20f
 #define MIN_LEG_LEN       0.15f//true:14
 #define MID_LEG_LEN       0.24f
-#define MAX_LEG_LEN       0.30f//true:30
+#define MAX_LEG_LEN       0.32f//true:30
 #define LQR_LEN_RESOLUTION     0.01f
 
 /* 腿长，单位m */

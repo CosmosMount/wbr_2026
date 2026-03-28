@@ -92,6 +92,7 @@ struct pendulum_debug_t
     float rwheel_spd;
     uint8_t stage;
     uint8_t motorL4error;
+  
 
 };
 struct pid_tuning_t 
@@ -375,7 +376,7 @@ DMMotorHandler *dmmotorhandler = DMMotorHandler::Instance();
                 Fr[1]=0.0f;
             }
 
-            if (Numeric::abs(lpendulum.alpha) > 1.0f || Numeric::abs(rpendulum.alpha) > 1.0f) 
+            if (Numeric::abs(lpendulum.alpha) > 0.5f || Numeric::abs(rpendulum.alpha) > 0.5f) 
             {
                 Twl=0.0f;
                 Twr=0.0f;
@@ -836,7 +837,8 @@ DMMotorHandler *dmmotorhandler = DMMotorHandler::Instance();
         pendulum_debug.pitch_dot = dpitch;
         pendulum_debug.yaw = yaw;
         pendulum_debug.yawref = cmd.yaw;
-        pendulum_debug.yaw_dot = dyaw;
+        pendulum_debug.yaw_dot = cmd.dyaw;
+        pendulum_debug.yaw_out = dyaw;
         pendulum_debug.Twl = Twl;
         pendulum_debug.Twr = Twr;
         pendulum_debug.Tpl = lqr.Tout[2];

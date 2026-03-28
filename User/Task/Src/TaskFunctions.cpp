@@ -239,7 +239,7 @@ SuperCap* debug_supercap = SuperCap::Instance();
                 // target_len = cmd.len + cmd_msg->vy * 0.1f * 0.0008f;
                 // target_len = FloatConstrain(target_len, MIN_LEG_LEN, MAX_LEG_LEN);
                 // cmd.len = len_updater.UpdateVal(target_len);
-                cmd.len += cmd_msg->vy * 0.1f * 0.0008f;
+                cmd.len += cmd_msg->vy * 0.1f * 0.0006f;
                 cmd.len = FloatConstrain(cmd.len, MIN_LEG_LEN, MAX_LEG_LEN);
             }
             
@@ -265,7 +265,7 @@ SuperCap* debug_supercap = SuperCap::Instance();
             else 
             {
                 spin_offset_init = false;
-                cmd.dyaw = -relative_angle*2.5f;
+                cmd.dyaw = -relative_angle*6.0f;
                 cmd.v = v_updater.UpdateVal(cmd_msg->vx*0.1f*2.0f);
                 cmd.roll = 0.0f;
             }
