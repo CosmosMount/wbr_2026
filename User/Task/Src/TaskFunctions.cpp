@@ -191,7 +191,7 @@ SuperCap* debug_supercap = SuperCap::Instance();
             trigger_motor.speedSet = cmd_msg->tri_spd*36.0f;
         }
 
-        
+        trigger_motor.speedSet = cmd_msg->tri_spd*36.0f;
         trigger_motor.setOutput();
         DJIMotorHandler::Instance()->sendControlData();
 

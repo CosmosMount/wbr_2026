@@ -13,7 +13,7 @@ constexpr int MAX_DMMOTOR_NUM = 4; // 每个CAN口最大电机数量，如果全
 
 // 控制帧和反馈帧的ID偏移
 constexpr uint32_t DM_CAN_ID = 0x01;    // CAN_ID，控制帧ID，需要用上位机调整至0x01~0x04。如果使用1拖4模式，可能需要额外调整
-constexpr uint32_t DM_MASTER_ID = 0x11; // MST_ID 反馈ID偏置。建议同一个电机的CAN_ID和MST_ID不相等。使用本驱动时，需要所有DM电机的偏置相同。例如当偏置为0x11，CAN_ID为0x01，则MST_ID为0x11，0x02对应0x12，以此类推。
+constexpr uint32_t DM_MASTER_ID = 0x05; // MST_ID 反馈ID偏置。建议同一个电机的CAN_ID和MST_ID不相等。使用本驱动时，需要所有DM电机的偏置相同。例如当偏置为0x11，CAN_ID为0x01，则MST_ID为0x11，0x02对应0x12，以此类推。
 
 // 1拖4模式相关，同一路CAN上，不建议把1拖4模式和其他模式混用，因为这会导致极大的带宽浪费。
 // constexpr bool CAN1_USE_1to4 = false; // CAN1是否使用1拖4模式

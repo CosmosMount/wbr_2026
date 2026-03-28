@@ -91,6 +91,8 @@ struct pendulum_debug_t
     float lwheel_spd;
     float rwheel_spd;
     uint8_t stage;
+    uint8_t motorL4error;
+
 };
 struct pid_tuning_t 
 {
@@ -100,8 +102,9 @@ struct pid_tuning_t
 };
 msg_ins_t debug_ins;
 pendulum_debug_t pendulum_debug;
-pid_tuning_t lenpd_tuning = {5000.0f, 0.0f, -700.0f};
-pid_tuning_t rollpd_tuning = {0.7f, 0.001f, -0.1f};
+pid_tuning_t lenpd_tuning = {6000.0f, 0.0f, -900.0f};
+pid_tuning_t rollpd_tuning = {0.0f, 0.000f, -0.00f};
+DMMotorHandler *dmmotorhandler = DMMotorHandler::Instance();
 #endif
 
 [[noreturn]] void PendulumThreadFun(ULONG initial_input)
@@ -124,13 +127,13 @@ pid_tuning_t rollpd_tuning = {0.7f, 0.001f, -0.1f};
     RWheel.currentSet = 0;
     RWheel.gearBox = GearBox_XRoll;
 
-    DMMotorHandler::Instance()->registerMotor(&LJoint4, &hfdcan1, 0x03);
+    DMMotorHandler::Instance()->registerMotor(&LJoint4, &hfdcan1, 0x02);
     LJoint4.controlMode = DMMotor::MIT_MODE;
     LJoint4.canType = DMMotor::DM_FDCAN;
     LJoint4.torqueSet = 0;
     DMMotorHandler::Instance()->EnableMotor_Block(&LJoint4);
 
-    DMMotorHandler::Instance()->registerMotor(&LJoint1, &hfdcan1, 0x04);
+    DMMotorHandler::Instance()->registerMotor(&LJoint1, &hfdcan1, 0x03);
     LJoint1.controlMode = DMMotor::MIT_MODE;
     LJoint1.canType = DMMotor::DM_FDCAN;
     LJoint1.torqueSet = 0;
@@ -142,7 +145,7 @@ pid_tuning_t rollpd_tuning = {0.7f, 0.001f, -0.1f};
     RJoint4.torqueSet = 0;
     DMMotorHandler::Instance()->EnableMotor_Block(&RJoint4);
 
-    DMMotorHandler::Instance()->registerMotor(&RJoint1, &hfdcan1, 0x02);
+    DMMotorHandler::Instance()->registerMotor(&RJoint1, &hfdcan1, 0x04);
     RJoint1.controlMode = DMMotor::MIT_MODE;
     RJoint1.canType = DMMotor::DM_FDCAN;
     RJoint1.torqueSet = 0;
@@ -372,7 +375,7 @@ pid_tuning_t rollpd_tuning = {0.7f, 0.001f, -0.1f};
                 Fr[1]=0.0f;
             }
 
-            if (Numeric::abs(lpendulum.alpha) > 0.6f || Numeric::abs(rpendulum.alpha) > 0.6f) 
+            if (Numeric::abs(lpendulum.alpha) > 1.0f || Numeric::abs(rpendulum.alpha) > 1.0f) 
             {
                 Twl=0.0f;
                 Twr=0.0f;
@@ -857,6 +860,7 @@ pid_tuning_t rollpd_tuning = {0.7f, 0.001f, -0.1f};
         lleg_len_pd.Tuning(lenpd_tuning.kp, lenpd_tuning.ki, lenpd_tuning.kd);
         rleg_len_pd.Tuning(lenpd_tuning.kp, lenpd_tuning.ki, lenpd_tuning.kd);
         roll_pd.Tuning(rollpd_tuning.kp, rollpd_tuning.ki, rollpd_tuning.kd);
+        pendulum_debug.motorL4error = RJoint4.motorFeedback.ERR;
     #endif
 
         tx_thread_sleep(MIN(1, 1-(tx_time_get()-thread_start_time)));
