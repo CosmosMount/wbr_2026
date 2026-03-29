@@ -137,6 +137,8 @@ SuperCap* debug_supercap = SuperCap::Instance();
         cmd_msg_debug = cmd_msg;
 
     #ifdef GIMBAL_ONLY
+        chassis_msg.inited = true;
+
         if (!cmd_msg->ifmove)
         {
             yaw_motor.currentSet = 0;
@@ -454,19 +456,21 @@ SuperCap* debug_supercap = SuperCap::Instance();
         else
             v_updater.SetPath(0.006f);
 
-        chassis_msg.color = referee_data.robot_status.robot_id <= 9 ? 0 : 1;
-        chassis_msg.level = referee_data.robot_status.robot_level;
-        chassis_msg.heatlimit = referee_data.robot_status.shooter_barrel_heat_limit;
-        chassis_msg.heatnow = referee_data.heat_now;
+    #endif
 
-        SuperCap::Instance()->SendCapData();
+    chassis_msg.color = referee_data.robot_status.robot_id <= 9 ? 0 : 1;
+    chassis_msg.level = referee_data.robot_status.robot_level;
+    chassis_msg.heatlimit = referee_data.robot_status.shooter_barrel_heat_limit;
+    chassis_msg.heatnow = referee_data.heat_now;
 
-        memcpy(&CommMsg, reinterpret_cast<uint8_t*>(&chassis_msg), sizeof(comm_chassis_t));
-        CAN_Transmit(&hfdcan3, 0xC1, CommMsg, 8);
+    SuperCap::Instance()->SendCapData();
 
-        /* Publish cmd msg */
-        om_publish(cmd_topic, &cmd, sizeof(msg_cmd_t), true, false);
-        pre_stair = cmd.gostair;
+    memcpy(&CommMsg, reinterpret_cast<uint8_t*>(&chassis_msg), sizeof(comm_chassis_t));
+    CAN_Transmit(&hfdcan3, 0xC1, CommMsg, 8);
+
+    /* Publish cmd msg */
+    om_publish(cmd_topic, &cmd, sizeof(msg_cmd_t), true, false);
+    pre_stair = cmd.gostair;
 
     #ifdef DEBUG
         debug_dist = tof_distance;
@@ -482,7 +486,7 @@ SuperCap* debug_supercap = SuperCap::Instance();
         debug_motor.tri_spd = trigger_motor.motorFeedback.speedFdb;
         debug_motor.tri_cur = trigger_motor.motorFeedback.currentFdb;
     #endif
-    #endif
+    
         /* Thread periodic delay */
         tx_semaphore_put(&FunctionThreadSem);
         tx_thread_sleep(MIN(1, 1-(tx_time_get()-thread_start_time)));

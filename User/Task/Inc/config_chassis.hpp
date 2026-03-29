@@ -1,6 +1,10 @@
 #pragma once
 
-// #define GIMBAL_ONLY
+#ifndef DEBUG
+#define DEBUG
+#endif
+
+#define GIMBAL_ONLY
 // #define CHASSIS_ONLY
 
 #define JUMP_UP
@@ -39,10 +43,6 @@
 #define JOINT_RECOVER_DELTA 4.71f
 
 #define GRAVITY_FF 67.865f
-
-#ifndef DEBUG
-#define DEBUG
-#endif
 
 typedef enum
 {

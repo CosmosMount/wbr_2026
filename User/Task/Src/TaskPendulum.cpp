@@ -140,13 +140,14 @@ DMMotorHandler *dmmotorhandler = DMMotorHandler::Instance();
     LJoint1.torqueSet = 0;
     DMMotorHandler::Instance()->EnableMotor_Block(&LJoint1);
 
-    DMMotorHandler::Instance()->registerMotor(&RJoint4, &hfdcan1, 0x01);
+    DMMotorHandler::Instance()->registerMotor(&RJoint4, &hfdcan1, 0x04);
     RJoint4.controlMode = DMMotor::MIT_MODE;
     RJoint4.canType = DMMotor::DM_FDCAN;
     RJoint4.torqueSet = 0;
     DMMotorHandler::Instance()->EnableMotor_Block(&RJoint4);
+    // DMMotorHandler::Instance()->DisableMotor(&RJoint4);
 
-    DMMotorHandler::Instance()->registerMotor(&RJoint1, &hfdcan1, 0x04);
+    DMMotorHandler::Instance()->registerMotor(&RJoint1, &hfdcan1, 0x01);
     RJoint1.controlMode = DMMotor::MIT_MODE;
     RJoint1.canType = DMMotor::DM_FDCAN;
     RJoint1.torqueSet = 0;
