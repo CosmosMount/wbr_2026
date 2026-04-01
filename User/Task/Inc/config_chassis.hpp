@@ -4,7 +4,7 @@
 #define DEBUG
 #endif
 
-#define GIMBAL_ONLY
+// #define GIMBAL_ONLY
 // #define CHASSIS_ONLY
 
 #define JUMP_UP

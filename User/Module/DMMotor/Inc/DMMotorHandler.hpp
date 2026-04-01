@@ -56,6 +56,8 @@ public:
 
     void ClearError(DMMotor *motor);
 
+    void ClearError_Block(DMMotor *motor);
+
     bool AllMotorAlive();
 
     static DMMotorHandler *Instance()

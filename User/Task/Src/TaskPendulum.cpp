@@ -30,6 +30,7 @@ TX_THREAD PendulumThread;
 TX_SEMAPHORE PendulumThreadSem;
 uint8_t PendulumThreadStack[8192] = {0};
 extern TX_SEMAPHORE IMUThreadSem;
+extern TX_SEMAPHORE MotorAlive;
 
 #ifdef DEBUG
 struct pendulum_debug_t
@@ -203,6 +204,8 @@ DMMotorHandler *dmmotorhandler = DMMotorHandler::Instance();
     bool first_jump = false;
     float maintain_yaw = 0.0f;
 
+    uint8_t check_cnt = 0;
+
     for (;;)
     {
         float thread_start_time = tx_time_get();
@@ -236,6 +239,16 @@ DMMotorHandler *dmmotorhandler = DMMotorHandler::Instance();
 
         if (!cmd.move || tx_semaphore_get(&IMUThreadSem, TX_NO_WAIT) != TX_SUCCESS)
             chassis_state = RELAX;
+
+        check_cnt ++;
+        if (check_cnt == 4)
+        {
+            check_cnt = 0;
+            if (LWheel.AliveCheck() != DJIMotor::MOTOR_ONLINE || RWheel.AliveCheck() != DJIMotor::MOTOR_ONLINE)
+            {
+                chassis_state = RELAX;
+            }
+        }
 
         switch (chassis_state) 
         {
@@ -371,7 +384,7 @@ DMMotorHandler *dmmotorhandler = DMMotorHandler::Instance();
             rleg_len_pd.UpdateResult(rpendulum.dlen);
             Fr[0] = rleg_len_pd.result - GRAVITY_FF;
 
-            if (lpendulum.len>0.18f || rpendulum.len>0.18f) 
+            if (lpendulum.len>0.19f || rpendulum.len>0.19f) 
             {
                 Fl[1]=0.0f;
                 Fr[1]=0.0f;

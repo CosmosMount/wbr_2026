@@ -4,6 +4,7 @@
 #include "DMMotorHandler.hpp"
 
 TX_THREAD AliveThread;
+TX_SEMAPHORE MotorAlive;
 uint8_t AliveThreadStack[512] = {0};
 
 /* Semaphores for Alivecheck */
@@ -39,6 +40,7 @@ extern TX_SEMAPHORE CANErrorSem;
             {
                 if (DMMotorHandler::Instance()->AllMotorAlive())
                 {
+                    tx_semaphore_put(&MotorAlive);
                     LED_blink(LED_COLOR::LED_GREEN);
                 }
                 else

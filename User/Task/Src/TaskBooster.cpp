@@ -14,7 +14,7 @@ extern uint8_t UIThreadStack[2048];
 extern void UIThreadFun(ULONG initial_input);
 
 extern TX_SEMAPHORE TOFGot;
-
+extern TX_SEMAPHORE MotorAlive;
 extern TX_SEMAPHORE FunctionThreadSem;
 extern TX_SEMAPHORE PendulumThreadSem;
 extern TX_SEMAPHORE UIThreadSem;

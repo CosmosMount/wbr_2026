@@ -1,5 +1,6 @@
 #include "DMMotorHandler.hpp"
 #include "DMMotor.hpp"
+#include "stm32h7xx_hal_tim.h"
 
 /**
  * @brief 构造函数，将所有值初始化
@@ -330,6 +331,56 @@ void DMMotorHandler::ClearError(DMMotor *motor)
     }
 }
 
+void DMMotorHandler::ClearError_Block(DMMotor *motor)
+{
+    uint32_t CAN_ID = motor->canId;
+    switch (motor->controlMode)
+    {
+    case DMMotor::RELAX_MODE:
+        break;
+    case DMMotor::MIT_MODE:
+        break;
+    case DMMotor::POS_SPD_MODE:
+        CAN_ID += 0x100;
+        break;
+    case DMMotor::SPD_MODE:
+        CAN_ID += 0x200;
+        break;
+    case DMMotor::MUTI_MODE:
+        CAN_ID = 0x300;
+        break;
+    default:
+        break;
+    }
+
+    uint16_t timeout = 0; // 超时计数，如果超过1s视为使能失败
+    do
+    {
+        timeout++;
+        if (timeout > 1000)
+        {
+            motor->Enable_Failed = true;
+            break;
+        }
+        switch (motor->canType)
+        {
+        case DMMotor::DM_CAN:
+            if (timeout % 2 == 0)
+                CAN_Transmit(motor->hcan, CAN_ID, (uint8_t *)DMMotor::Enable_Frame, 8);
+            else
+                CAN_Transmit(&hfdcan1, CAN_ID, (uint8_t *)DMMotor::ClearError_Frame, 8);
+            break;
+        case DMMotor::DM_FDCAN:
+            if (timeout % 2 == 0)
+                FDCAN_Transmit(motor->hcan, CAN_ID, (uint8_t *)DMMotor::Enable_Frame, 8);
+            else
+                FDCAN_Transmit(&hfdcan1, CAN_ID, (uint8_t *)DMMotor::ClearError_Frame, 8);
+            break;
+        }
+        tx_thread_sleep(1);
+    } while (motor->motorFeedback.ERR != DMMotor::ERR_ENABLE);
+}
+
 /**
  * @brief 检查所有电机是否在线
  * @note 需要在主循环中调用
@@ -344,6 +395,7 @@ bool DMMotorHandler::AllMotorAlive()
             {
                 if (DMMotorList[i][j]->AliveCheck() == DMMotor::MOTOR_OFFLINE || DMMotorList[i][j]->motorFeedback.ERR != DMMotor::ERR_ENABLE)
                 {
+                    ClearError_Block(DMMotorList[i][j]);
                     return false;
                 }
             }
