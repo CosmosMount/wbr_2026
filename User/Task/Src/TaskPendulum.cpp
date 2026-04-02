@@ -1,3 +1,4 @@
+#include "DMMotor.hpp"
 #include "arm_math_types.h"
 #include "main.h"
 #include "slope.hpp"
@@ -205,6 +206,8 @@ DMMotorHandler *dmmotorhandler = DMMotorHandler::Instance();
     float maintain_yaw = 0.0f;
 
     uint8_t check_cnt = 0;
+    uint32_t dead_cnt = 0;
+    uint32_t alive_cnt = 0;
 
     for (;;)
     {
@@ -241,14 +244,44 @@ DMMotorHandler *dmmotorhandler = DMMotorHandler::Instance();
             chassis_state = RELAX;
 
         check_cnt ++;
-        if (check_cnt == 4)
+        bool chassis_dead = dead_cnt > 500;
+        bool chassis_alive = alive_cnt > 500;
+
+        if (check_cnt == 3)
         {
+            if ( LWheel.AliveCheck() != DJIMotor::MOTOR_ONLINE 
+                        || RWheel.AliveCheck() != DJIMotor::MOTOR_ONLINE)
+            {
+                dead_cnt++;
+                alive_cnt = 0;
+            }
+            else 
+            {
+                alive_cnt++;
+                dead_cnt = 0;
+            }
             check_cnt = 0;
-            if (LWheel.AliveCheck() != DJIMotor::MOTOR_ONLINE || RWheel.AliveCheck() != DJIMotor::MOTOR_ONLINE)
+
+            if (chassis_dead) 
             {
                 chassis_state = RELAX;
+                DMMotorHandler::Instance()->DisableMotor(&LJoint1);
+                DMMotorHandler::Instance()->DisableMotor(&LJoint4);
+                DMMotorHandler::Instance()->DisableMotor(&RJoint1);
+                DMMotorHandler::Instance()->DisableMotor(&RJoint4);
+            }
+
+            if (chassis_alive &&
+                tx_semaphore_get(&MotorAlive, TX_NO_WAIT) != TX_SUCCESS)
+            {
+                DMMotorHandler::Instance()->EnableMotor(&LJoint1);
+                DMMotorHandler::Instance()->EnableMotor(&LJoint4);
+                DMMotorHandler::Instance()->EnableMotor(&RJoint1);
+                DMMotorHandler::Instance()->EnableMotor(&RJoint4);
             }
         }
+        
+        
 
         switch (chassis_state) 
         {
@@ -261,7 +294,7 @@ DMMotorHandler *dmmotorhandler = DMMotorHandler::Instance();
             pendulum_data.reset_len = true;
             pendulum_data.recovered = true;
             pendulum_data.neutral = false;
-            if (cmd.move)
+            if (cmd.move && !chassis_dead)
             {
                 if (ins.accel[2] < 0.0f)
                 {
@@ -296,7 +329,7 @@ DMMotorHandler *dmmotorhandler = DMMotorHandler::Instance();
             
             lpendulum.DeltaPControl(-recovery_updater.UpdateVal(JOINT_RECOVER_DELTA), 3.0f, 3.0f);
             rpendulum.DeltaPControl(-recovery_updater.UpdateVal(JOINT_RECOVER_DELTA), 3.0f, 3.0f);
-            // lpendulum.SpdControl(-0.5f, 4.0f);
+            // 
             // rpendulum.SpdControl(-0.5f, 4.0f);
             break;
         }
@@ -879,6 +912,6 @@ DMMotorHandler *dmmotorhandler = DMMotorHandler::Instance();
         pendulum_debug.motorL4error = RJoint4.motorFeedback.ERR;
     #endif
 
-        tx_thread_sleep(MIN(1, 1-(tx_time_get()-thread_start_time)));
+        tx_thread_sleep(1);
     }
 }

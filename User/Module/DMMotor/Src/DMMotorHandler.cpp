@@ -395,7 +395,6 @@ bool DMMotorHandler::AllMotorAlive()
             {
                 if (DMMotorList[i][j]->AliveCheck() == DMMotor::MOTOR_OFFLINE || DMMotorList[i][j]->motorFeedback.ERR != DMMotor::ERR_ENABLE)
                 {
-                    ClearError_Block(DMMotorList[i][j]);
                     return false;
                 }
             }
