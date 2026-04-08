@@ -12,7 +12,7 @@
 
 #define TOF_DATA_SIZE 9
 
-#define NORMAL_LEG_LEN    0.20f
+#define NORMAL_LEG_LEN    0.16f
 #define MIN_LEG_LEN       0.15f//true:14
 #define MID_LEG_LEN       0.24f
 #define MAX_LEG_LEN       0.32f//true:30

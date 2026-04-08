@@ -115,3 +115,14 @@ public:
         v = 0.0f;
     }
 };
+
+class SimpleOdom{
+public:
+    float x;
+    float v;
+
+    void Update(float _vel){
+        v = _vel;
+        x = x + v*0.001f;
+    }
+};

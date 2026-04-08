@@ -94,7 +94,8 @@ struct pendulum_debug_t
     float rwheel_spd;
     uint8_t stage;
     uint8_t motorL4error;
-  
+    float simple_odom_x;
+    float simple_odom_v;
 
 };
 struct pid_tuning_t 
@@ -130,13 +131,13 @@ DMMotorHandler *dmmotorhandler = DMMotorHandler::Instance();
     RWheel.currentSet = 0;
     RWheel.gearBox = GearBox_XRoll;
 
-    DMMotorHandler::Instance()->registerMotor(&LJoint4, &hfdcan1, 0x02);
+    DMMotorHandler::Instance()->registerMotor(&LJoint4, &hfdcan1, 0x03);
     LJoint4.controlMode = DMMotor::MIT_MODE;
     LJoint4.canType = DMMotor::DM_FDCAN;
     LJoint4.torqueSet = 0;
     DMMotorHandler::Instance()->EnableMotor_Block(&LJoint4);
 
-    DMMotorHandler::Instance()->registerMotor(&LJoint1, &hfdcan1, 0x03);
+    DMMotorHandler::Instance()->registerMotor(&LJoint1, &hfdcan1, 0x02);
     LJoint1.controlMode = DMMotor::MIT_MODE;
     LJoint1.canType = DMMotor::DM_FDCAN;
     LJoint1.torqueSet = 0;
@@ -175,6 +176,7 @@ DMMotorHandler *dmmotorhandler = DMMotorHandler::Instance();
     Pendulum<DM8009P, M3508> rpendulum(true, &RJoint1, &RJoint4, &RWheel);
     /* odom */
     Odometry odom;
+    SimpleOdom simple_odom;
     /* lqr */
     float observedX[10] = {0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f};
     float refX[10] = {0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f};
@@ -223,6 +225,7 @@ DMMotorHandler *dmmotorhandler = DMMotorHandler::Instance();
         float vrwheel = RWheel.motorFeedback.speedFdb * WHEEL_RADIUS;
 
         odom.Update(ins.quaternion, ins.accel,(vlwheel+vrwheel)*0.5f, yaw);
+        simple_odom.Update((vlwheel+vrwheel)*0.5f);
         lpendulum.Solve(pitch, dpitch, odom.az);
         rpendulum.Solve(pitch, dpitch, odom.az);
 
@@ -280,8 +283,6 @@ DMMotorHandler *dmmotorhandler = DMMotorHandler::Instance();
                 DMMotorHandler::Instance()->EnableMotor(&RJoint4);
             }
         }
-        
-        
 
         switch (chassis_state) 
         {
@@ -538,6 +539,9 @@ DMMotorHandler *dmmotorhandler = DMMotorHandler::Instance();
             refX[7] = 0.0f;
             refX[8] = 0.0f;
             refX[9] = 0.0f;
+
+            observedX[0] = refX[0];
+            observedX[1] = simple_odom.v;
 
             lqr.lqr_type = LQR_LOW;
             lqr.Update(lpendulum.len, rpendulum.len, true);
@@ -906,6 +910,8 @@ DMMotorHandler *dmmotorhandler = DMMotorHandler::Instance();
         pendulum_debug.Nr = rpendulum.N;
         pendulum_debug.N = N;
         pendulum_debug.stage = jump_stage;
+        pendulum_debug.simple_odom_v = simple_odom.v;
+        pendulum_debug.simple_odom_x = simple_odom.x;
         lleg_len_pd.Tuning(lenpd_tuning.kp, lenpd_tuning.ki, lenpd_tuning.kd);
         rleg_len_pd.Tuning(lenpd_tuning.kp, lenpd_tuning.ki, lenpd_tuning.kd);
         roll_pd.Tuning(rollpd_tuning.kp, rollpd_tuning.ki, rollpd_tuning.kd);

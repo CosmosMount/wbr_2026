@@ -270,6 +270,10 @@ SuperCap* debug_supercap = SuperCap::Instance();
                 cmd.dyaw = -relative_angle*4.0f;
                 cmd.v = v_updater.UpdateVal(cmd_msg->vx*0.1f*2.0f);
                 cmd.roll = 0.0f;
+                if (front_offset == yaw_offset2)
+                {
+                    cmd.v *= -1.0f;
+                }
             }
             
             // if (cmd_msg->ifspin)
@@ -463,6 +467,7 @@ SuperCap* debug_supercap = SuperCap::Instance();
     chassis_msg.heatlimit = referee_data.robot_status.shooter_barrel_heat_limit;
     chassis_msg.heatnow = referee_data.heat_now;
 
+    SuperCap::Instance()->supercap_set.set.power_limit_set = 75.0f;
     SuperCap::Instance()->SendCapData();
 
     memcpy(&CommMsg, reinterpret_cast<uint8_t*>(&chassis_msg), sizeof(comm_chassis_t));
