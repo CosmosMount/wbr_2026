@@ -6,12 +6,17 @@
       "type": "shell",
       "command": "openocd",
       "args": [
-        "-f", "interface/cmsis-dap.cfg",//stlink.cfg",//
+        "-f", "interface/cmsis-dap.cfg",
+        // "-f", "interface/stlink.cfg",
         "-f", "target/stm32h7x.cfg",
-        "-c", "adapter speed 2000", 
-        "-c", "program build/Debug/wbr_chassis.elf reset exit"
-      ],
-      "problemMatcher": []
+        "-c", "adapter speed 1000",
+        "-c", "init",
+        "-c", "reset halt",
+        "-c", "stm32h7x mass_erase 0",
+        "-c", "program build/Debug/wbr_chassis.elf",
+        "-c", "reset run",
+        "-c", "shutdown"
+      ]
     }
   ]
 }
