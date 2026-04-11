@@ -155,3 +155,10 @@ struct msg_referee_t
     uint16_t heat_now;
     uint16_t power_buffer;
 };
+
+struct msg_chassisui_t
+{
+    float relative_angle;
+    float len;
+    float v;
+};

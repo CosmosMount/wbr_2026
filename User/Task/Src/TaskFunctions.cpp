@@ -73,6 +73,8 @@ SuperCap* debug_supercap = SuperCap::Instance();
     /* om publishers */
     om_topic_t *cmd_topic = om_config_topic(nullptr, "ca", "cmd", sizeof(msg_cmd_t));
     msg_cmd_t cmd{};
+    om_topic_t *chassisui_topic = om_config_topic(nullptr, "ca", "chassisui", sizeof(msg_chassisui_t));
+    msg_chassisui_t chassisui{};
 
     /* om subscribers */
     om_suber_t *remoter_suber = om_subscribe(om_find_topic("remoter", UINT32_MAX));
@@ -473,8 +475,13 @@ SuperCap* debug_supercap = SuperCap::Instance();
     memcpy(&CommMsg, reinterpret_cast<uint8_t*>(&chassis_msg), sizeof(comm_chassis_t));
     CAN_Transmit(&hfdcan3, 0xC1, CommMsg, 8);
 
+    chassisui.relative_angle = yaw_motor.motorFeedback.positionFdb - yaw_offset2 + PI;
+    chassisui.len = pendulum_data.len;
+    chassisui.v = pendulum_data.v;
+
     /* Publish cmd msg */
     om_publish(cmd_topic, &cmd, sizeof(msg_cmd_t), true, false);
+    om_publish(chassisui_topic, &chassisui, sizeof(msg_chassisui_t), true, false);
     pre_stair = cmd.gostair;
 
     #ifdef DEBUG
