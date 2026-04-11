@@ -32,15 +32,18 @@ using namespace Numeric;
     // const char TXT_RUNE[5] = "RUNE";
     // const char TXT_AUTO[5] = "AUTO";
     // const char TXT_NONE[5] = "NONE";
-    const char TXT_ALERT[13] = "TURN ON SPIN";
-    const char TXT_VELOCITY[9] = "VELOCITY";
+    // const char TXT_ALERT[13] = "TURN ON SPIN";
+    // const char TXT_VELOCITY[9] = "VELOCITY";
+    const char TXT_AIM[4] = "AIM";
+    const char TXT_RUNE[5] = "RUNE";
     
     int8_t LINE_SUPERCAP;
-    int8_t RECT_AIM;
+    int8_t RECT_AIM,RECT_ROBOT,RECT_RUNE;
     int8_t CIRC_AIM,CIRC_AIMER;
     int8_t FLOAT_V,FLOAT_LEN;
     int8_t STR_ALERT;
     int8_t ARC_FRONT;
+    int8_t INT_TARGET;
     float arc_start_ang = 330, arc_end_ang = 30;
     bool ui_reset = true;
 
@@ -70,14 +73,24 @@ using namespace Numeric;
                 ui.SetSenderReceiverId(referee_data.robot_status.robot_id, 
                                 referee_data.robot_status.robot_id+256);
 
+                /* robot state UI */
                 LINE_SUPERCAP = ui.CreateLine(30, UIObjectColor::Yellow, 2, 695, 300, 1155, 300);
+                ARC_FRONT = ui.CreateArc(10, UIObjectColor::Yellow, 2, 960, 540, 90, 90, arc_start_ang, arc_end_ang);
+                FLOAT_V = ui.CreateFloat(2, UIObjectColor::Yellow, 2, 120, 750, 20, 0);
+                FLOAT_LEN = ui.CreateFloat(2, UIObjectColor::Yellow, 2, 120, 800, 20, 0);
+                
+                /* aim UI */
                 RECT_AIM = ui.CreateRect(3, UIObjectColor::White, 3, 695, 700, 1155, 330);
-                CIRC_AIM = ui.CreateCircle(3, UIObjectColor::Green, 4, 695, 330, 15);
-                CIRC_AIMER = ui.CreateCircle(3, UIObjectColor::Orange, 4, 960, 540, 80);
-                ARC_FRONT = ui.CreateArc(10, UIObjectColor::Yellow, 4, 960, 540, 90, 90, arc_start_ang, arc_end_ang);
-                FLOAT_V = ui.CreateFloat(2, UIObjectColor::Yellow, 3, 120, 700, 30, 0);
-                FLOAT_LEN = ui.CreateFloat(2, UIObjectColor::Yellow, 3, 120, 800, 30, 0);
-
+                RECT_ROBOT = ui.CreateRect(3, UIObjectColor::White, 3, 695, 710, 765, 760);
+                RECT_RUNE = ui.CreateRect(3, UIObjectColor::White, 3, 775, 710, 865, 760);
+                CIRC_AIM = ui.CreateCircle(3, UIObjectColor::Green, 3, 695, 330, 15);
+                CIRC_AIMER = ui.CreateCircle(3, UIObjectColor::Orange, 3, 960, 540, 80);
+                INT_TARGET = ui.CreateInt(2, UIObjectColor::Yellow, 3, 710, 685, 15, 0);
+                ui.CreateString(2, UIObjectColor::White, 3, 705, 745, 20, TXT_AIM);
+                ui.CreateString(2, UIObjectColor::White, 3, 785, 745, 20, TXT_RUNE);
+                
+                ui.SetVisible(RECT_RUNE, false);
+                ui.SetVisible(RECT_ROBOT, false);
                 ui.SetVisible(LINE_SUPERCAP, false);
                 ui.SetVisible(ARC_FRONT, false);
                 ui.SetVisible(CIRC_AIM, false);
@@ -87,14 +100,26 @@ using namespace Numeric;
         else 
         {
             ui.SetVisible(ARC_FRONT, true);
-            ui.SetVisible(LINE_SUPERCAP, true);
-            // ui.MoveP2To(LINE_SUPERCAP, 600+SuperCap::Instance()->GetCapEnergy()*0.245, 100);
+            ui.MoveP2To(LINE_SUPERCAP, 600+SuperCap::Instance()->GetCapEnergy()*0.245, 100);
             
-            ui.SetStartAngle(ARC_FRONT, LoopFloatConstrain(arc_start_ang+chassisui.relative_angle*RadToDegree,0.0f,360.0f));
-            ui.SetEndAngle(ARC_FRONT, LoopFloatConstrain(arc_end_ang+chassisui.relative_angle*RadToDegree,0.0f,360.0f));
+            ui.SetStartAngle(ARC_FRONT, LoopFloatConstrain(arc_start_ang-chassisui.relative_angle*RadToDegree,0.0f,360.0f));
+            ui.SetEndAngle(ARC_FRONT, LoopFloatConstrain(arc_end_ang-chassisui.relative_angle*RadToDegree,0.0f,360.0f));
 
             ui.SetFloat(FLOAT_V, chassisui.v);
             ui.SetFloat(FLOAT_LEN, chassisui.len);
+
+            if (gimbal_ui->aim_rune)
+            {
+                ui.SetVisible(RECT_RUNE, true);
+                ui.SetVisible(RECT_ROBOT, false);
+            }
+            else 
+            {
+                ui.SetVisible(RECT_RUNE, false);
+                ui.SetVisible(RECT_ROBOT, true);
+            }
+
+            ui.SetInt(INT_TARGET, gimbal_ui->aim_target_now);
 
             if (gimbal_ui->aim_target_now == 0)
             {

@@ -16,7 +16,7 @@ struct comm_ui_t
 {
     uint8_t reset : 1;
     uint8_t fire : 1;
-    uint8_t aim_target_set : 4;
+    uint8_t aim_rune : 1;
     uint8_t aim_target_now : 4;
     uint8_t aim_target_x;
     uint8_t aim_target_y;
