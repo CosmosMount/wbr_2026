@@ -70,23 +70,7 @@ using namespace Numeric;
                 ui.SetSenderReceiverId(referee_data.robot_status.robot_id, 
                                 referee_data.robot_status.robot_id+256);
 
-                // ui.CreateString(3, UIObjectColor::Cyan, 1, 1542, 860, 20, TXT_AUTO);
-                // ui.CreateString(3, UIObjectColor::Cyan, 2, 1542, 820, 20, TXT_OUTPOST);
-                // ui.CreateString(3, UIObjectColor::Cyan, 2, 1542, 780, 20, TXT_HERO);
-                // ui.CreateString(3, UIObjectColor::Cyan, 2, 1542, 740, 20, TXT_ENGINEER);
-                // ui.CreateString(3, UIObjectColor::Cyan, 2, 1542, 700, 20, TXT_INFANTRY3);
-                // ui.CreateString(3, UIObjectColor::Cyan, 2, 1542, 660, 20, TXT_INFANTRY4);
-                // ui.CreateString(3, UIObjectColor::Cyan, 2, 1542, 620, 20, TXT_INFANTRY5);
-                // ui.CreateString(3, UIObjectColor::Cyan, 2, 1542, 580, 20, TXT_SENTRY);
-                // ui.CreateString(3, UIObjectColor::Cyan, 2, 1542, 540, 20, TXT_RUNE);
-                // ui.CreateString(3, UIObjectColor::Cyan, 2, 1542, 500, 20, TXT_BASE);
-                // ui.CreateString(3, UIObjectColor::Cyan, 2, 1542, 460, 20, TXT_NONE);
-                // ui.CreateLine(3, UIObjectColor::Pink, 2, 582, 440, 682, 543);
-                // ui.CreateLine(3, UIObjectColor::Pink, 3, 1087, 544, 1317, 387);
-
-                // ui.CreateString(3, UIObjectColor::Black, 1, 750, 180, 25, TXT_VELOCITY);
-
-                LINE_SUPERCAP = ui.CreateLine(30, UIObjectColor::Yellow, 2, 800, 300, 1175, 300);
+                LINE_SUPERCAP = ui.CreateLine(30, UIObjectColor::Yellow, 2, 695, 300, 1155, 300);
                 RECT_AIM = ui.CreateRect(3, UIObjectColor::White, 3, 695, 700, 1155, 330);
                 CIRC_AIM = ui.CreateCircle(3, UIObjectColor::Green, 4, 695, 330, 15);
                 CIRC_AIMER = ui.CreateCircle(3, UIObjectColor::Orange, 4, 960, 540, 80);
@@ -104,7 +88,7 @@ using namespace Numeric;
         {
             ui.SetVisible(ARC_FRONT, true);
             ui.SetVisible(LINE_SUPERCAP, true);
-            // ui.MoveP2To(LINE_SUPERCAP, 800+SuperCap::Instance()->GetCapEnergy() * 0.2, 100);
+            // ui.MoveP2To(LINE_SUPERCAP, 600+SuperCap::Instance()->GetCapEnergy()*0.245, 100);
             
             ui.SetStartAngle(ARC_FRONT, LoopFloatConstrain(arc_start_ang+chassisui.relative_angle*RadToDegree,0.0f,360.0f));
             ui.SetEndAngle(ARC_FRONT, LoopFloatConstrain(arc_end_ang+chassisui.relative_angle*RadToDegree,0.0f,360.0f));

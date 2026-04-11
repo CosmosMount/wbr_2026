@@ -7,7 +7,7 @@
 #include "crc.hpp"
 #include "usart.h"
 #include "dma.h"
-#include "adc.h"
+#include "bsp_usart.hpp"
 
 extern UART_HandleTypeDef huart1;
 extern DMA_HandleTypeDef hdma_usart1_rx;
@@ -400,7 +400,7 @@ private:
     static uint8_t UITxBuffer[TX_BUFFER_SIZE];
     static UIDelete UIDeleteOp;
 
-    uint8_t IncreaseID = 0;
+    uint32_t IncreaseID = 1;
     bool UIPendingUpdateIsString = false;
     uint8_t UIPendingStringIndex = 0;
     uint8_t UIScanOffset = 0;
@@ -494,8 +494,7 @@ private:
      */
     inline void SendData(uint8_t* data, uint16_t len)
     {
-        SCB_CleanDCache_by_Addr((uint32_t *)data, len);
-        HAL_UART_Transmit_DMA(&huart1, data, len);
+        USART_Transmit(&huart1, data, len, USART_MODE_DMA);
     }
 
     /**

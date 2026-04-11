@@ -18,6 +18,7 @@ extern DMA_HandleTypeDef hdma_usart1_tx;
 
 __attribute__((section (".RAM_D1"))) uint8_t UART7RxBuffer[TOF_DATA_SIZE] = {0};
 __attribute__((section (".RAM_D1"))) uint8_t USART1RxBuffer[256] = {0};
+__attribute__((section (".RAM_D1"))) uint8_t TxBuffer[512] = {0};
 extern uint8_t tof_rx[TOF_DATA_SIZE];
 extern uint8_t dr16_rx[DR16_DATA_SIZE];
 extern TX_SEMAPHORE RemoterGot;
@@ -71,5 +72,25 @@ void HAL_UARTEx_RxEventCallback(UART_HandleTypeDef *huart, uint16_t Size)
     SCB_InvalidateDCache_by_Addr((uint32_t*)USART1RxBuffer, 256);
     referee_fifo.push(USART1RxBuffer, Size);
     HAL_UARTEx_ReceiveToIdle_DMA(&huart1, USART1RxBuffer, 256);
+  }
+}
+
+void USART_Transmit(UART_HandleTypeDef *huart, uint8_t *pData, uint16_t Size, enum USART_Mode mode)
+{
+  memcpy(TxBuffer, pData, Size);
+  switch (mode)
+  {
+  case USART_MODE_BLOCK:
+    SCB_CleanDCache_by_Addr((uint32_t*)TxBuffer, Size);
+    HAL_UART_Transmit(huart, TxBuffer, Size, 100);
+    break;
+  case USART_MODE_DMA:
+    SCB_CleanDCache_by_Addr((uint32_t*)TxBuffer, Size);
+    HAL_UART_Transmit_DMA(huart, TxBuffer, Size);
+    break;
+  case USART_MODE_IT:
+    break;
+  default:
+    break;
   }
 }

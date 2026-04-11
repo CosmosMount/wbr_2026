@@ -1,9 +1,11 @@
 #include "ui.hpp"
 #include <cstdint>
+#include <algorithm>
+#include <cstring>
 
-__attribute__((section(".RAM_D1"))) UI::UIObject UI::UIObjectList[UI_TOTAL_COUNT];
-__attribute__((section(".RAM_D1"))) uint8_t UI::UITxBuffer[TX_BUFFER_SIZE];
-__attribute__((section(".RAM_D1"))) UI::UIDelete UI::UIDeleteOp;
+UI::UIObject UI::UIObjectList[UI_TOTAL_COUNT];
+uint8_t UI::UITxBuffer[TX_BUFFER_SIZE];
+UI::UIDelete UI::UIDeleteOp;
 
 /* ==================================== 绘图接口 ==================================== */
 
@@ -292,18 +294,58 @@ void UI::Delete(int id)
     obj.metadata.deleted = true;
 }
 
-void UI::DeleteAll() 
+void UI::DeleteAll()
 {
-    UIDeleteOp.Type = 2;
-    UIDeleteOp.Layer = 0xFF;
-    SendData(reinterpret_cast<uint8_t*>(&UIDeleteOp), sizeof(UIDeleteOp));
+    auto header = getFrameHeader();
+
+    UIDeleteOp.Type = 2;   // 2: delete all
+    UIDeleteOp.Layer = 0;
+
+    header->DataLength = 8;      // 6 (contentId+sender+receiver) + 2 (delete payload)
+    Append_CRC8_Check_Sum(reinterpret_cast<unsigned char*>(header), 5);
+    header->ContentId = 0x0100;  // delete command content id
+
+    memcpy(UITxBuffer + sizeof(UITxFrameHeader), &UIDeleteOp, sizeof(UIDeleteOp));
+
+    constexpr uint16_t frameLen = sizeof(UITxFrameHeader) + sizeof(UIDeleteOp) + 2;
+    Append_CRC16_Check_Sum(UITxBuffer, frameLen);
+    SendData(UITxBuffer, frameLen);
+
+    // Keep local state in sync with client after global delete.
+    memset(UIObjectList, 0, sizeof(UIObjectList));
+    UIPendingUpdateIsString = false;
+    UIPendingStringIndex = 0;
+    UIScanOffset = 0;
 }
 
-void UI::DeleteLayer(int layer) 
+void UI::DeleteLayer(int layer)
 {
-    UIDeleteOp.Type = 2;
-    UIDeleteOp.Layer = layer;
-    SendData(reinterpret_cast<uint8_t*>(&UIDeleteOp), sizeof(UIDeleteOp));
+    auto header = getFrameHeader();
+
+    UIDeleteOp.Type = 1;   // 1: delete one layer
+    UIDeleteOp.Layer = static_cast<uint8_t>(layer);
+
+    header->DataLength = 8;      // 6 + 2
+    Append_CRC8_Check_Sum(reinterpret_cast<unsigned char*>(header), 5);
+    header->ContentId = 0x0100;  // delete command content id
+
+    memcpy(UITxBuffer + sizeof(UITxFrameHeader), &UIDeleteOp, sizeof(UIDeleteOp));
+
+    constexpr uint16_t frameLen = sizeof(UITxFrameHeader) + sizeof(UIDeleteOp) + 2;
+    Append_CRC16_Check_Sum(UITxBuffer, frameLen);
+    SendData(UITxBuffer, frameLen);
+
+    // Optional but recommended: remove corresponding local objects.
+    for (auto& obj : UIObjectList)
+    {
+        if (obj.metadata.valid && obj.detailDword1.layer == static_cast<uint32_t>(layer))
+        {
+            obj.metadata.valid = false;
+            obj.metadata.deleted = false;
+            obj.metadata.dirty = false;
+            obj.metadata.dirtyVisibility = false;
+        }
+    }
 }
 
 
@@ -320,7 +362,7 @@ void UI::TransmitStringObject(uint8_t index, UIOperation op)
     auto meta = getBufferNthUiObject(0);
     meta->Dword1.detailDword1 = obj.detailDword1.dw;
     meta->detailDword2 = obj.detailDword2.dw;
-    meta->detailDword3 = obj.detailDword3.dw;
+    meta->detailDword3 = 0;//obj.detailDword3.dw;
     memcpy((void *)&meta->name, (void *)&obj.refereeHandle, 3);
     meta->Dword1.detailDword1Internal.operation = static_cast<uint32_t>(op);
 
@@ -382,7 +424,12 @@ RestartForStringProcessing:
         // 查找下一个需要更新的字符串对象
         auto checkStr = [&](size_t i, UIObject& o) -> bool
         {
-            if (o.detailDword1.type == static_cast<uint8_t>(UIObjectType::Str))
+            const bool isString =
+                o.detailDword1.type == static_cast<uint8_t>(UIObjectType::Str);
+            const bool needsUpdate =
+                o.metadata.valid && (o.metadata.dirty || o.metadata.dirtyVisibility || o.metadata.deleted);
+
+            if (isString && needsUpdate)
             {
                 UIPendingStringIndex = i;
                 UIPendingUpdateIsString = true;
@@ -429,10 +476,13 @@ RestartForStringProcessing:
                 if (obj.metadata.visible)
                 {
                     // 如果是字符串对象变为可见，需要转交给字符串处理逻辑
-                    if (obj.detailDword1.type == static_cast<uint8_t>(UIObjectType::Str) && !UIPendingUpdateIsString)
+                    if (obj.detailDword1.type == static_cast<uint8_t>(UIObjectType::Str))
                     {
-                        UIPendingUpdateIsString = true;
-                        UIPendingStringIndex = i;
+                        if (!UIPendingUpdateIsString)
+                        {
+                            UIPendingUpdateIsString = true;
+                            UIPendingStringIndex = i;
+                        }  
                     }
                     else
                     {
