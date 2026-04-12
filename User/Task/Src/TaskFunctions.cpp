@@ -66,8 +66,9 @@ SuperCap* debug_supercap = SuperCap::Instance();
     float target_len;
 
     /* Slope Updaters */
-    SLOPE yaw_updater(0.0f, 0.01f);
-    SLOPE v_updater(0.0f,0.006f);
+    SLOPE yaw_updater(0.0f, 0.006f);
+    SLOPE vx_updater(0.0f,0.006f);
+    SLOPE vy_updater(0.0f,0.006f);
     SLOPE len_updater(0.15f,LEG_NORMAL_STEP);
 
     /* om publishers */
@@ -240,10 +241,10 @@ SuperCap* debug_supercap = SuperCap::Instance();
             }
             else 
             {
-                // target_len = cmd.len + cmd_msg->vy * 0.1f * 0.0008f;
+                // target_len = cmd.len + cmd_msg->dlen * 0.1f * 0.0008f;
                 // target_len = FloatConstrain(target_len, MIN_LEG_LEN, MAX_LEG_LEN);
                 // cmd.len = len_updater.UpdateVal(target_len);
-                cmd.len += cmd_msg->vy * 0.1f * 0.0006f;
+                cmd.len += cmd_msg->dlen * 0.1f * 0.0006f;
                 cmd.len = FloatConstrain(cmd.len, MIN_LEG_LEN, MAX_LEG_LEN);
             }
             
@@ -256,7 +257,8 @@ SuperCap* debug_supercap = SuperCap::Instance();
                 cmd.spin = true;
                 spin_offset_init = true;
                 cmd.dyaw = yaw_updater.UpdateVal(10.0f);
-                cmd.v = v_updater.UpdateVal(-cmd_msg->vx*0.1f)*arm_cos_f32(relative_angle);
+                cmd.v = vx_updater.UpdateVal(-cmd_msg->vx*0.1f)*arm_cos_f32(relative_angle)
+                       +vy_updater.UpdateVal(cmd_msg->vy*0.1f)*arm_sin_f32(relative_angle);
                 cmd.roll = 0.0f;
             }
             else 
@@ -268,9 +270,23 @@ SuperCap* debug_supercap = SuperCap::Instance();
                 }
                 else
                 {
-                    cmd.dyaw = -relative_angle*4.0f;
+                    if (fabs(cmd_msg->vx*0.1f) > 0.005f)
+                    {
+                        cmd.dyaw = -relative_angle*4.0f;
+                        cmd.v = vx_updater.UpdateVal(cmd_msg->vx*0.1f*2.0f);
+                    }
+                    else if (fabs(cmd_msg->vy*0.1f) > 0.005f)
+                    {
+                        relative_angle += PI*0.5f;
+                        cmd.dyaw = -relative_angle*4.0f;
+                        cmd.v = vy_updater.UpdateVal(cmd_msg->vy*0.1f*2.0f);
+                    }
+                    else
+                    {
+                        cmd.dyaw = -relative_angle*4.0f;
+                        cmd.v = 0.0f;
+                    }
                 }
-                cmd.v = v_updater.UpdateVal(cmd_msg->vx*0.1f*2.0f);
                 cmd.roll = 0.0f;
             }
         }
@@ -409,9 +425,18 @@ SuperCap* debug_supercap = SuperCap::Instance();
         }
 
         if (pendulum_data.len > 0.17f)
-            v_updater.SetPath(0.006f-0.04f*(pendulum_data.len-0.17f));
+        {
+            vx_updater.SetPath(0.006f-0.04f*(pendulum_data.len-0.17f));
+            vy_updater.SetPath(0.006f-0.04f*(pendulum_data.len-0.17f));
+            vx_updater.SetDecreasePath(0.005f);
+            vy_updater.SetDecreasePath(0.005f);
+        }
+            
         else
-            v_updater.SetPath(0.006f);
+        {
+            vx_updater.SetPath(0.006f);
+            vy_updater.SetPath(0.006f);
+        }
 
     #endif
 
