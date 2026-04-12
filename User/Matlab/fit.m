@@ -49,7 +49,7 @@ leg = 0.10:0.01:0.35;
 % Q矩阵
 %         s  ds yaw dyaw alphal dalphal alphar dalphar theta dtheta
 % 短腿长参数
-Q = diag([300 100 400 100 10000 50 10000 50 40000 100]);
+Q = diag([300 100 500 120 7000 500 7000 500 40000 100]);
 % 长腿长参数
 % Q = diag([50 200 200 20 3000 50 3000 50 10000 30]);
 % 其中：
@@ -130,9 +130,9 @@ end
 syms L_length R_length
 K = sym(zeros(4, 10));
 % 输出当前QR矩阵
-fprintf('\t/*Q = [%.2f, %.2f, %.2f, %.2f, %.2f, %.2f, %.2f, %.2f, %.2f, %.2f] R = [%.2f, %.2f, %.2f, %.2f]*/\n', ...
+fprintf('    /*Q = [%.2f, %.2f, %.2f, %.2f, %.2f, %.2f, %.2f, %.2f, %.2f, %.2f] R = [%.2f, %.2f, %.2f, %.2f]*/\n', ...
           Q(1,1), Q(2,2), Q(3,3), Q(4,4), Q(5,5), Q(6,6),Q(7,7),Q(8,8),Q(9,9),Q(10,10),R(1,1),R(2,2),R(3,3),R(4,4));
-fprintf('\t/* a1 + a2*L_len + a3*R_len + a4*L_len^2 + a5*L_len*R_len + a6*R_len^2 */\n');
+fprintf('    /* a1 + a2*L_len + a3*R_len + a4*L_len^2 + a5*L_len*R_len + a6*R_len^2 */\n');
 for i = 1:4
     for j = 1:10
         % 提取拟合系数
@@ -148,7 +148,7 @@ for i = 1:4
         % 输出与左右腿长相关的数组
         % fprintf('\tK(%.f,%.f) = %8.6f + %8.6f*L_len + %8.6f*R_len + %8.6f*L_len^2 + %8.6f*L_len*R_len + %8.6f*R_len^2; \n', ...
         %           i, j, p00, p10, p01, p20, p11, p02);
-        fprintf('\t{ %8.6f , %8.6f, %8.6f, %8.6f, %8.6f, %8.6f}, \n', ...
+        fprintf('    { %8.6f , %8.6f, %8.6f, %8.6f, %8.6f, %8.6f}, \n', ...
              p00, p10, p01, p20, p11, p02);
 
     end

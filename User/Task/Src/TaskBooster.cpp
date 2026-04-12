@@ -2,7 +2,7 @@
 #include "tx_api.h"
 
 extern TX_THREAD PendulumThread;
-extern uint8_t PendulumThreadStack[8192];
+extern uint8_t PendulumThreadStack[6144];
 extern void PendulumThreadFun(ULONG initial_input);
 
 extern TX_THREAD FunctionThread;

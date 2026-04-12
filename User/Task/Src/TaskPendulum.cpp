@@ -29,7 +29,7 @@ extern FDCAN_HandleTypeDef hfdcan3;
 
 TX_THREAD PendulumThread;
 TX_SEMAPHORE PendulumThreadSem;
-uint8_t PendulumThreadStack[8192] = {0};
+uint8_t PendulumThreadStack[6144] = {0};
 extern TX_SEMAPHORE IMUThreadSem;
 extern TX_SEMAPHORE MotorAlive;
 
@@ -93,6 +93,7 @@ struct pendulum_debug_t
     float lwheel_spd;
     float rwheel_spd;
     uint8_t stage;
+    uint8_t state;
     uint8_t motorL4error;
     float simple_odom_x;
     float simple_odom_v;
@@ -107,7 +108,7 @@ struct pid_tuning_t
 msg_ins_t debug_ins;
 pendulum_debug_t pendulum_debug;
 pid_tuning_t lenpd_tuning = {6000.0f, 0.0f, -900.0f};
-pid_tuning_t rollpd_tuning = {0.0f, 0.000f, -0.00f};
+pid_tuning_t rollpd_tuning = {0.7f, 0.00f, -0.1f};
 DMMotorHandler *dmmotorhandler = DMMotorHandler::Instance();
 #endif
 
@@ -203,7 +204,6 @@ DMMotorHandler *dmmotorhandler = DMMotorHandler::Instance();
     uint16_t recover_count = 0;
     uint32_t airland_cnt = 0;
     uint16_t jumpair_cnt = 0;
-    uint16_t jumplanding_cnt = 0;
     bool first_jump = false;
     float maintain_yaw = 0.0f;
 
@@ -532,7 +532,6 @@ DMMotorHandler *dmmotorhandler = DMMotorHandler::Instance();
 
         case SPIN:
         {
-
             /* [x, dx, yaw, dyaw, alphal, dalphal, alphar, dalphar, theta, dtheta] */
             refX[0] = cmd.x;
             refX[1] = cmd.v;
@@ -545,10 +544,10 @@ DMMotorHandler *dmmotorhandler = DMMotorHandler::Instance();
             refX[8] = 0.0f;
             refX[9] = 0.0f;
 
-            observedX[0] = refX[0];
-            observedX[1] = simple_odom.v;
+            // observedX[0] = refX[0];
+            // observedX[1] = simple_odom.v;
 
-            lqr.lqr_type = LQR_LOW;
+            lqr.lqr_type = LQR_SPIN;
             lqr.Update(lpendulum.len, rpendulum.len, true);
 
             Twl = lqr.Tout[0];
@@ -569,8 +568,7 @@ DMMotorHandler *dmmotorhandler = DMMotorHandler::Instance();
             rpendulum.TorqueControl(Fr, Twr);
 
             if (!cmd.spin) 
-            {
-                odom.Reset(); 
+            { 
                 chassis_state = NORMAL; 
             }
             break;
@@ -925,8 +923,9 @@ DMMotorHandler *dmmotorhandler = DMMotorHandler::Instance();
         rleg_len_pd.Tuning(lenpd_tuning.kp, lenpd_tuning.ki, lenpd_tuning.kd);
         roll_pd.Tuning(rollpd_tuning.kp, rollpd_tuning.ki, rollpd_tuning.kd);
         pendulum_debug.motorL4error = RJoint4.motorFeedback.ERR;
+        pendulum_debug.state = chassis_state;
     #endif
 
-        tx_thread_sleep(1);
+        tx_thread_sleep(MIN(1, 1-(tx_time_get()-thread_start_time)));
     }
 }

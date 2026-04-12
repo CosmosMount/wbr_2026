@@ -121,8 +121,15 @@ public:
     float x;
     float v;
 
-    void Update(float _vel){
+    void Update(float _vel)
+    {
         v = _vel;
         x = x + v*0.001f;
+    }
+
+    void Reset()
+    {
+        x = 0.0f;
+        v = 0.0f;
     }
 };

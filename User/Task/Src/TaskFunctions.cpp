@@ -253,29 +253,25 @@ SuperCap* debug_supercap = SuperCap::Instance();
 
             if (cmd_msg->ifspin)
             {
+                cmd.spin = true;
                 spin_offset_init = true;
-                if (cmd_msg->vx < 0.05f)
-                {
-                    cmd.dyaw = yaw_updater.UpdateVal(10.0f);
-                    cmd.v = 0.0f;
-                }
-                else 
-                {
-                    cmd.dyaw = yaw_updater.UpdateVal(10.0f);
-                    cmd.v = v_updater.UpdateVal(-cmd_msg->vx*0.1f*2.0f)*arm_sin_f32(relative_angle);
-                }
+                cmd.dyaw = yaw_updater.UpdateVal(10.0f);
+                cmd.v = v_updater.UpdateVal(-cmd_msg->vx*0.1f)*arm_cos_f32(relative_angle);
                 cmd.roll = 0.0f;
             }
             else 
             {
                 spin_offset_init = false;
-                cmd.dyaw = -relative_angle*4.0f;
+                if (fabs(yaw_updater.GetVal()) > 1.0f)
+                {
+                    cmd.dyaw = yaw_updater.UpdateVal(0.0f);
+                }
+                else
+                {
+                    cmd.dyaw = -relative_angle*4.0f;
+                }
                 cmd.v = v_updater.UpdateVal(cmd_msg->vx*0.1f*2.0f);
                 cmd.roll = 0.0f;
-                if (front_offset == yaw_offset2)
-                {
-                    cmd.v *= -1.0f;
-                }
             }
         }
             
@@ -375,7 +371,7 @@ SuperCap* debug_supercap = SuperCap::Instance();
 
     #endif
 
-        if (fabsf(cmd.v) < 0.005f || remoter.ctrl_sw == Spin)
+        if (fabsf(cmd.v) < 0.005f)
         {
             if (!maintained_x)
             {
@@ -387,6 +383,10 @@ SuperCap* debug_supercap = SuperCap::Instance();
         else
         {   
             maintained_x = false;
+            if (front_offset == yaw_offset2)
+            {
+                cmd.v *= -1.0f;
+            }
             cmd.x = pendulum_data.x+cmd.v*0.001f;
         }
         
