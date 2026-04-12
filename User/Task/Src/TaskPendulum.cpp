@@ -341,12 +341,12 @@ DMMotorHandler *dmmotorhandler = DMMotorHandler::Instance();
             if (lpendulum.flat) 
                 lpendulum.Relax();
             else
-                lpendulum.DeltaPControl(-JOINT_FLAT_DELTA, 2.0f, 10.0f);
+                lpendulum.DeltaPControl(-JOINT_FLAT_DELTA, 1.5f, 12.0f);
             
             if (rpendulum.flat)
                 rpendulum.Relax();
             else
-                rpendulum.DeltaPControl(-JOINT_FLAT_DELTA, 2.0f, 10.0f);
+                rpendulum.DeltaPControl(-JOINT_FLAT_DELTA, 1.5f, 12.0f);
             if (lpendulum.flat && rpendulum.flat)
                 chassis_state = NEUTRAL;
             break;
@@ -521,6 +521,11 @@ DMMotorHandler *dmmotorhandler = DMMotorHandler::Instance();
                 jumpair_cnt = 0;
             }
 
+            if (cmd.spin)
+            {
+                chassis_state = SPIN;
+            }
+
             pre_stair = cmd.gostair;
             break;
         }
@@ -563,7 +568,11 @@ DMMotorHandler *dmmotorhandler = DMMotorHandler::Instance();
             lpendulum.TorqueControl(Fl, Twl);
             rpendulum.TorqueControl(Fr, Twr);
 
-            if (!cmd.spin) { chassis_state = NORMAL; }
+            if (!cmd.spin) 
+            {
+                odom.Reset(); 
+                chassis_state = NORMAL; 
+            }
             break;
         }
 

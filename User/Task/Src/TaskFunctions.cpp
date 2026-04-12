@@ -277,55 +277,6 @@ SuperCap* debug_supercap = SuperCap::Instance();
                     cmd.v *= -1.0f;
                 }
             }
-            
-            // if (cmd_msg->ifspin)
-            // {
-            //     cmd.move = true;
-            //     cmd.roll = 0.0f;
-            //     cmd.dyaw = yaw_updater.UpdateVal(3.0f+5.0f*remoter.right_x);
-            //     cmd.v = 0.0f;
-            //     cmd.inair = false;
-            //     cmd.gostair = false;
-            //     cmd.spin = true;
-            // }
-            // else if (cmd_msg->ifjump)
-            // {
-            //     v_updater.SetPath(0.003f);
-            //     cmd.dyaw = yaw_updater.UpdateVal(-remoter.right_x*2.0f);//0.0f;//
-            //     cmd.v = v_updater.UpdateVal(remoter.left_y*1.5f);
-            //     // if ()
-            //     // {
-            //     //     cmd.prejump = true;
-            //     // }
-            //     // else if ()
-            //     // {
-            //     //     cmd.ifjump = true;
-            //     //     cmd.prejump = false;
-            //     // }
-            //     // else 
-            //     // {
-            //     //     cmd.prejump = false;
-            //     //     cmd.ifjump = false;
-            //     // }
-            // }
-            // else if (cmd_msg->ifstair)
-            // {
-            //     cmd.roll = 0.0f;
-            //     cmd.len += cmd_msg->vy*0.1f*0.0008f;
-            //     cmd.len = FloatConstrain(cmd.len, MIN_LEG_LEN, MAX_LEG_LEN);
-            //     cmd.gostair = true;
-            // }
-            // else
-            // {
-            //     cmd.dyaw = 0.0f;
-            //     cmd.v = 0.0f;
-            //     cmd.roll = 0.0f;
-            //     cmd.len = NORMAL_LEG_LEN;
-            //     cmd.len = FloatConstrain(cmd.len, MIN_LEG_LEN, MAX_LEG_LEN);
-            //     cmd.spin = false;
-            //     cmd.inair = false;
-            //     cmd.gostair = false;
-            // }
         }
             
     #else
