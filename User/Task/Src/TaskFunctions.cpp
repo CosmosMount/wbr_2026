@@ -266,6 +266,8 @@ SuperCap* debug_supercap = SuperCap::Instance();
                 spin_offset_init = false;
                 if (fabs(yaw_updater.GetVal()) > 1.0f)
                 {
+                    maintained_x = false;
+                    cmd.x = pendulum_data.x;
                     cmd.dyaw = yaw_updater.UpdateVal(0.0f);
                 }
                 else

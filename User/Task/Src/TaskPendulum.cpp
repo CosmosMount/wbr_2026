@@ -568,7 +568,8 @@ DMMotorHandler *dmmotorhandler = DMMotorHandler::Instance();
             rpendulum.TorqueControl(Fr, Twr);
 
             if (!cmd.spin) 
-            { 
+            {
+                odom.Reset();
                 chassis_state = NORMAL; 
             }
             break;
