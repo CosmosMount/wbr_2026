@@ -204,6 +204,7 @@ SuperCap* debug_supercap = SuperCap::Instance();
         if (isnan(cmd_msg->dlen) || isnan(cmd_msg->vx) || isnan(cmd_msg->vy)) // 如果出现nan错误，将速度设定值设为0
         {
             cmd.v = 0.0f;
+            cmd.x = pendulum_data.x;
             cmd.len = chassis::Lnormal;
             cmd.dyaw = 0.0f;
             cmd.move = false;
@@ -211,6 +212,7 @@ SuperCap* debug_supercap = SuperCap::Instance();
         else if (!cmd_msg->ifmove)
         {
             cmd.v = 0.0f;
+            cmd.x = 0.0f;
             cmd.len = chassis::Lnormal;
             cmd.dyaw = 0.0f;
             cmd.move = false;
@@ -218,6 +220,7 @@ SuperCap* debug_supercap = SuperCap::Instance();
         else if (!pendulum_data.recovered)
         {
             cmd.v = 0.0f;
+            cmd.x = 0.0f;
             cmd.len = chassis::Lnormal;
             cmd.dyaw = 0.0f;
             cmd.move = true;
@@ -225,6 +228,7 @@ SuperCap* debug_supercap = SuperCap::Instance();
         else if (!yaw_init) 
         {
             cmd.v = 0.0f;
+            cmd.x = 0.0f;
             cmd.len = chassis::Lnormal;
             cmd.dyaw = 0.0f;
             cmd.move = false;

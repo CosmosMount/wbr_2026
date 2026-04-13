@@ -73,10 +73,6 @@ constexpr float Mbody = 14.0f;
 constexpr float Thip_max = 40.0f;
 constexpr float Twheel_max = 15.0f;
 
-constexpr float Joint_flat_delta = 3.71f;
-constexpr float Joint_stair_delta = 1.80f;
-constexpr float Joint_recover_delta = 4.71f;
-
 constexpr float Fspring = 430.0f;
 constexpr float Dspring1 = 0.0475f;
 constexpr float Dspring2 = 0.05f;
@@ -84,9 +80,11 @@ constexpr float Ang_spring = 1.891415f;
 
 constexpr float Gff = 67.865f;
 
-constexpr float Nliftoff = 20.0f;
-constexpr float Nlanding = 70.0f;
+constexpr float Nliftoff = 5.0f;
+constexpr float Nlanding = 30.0f;
 
 constexpr float alpha_eq_coeff[3] = { 0.280918f, -1.101757f, 1.232768f };
+
+constexpr float imu_offset_x = 0.2f;
 
 };

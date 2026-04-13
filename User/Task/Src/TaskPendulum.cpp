@@ -65,12 +65,15 @@ struct pendulum_debug_t
     float Nl;
     float Nr;
     float N;
+    float az;
     float llendot;
     float rlendot;
     float yaw;
     float yawref;
     float yaw_dot;
     float yaw_out;
+    float lphi;
+    float rphi;
     bool lflat;
     bool rflat;
     bool lneutral;
@@ -92,8 +95,6 @@ struct pendulum_debug_t
     uint8_t stage;
     uint8_t state;
     uint8_t motorL4error;
-    float simple_odom_x;
-    float simple_odom_v;
 
 };
 struct pid_tuning_t 
@@ -104,7 +105,7 @@ struct pid_tuning_t
 };
 msg_ins_t debug_ins;
 pendulum_debug_t pendulum_debug;
-pid_tuning_t lenpd_tuning = {6000.0f, 0.0f, -900.0f};
+pid_tuning_t lenpd_tuning = {5000.0f, 0.0f, -900.0f};
 pid_tuning_t rollpd_tuning = {0.7f, 0.00f, -0.1f};
 DMMotorHandler *dmmotorhandler = DMMotorHandler::Instance();
 #endif
@@ -174,7 +175,6 @@ DMMotorHandler *dmmotorhandler = DMMotorHandler::Instance();
     Pendulum<DM8009P, M3508> rpendulum(true, &RJoint1, &RJoint4, &RWheel);
     /* odom */
     Odometry odom;
-    SimpleOdom simple_odom;
     /* lqr */
     float observedX[10] = {0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f};
     float refX[10] = {0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f};
@@ -196,7 +196,7 @@ DMMotorHandler *dmmotorhandler = DMMotorHandler::Instance();
     bool pre_stair = false;
 
     uint16_t recover_count = 0;
-    uint32_t airland_cnt = 0;
+    // uint32_t airland_cnt = 0;
     uint16_t jumpair_cnt = 0;
     bool first_jump = false;
     float maintain_yaw = 0.0f;
@@ -218,8 +218,8 @@ DMMotorHandler *dmmotorhandler = DMMotorHandler::Instance();
         float vlwheel = -LWheel.motorFeedback.speedFdb * Rwheel;
         float vrwheel = RWheel.motorFeedback.speedFdb * Rwheel;
 
-        odom.Update(ins.quaternion, ins.accel,(vlwheel+vrwheel)*0.5f, yaw);
-        simple_odom.Update((vlwheel+vrwheel)*0.5f);
+        ins.accel[0] += imu_offset_x * ins.gyro_y * ins.gyro_y;
+        odom.Update(ins.quaternion, ins.accel, (vlwheel+vrwheel)*0.5f, yaw);
         lpendulum.Solve(pitch, dpitch, odom.az);
         rpendulum.Solve(pitch, dpitch, odom.az);
 
@@ -322,8 +322,8 @@ DMMotorHandler *dmmotorhandler = DMMotorHandler::Instance();
                 break;
             }
             
-            lpendulum.DeltaPhiControl(PI, 0.7f, 1.4f);
-            rpendulum.DeltaPhiControl(PI, 0.7f, 1.4f);
+            lpendulum.DeltaPhiControl(PI, 10.0f, 5.0f, 0.002f);
+            rpendulum.DeltaPhiControl(PI, 10.0f, 5.0f, 0.002f);
             break;
         }
 
@@ -331,50 +331,24 @@ DMMotorHandler *dmmotorhandler = DMMotorHandler::Instance();
         {
             odom.Reset();
             if (lpendulum.flat) 
+            {
                 lpendulum.Relax();
+                lpendulum.delta_init = false;
+                lpendulum.phi_updater.SetDefault(0.0f);
+            }
             else
-                lpendulum.DeltaPhiControl(PI, 1.5f, 12.0f);
+                lpendulum.DeltaPhiControl(PI, 5.0f, 10.0f, 0.002f);
             
             if (rpendulum.flat)
+            {
                 rpendulum.Relax();
+                rpendulum.delta_init = false;
+                rpendulum.phi_updater.SetDefault(0.0f);
+            } 
             else
-                rpendulum.DeltaPhiControl(PI, 1.5f, 12.0f);
+                rpendulum.DeltaPhiControl(PI, 5.0f, 10.0f, 0.002f);
             if (lpendulum.flat && rpendulum.flat)
                 chassis_state = NEUTRAL;
-            break;
-        }
-
-        case GOSTAIR:
-        {
-            odom.Reset();
-
-            lpendulum.DeltaPhiControl(PI, 2.0f, 6.0f);
-            rpendulum.DeltaPhiControl(PI, 2.0f, 6.0f);
-
-            if (lpendulum.phi < 1.7f && lpendulum.phi > 0.0f)
-                Twl = 0.1f;
-            else
-                Twl = 0.0f;
-            if (rpendulum.phi < 1.7f && rpendulum.phi > 0.0f)
-                Twr = 0.1f;
-            else
-                Twr = 0.0f;
-            Fl[0] = 0.0f;
-            Fl[1] = 0.0f;
-            Fr[0] = 0.0f;
-            Fr[1] = 0.0f;
-            lpendulum.TorqueControl(Fl, Twl);
-            rpendulum.TorqueControl(Fr, Twr);
-
-            if (((lpendulum.phi>-3.14f&&lpendulum.phi<-2.0f) 
-                && (rpendulum.phi>-3.14f&&rpendulum.phi<-2.0f))
-                || ((lpendulum.phi>=2.4f&&lpendulum.phi<=3.1f)
-                && (rpendulum.phi>=2.4f&&rpendulum.phi<=3.1f))
-                )   
-            {
-                chassis_state = NEUTRAL;
-                pendulum_data.reset_len = true;
-            }
             break;
         }
 
@@ -469,20 +443,20 @@ DMMotorHandler *dmmotorhandler = DMMotorHandler::Instance();
             roll_pd.fdb = ins.roll*DegreeToRad;
             roll_pd.UpdateResult(ins.gyro_r);
 
-            Fl[0] = lpendulum.LenControl(cmd.len+roll_pd.result);
-            Fr[0] = rpendulum.LenControl(cmd.len-roll_pd.result);
+            Fl[0] = lpendulum.LenControl(cmd.len);//+roll_pd.result);
+            Fr[0] = rpendulum.LenControl(cmd.len);//-roll_pd.result);
 
             lpendulum.TorqueControl(Fl, Twl);
             rpendulum.TorqueControl(Fr, Twr);
             
             pendulum_data.reset_len = false;
 
-            airland_cnt ++;
+            // airland_cnt ++;
             
-            if (lpendulum.airborne && rpendulum.airborne && airland_cnt > 600) 
-            {
-                chassis_state = OFFGROUND; 
-            }
+            // if (lpendulum.airborne && rpendulum.airborne) 
+            // {
+            //     chassis_state = OFFGROUND; 
+            // }
 
             if (cmd.gostair && !pre_stair) 
             {
@@ -520,9 +494,6 @@ DMMotorHandler *dmmotorhandler = DMMotorHandler::Instance();
             refX[7] = 0.0f;
             refX[8] = 0.0f;
             refX[9] = 0.0f;
-
-            // observedX[0] = refX[0];
-            // observedX[1] = simple_odom.v;
 
             lqr.lqr_type = LQR_SPIN;
             lqr.Update(lpendulum.len, rpendulum.len, true);
@@ -574,9 +545,39 @@ DMMotorHandler *dmmotorhandler = DMMotorHandler::Instance();
 
             if ((!lpendulum.airborne && !rpendulum.airborne) || ins.accel[2] > 20.0f)
             {
-                airland_cnt = 0;
+                // airland_cnt = 0;
                 pendulum_data.reset_len = true;
                 chassis_state = NORMAL; 
+            }
+            break;
+        }
+
+        case GOSTAIR:
+        {
+            odom.Reset();
+
+            lpendulum.DeltaPhiControl(PI, 2.0f, 6.0f, 0.002f);
+            rpendulum.DeltaPhiControl(PI, 2.0f, 6.0f, 0.002f);
+
+            if (lpendulum.phi < 1.7f && lpendulum.phi > 0.0f)
+                Twl = 0.1f;
+            else
+                Twl = 0.0f;
+            if (rpendulum.phi < 1.7f && rpendulum.phi > 0.0f)
+                Twr = 0.1f;
+            else
+                Twr = 0.0f;
+            Fl[0] = 0.0f;
+            Fl[1] = 0.0f;
+            Fr[0] = 0.0f;
+            Fr[1] = 0.0f;
+            lpendulum.TorqueControl(Fl, Twl);
+            rpendulum.TorqueControl(Fr, Twr);
+
+            if (lpendulum.flat && rpendulum.flat)   
+            {
+                chassis_state = NEUTRAL;
+                pendulum_data.reset_len = true;
             }
             break;
         }
@@ -731,7 +732,7 @@ DMMotorHandler *dmmotorhandler = DMMotorHandler::Instance();
 
                 if (ins.accel[2] > 40.0f)
                 {
-                    airland_cnt = 0;
+                    // airland_cnt = 0;
                     pendulum_data.reset_len = true;
                     jump_stage = BACK;
                 }
@@ -772,13 +773,13 @@ DMMotorHandler *dmmotorhandler = DMMotorHandler::Instance();
                 
                 pendulum_data.reset_len = false;
 
-                airland_cnt ++;
+                // airland_cnt ++;
                 
-                if (first_jump && airland_cnt > 800)
+                if (first_jump)// && airland_cnt > 800)
                 {
                     first_jump = false;
                     chassis_state = GOSTAIR;
-                    airland_cnt = 0;
+                    // airland_cnt = 0;
                 }
                 break;
             }
@@ -828,6 +829,8 @@ DMMotorHandler *dmmotorhandler = DMMotorHandler::Instance();
         pendulum_debug.rlenref = rpendulum.len_pd.ref;
         pendulum_debug.llen = lpendulum.len;
         pendulum_debug.rlen = rpendulum.len;
+        pendulum_debug.lphi = lpendulum.phi;
+        pendulum_debug.rphi = rpendulum.phi;
         pendulum_debug.alphal = lpendulum.alpha;
         pendulum_debug.alphar = rpendulum.alpha;
         pendulum_debug.alphal_eq = lpendulum.alpha_eq;
@@ -844,8 +847,8 @@ DMMotorHandler *dmmotorhandler = DMMotorHandler::Instance();
         pendulum_debug.Twr = Twr;
         pendulum_debug.Tpl = lqr.Tout[2];
         pendulum_debug.Tpr = lqr.Tout[3];
-        pendulum_debug.Fl = Fl[0];
-        pendulum_debug.Fr = Fr[0];
+        pendulum_debug.Fl = lpendulum.Fs;
+        pendulum_debug.Fr = rpendulum.Fs;
         pendulum_debug.lair = lpendulum.airborne;
         pendulum_debug.rair = rpendulum.airborne;
         pendulum_debug.lneutral = lpendulum.neutral;
@@ -855,9 +858,8 @@ DMMotorHandler *dmmotorhandler = DMMotorHandler::Instance();
         pendulum_debug.Nl = lpendulum.N;
         pendulum_debug.Nr = rpendulum.N;
         pendulum_debug.N = N;
+        pendulum_debug.az = odom.az;
         pendulum_debug.stage = jump_stage;
-        pendulum_debug.simple_odom_v = simple_odom.v;
-        pendulum_debug.simple_odom_x = simple_odom.x;
         lpendulum.len_pd.Tuning(lenpd_tuning.kp, lenpd_tuning.ki, lenpd_tuning.kd);
         rpendulum.len_pd.Tuning(lenpd_tuning.kp, lenpd_tuning.ki, lenpd_tuning.kd);
         roll_pd.Tuning(rollpd_tuning.kp, rollpd_tuning.ki, rollpd_tuning.kd);
