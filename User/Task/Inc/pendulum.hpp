@@ -16,6 +16,7 @@ protected:
     VMCsolver vmc;
     uint32_t neutral_count;
     float prev_dlen;
+    float prev_dalpha;
     bool reverse;
 
     hiptype*   joint1;
@@ -43,6 +44,7 @@ public:
     {
         this->reverse         = _reverse;
         this->prev_dlen       = 0.0f;
+        this->prev_dalpha     = 0.0f;
         this->neutral_count   = 0;
         this->delta_init      = false;
         this->dlen            = 0.0f;
@@ -61,15 +63,18 @@ public:
     float len;
     float dlen;
     float N;
+    float Fs;
     float alpha_eq;
 
     bool flat;
     bool neutral;
-    bool delta_init;
+    bool delta_init = false;
     bool airborne;       ///< 离地状态（经防抖确认）
 
     PID len_pd = PID(6000.0f, 0.0f, -900.0f, 125.0f, 0.0f, PID_DVEL);
-    PID phi_pd = PID(0.7f, 0.0f, 1.4f, 5.0f, 0.005f);
+    PID phi_pd = PID(0.7f, 0.0f, 1.4f, 10.0f, 0.005f);
+
+    SLOPE phi_updater = SLOPE(0.0f, 0.005f);
 
     void Solve(float _pitch, float _dpitch, float _az)
     {
@@ -100,6 +105,8 @@ public:
 
         /* ── 摆角 ───────────────────────────────────────────────────────── */
         phi = this->vmc.GetPhi();
+        if (phi < 0.0f)
+            phi += 2.0f * PI; // 将 phi 规范到 [0, 2π] 范围内，方便后续判断
         this->alpha    = Numeric::LoopFloatConstrain(phi - 0.5f*PI + _pitch, -PI, PI);
         this->dalpha   = xdot[1] + _dpitch;
         this->alpha_eq = alpha_eq_coeff[0]
@@ -110,11 +117,21 @@ public:
         float Treal[2] = {joint1_tor, joint4_tor};
         float Trev[2]  = {0.0f, 0.0f};
         this->vmc.VMCRevCal(Trev, Treal);
-        float Fs    = this->vmc.GetFs();
-        float P     = (Trev[0]+Fs) * arm_cos_f32(this->alpha)
-                    + Trev[1] / this->len * arm_sin_f32(this->alpha);
-        float ddlen = this->dlen - this->prev_dlen;
-        this->N     = P + wheel_mass * (_az - ddlen * arm_cos_f32(this->alpha));
+        this->Fs = this->vmc.GetFs();
+        float cos_alpha = arm_cos_f32(this->alpha);
+        float sin_alpha = arm_sin_f32(this->alpha);
+        float P  = (Trev[0]+this->Fs) * cos_alpha
+                  + Trev[1] / this->len * sin_alpha;
+        float ddlen   = this->dlen - this->prev_dlen;
+        float ddalpha = this->dalpha - this->prev_dalpha;
+
+        float Zw = (_az - Numeric::Gravity)
+                - ddlen * cos_alpha
+                + 2.0f * this->dlen * this->dalpha * sin_alpha
+                + this->len * ddalpha * sin_alpha
+                + this->len * this->dalpha * this->dalpha * cos_alpha;
+
+        this->N = P + wheel_mass * Zw;
 
         /* ── 离地检测 ────────────────────────────────────────────────────── */
         /* N-based 离地检测（沿用上一版计数状态机） */
@@ -130,7 +147,7 @@ public:
                 this->liftoff_count = 0;
             }
 
-            if (this->liftoff_count >= 3)
+            if (this->liftoff_count >= 5)
             {
                 this->airborne = true;
                 this->liftoff_count = 0;
@@ -149,7 +166,7 @@ public:
                 this->landing_count = 0;
             }
 
-            if (this->landing_count >= 5)
+            if (this->landing_count >= 3)
             {
                 this->airborne = false;
                 this->landing_count = 0;
@@ -162,10 +179,11 @@ public:
             this->neutral_count++;
         else
             this->neutral_count = 0;
-        this->neutral = this->neutral_count > 200;
+        this->neutral = this->neutral_count > 150;
         this->flat    = (2.5f <= phi && phi <= 3.1f);
 
         this->prev_dlen = this->dlen;
+        this->prev_dalpha = this->dalpha;
     }
 
     void Relax()
@@ -179,10 +197,17 @@ public:
         this->wheel->currentSet = 0.0f;
     }
 
-    void DeltaPhiControl(float _phi, float _kp, float _kd)
+    void DeltaPhiControl(float _phi, float _kp, float _kd, float _slope)
     {
+        if (!this->delta_init)
+        {
+            this->phi_updater.SetDefault(this->phi);
+            this->phi_updater.SetPath(_slope);
+            this->delta_init = true;
+        }
+
         this->phi_pd.Tuning(_kp, 0.0f, _kd);
-        this->phi_pd.ref = _phi;
+        this->phi_pd.ref = this->phi_updater.UpdateVal(_phi);
         this->phi_pd.fdb = this->phi;
         this->phi_pd.UpdateResult(this->dalpha);
         float F[2] = {0.0f, 0.0f};

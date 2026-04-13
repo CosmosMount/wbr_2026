@@ -83,7 +83,7 @@ public:
      * @brief odometry update function
      * @note all the params must be homography
      * @param _quaternion [w, x, y, z] format
-     * @param _acc [0, ax, ay, az] quaternion format for acceleration
+     * @param _acc [ax, ay, az] acceleration
      * @param _vel velocity measurement
      * @param _yaw in radians
      * @return odometry_info
@@ -96,12 +96,11 @@ public:
 
         float temp[4] = {0};
         float a_world[4] = {0};
+        float a_body[4] = {0, _acc[0], _acc[1], _acc[2]};
         float _quaternion_conj[4] = {_quaternion[0], -_quaternion[1], -_quaternion[2], -_quaternion[3]};
-        arm_quaternion_product_f32(_quaternion, _acc, temp, 1);
+        arm_quaternion_product_f32(_quaternion, a_body, temp, 1);
         arm_quaternion_product_f32(temp, _quaternion_conj, a_world, 1);
 
-        // float a_x = sqrtf(a_world[1] * a_world[1] + a_world[2] * a_world[2]) *
-        //             arm_cos_f32(atan2f(a_world[2], a_world[1]) - _yaw);
         float a_x = a_world[1] * arm_cos_f32(_yaw) + a_world[2] * arm_sin_f32(_yaw);
 
         vel_kf.UpdateKalman(_vel, a_x);
@@ -114,24 +113,6 @@ public:
     void Reset()
     {
         vel_kf.ResetKF();
-        x = 0.0f;
-        v = 0.0f;
-    }
-};
-
-class SimpleOdom{
-public:
-    float x;
-    float v;
-
-    void Update(float _vel)
-    {
-        v = _vel;
-        x = x + v*0.001f;
-    }
-
-    void Reset()
-    {
         x = 0.0f;
         v = 0.0f;
     }
