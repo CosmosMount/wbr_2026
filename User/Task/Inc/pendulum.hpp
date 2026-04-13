@@ -60,11 +60,15 @@ public:
     float phi;
     float alpha;
     float dalpha;
+    float alpha_eq;
+
     float len;
     float dlen;
+
     float N;
     float Fs;
-    float alpha_eq;
+    float Freal;
+    float Treal;
 
     bool flat;
     bool neutral;
@@ -117,6 +121,8 @@ public:
         float Treal[2] = {joint1_tor, joint4_tor};
         float Trev[2]  = {0.0f, 0.0f};
         this->vmc.VMCRevCal(Trev, Treal);
+        this->Freal = Trev[0];
+        this->Treal = Trev[1];
         this->Fs = this->vmc.GetFs();
         float cos_alpha = arm_cos_f32(this->alpha);
         float sin_alpha = arm_sin_f32(this->alpha);
