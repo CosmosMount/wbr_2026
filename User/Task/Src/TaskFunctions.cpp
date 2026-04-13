@@ -69,7 +69,7 @@ SuperCap* debug_supercap = SuperCap::Instance();
     SLOPE yaw_updater(0.0f, 0.006f);
     SLOPE vx_updater(0.0f,0.006f);
     SLOPE vy_updater(0.0f,0.006f);
-    SLOPE len_updater(0.15f,LEG_NORMAL_STEP);
+    SLOPE len_updater(0.15f, 0.005f);
 
     /* om publishers */
     om_topic_t *cmd_topic = om_config_topic(nullptr, "ca", "cmd", sizeof(msg_cmd_t));
@@ -156,7 +156,6 @@ SuperCap* debug_supercap = SuperCap::Instance();
         }
         
     #else
-    #ifndef CHASSIS_ONLY
 
         /* Handle Gimbal Motors */
         distance1 = fabs(yaw_motor.motorFeedback.positionFdb-yaw_offset1);
@@ -205,28 +204,28 @@ SuperCap* debug_supercap = SuperCap::Instance();
         if (isnan(cmd_msg->dlen) || isnan(cmd_msg->vx) || isnan(cmd_msg->vy)) // 如果出现nan错误，将速度设定值设为0
         {
             cmd.v = 0.0f;
-            cmd.len = NORMAL_LEG_LEN;
+            cmd.len = chassis::Lnormal;
             cmd.dyaw = 0.0f;
             cmd.move = false;
         }
         else if (!cmd_msg->ifmove)
         {
             cmd.v = 0.0f;
-            cmd.len = NORMAL_LEG_LEN;
+            cmd.len = chassis::Lnormal;
             cmd.dyaw = 0.0f;
             cmd.move = false;
         }
         else if (!pendulum_data.recovered)
         {
             cmd.v = 0.0f;
-            cmd.len = NORMAL_LEG_LEN;
+            cmd.len = chassis::Lnormal;
             cmd.dyaw = 0.0f;
             cmd.move = true;
         }
         else if (!yaw_init) 
         {
             cmd.v = 0.0f;
-            cmd.len = NORMAL_LEG_LEN;
+            cmd.len = chassis::Lnormal;
             cmd.dyaw = 0.0f;
             cmd.move = false;
         }
@@ -236,8 +235,8 @@ SuperCap* debug_supercap = SuperCap::Instance();
 
             if (pendulum_data.reset_len)
             {
-                cmd.len = NORMAL_LEG_LEN;
-                // target_len = NORMAL_LEG_LEN;
+                cmd.len = chassis::Lnormal;
+                // target_len = chassis::Lnormal;
             }
             else 
             {
@@ -245,7 +244,7 @@ SuperCap* debug_supercap = SuperCap::Instance();
                 // target_len = FloatConstrain(target_len, MIN_LEG_LEN, MAX_LEG_LEN);
                 // cmd.len = len_updater.UpdateVal(target_len);
                 cmd.len += cmd_msg->dlen * 0.1f * 0.0006f;
-                cmd.len = FloatConstrain(cmd.len, MIN_LEG_LEN, MAX_LEG_LEN);
+                cmd.len = FloatConstrain(cmd.len, chassis::Lmin, chassis::Lmax);
             }
             
             cmd.spin = false;
@@ -292,102 +291,6 @@ SuperCap* debug_supercap = SuperCap::Instance();
                 cmd.roll = 0.0f;
             }
         }
-            
-    #else
-
-        if (remoter.ctrl_sw == Relax || remoter.offline || tx_semaphore_get(&IMUThreadSem, TX_NO_WAIT) != TX_SUCCESS)
-        {
-            cmd.v = 0.0f;
-            cmd.len = NORMAL_LEG_LEN;
-            cmd.dyaw = 0.0f;
-            cmd.move = false;
-            cmd.inair = false;
-        }
-        else if (remoter.ctrl_sw == Normal)
-        {
-            cmd.move = true;
-            cmd.spin = false;
-        #ifdef JUMP_UP
-            if (remoter.jump_sw == None)
-            {
-                cmd.dyaw = yaw_updater.UpdateVal(-remoter.right_x*2.0f);
-                cmd.v = v_updater.UpdateVal(-remoter.left_y*0.7f);
-                cmd.roll = 0.0f;
-                
-                if (pendulum_data.reset_len)
-                {
-                    cmd.len = NORMAL_LEG_LEN;
-                }
-                else 
-                {
-                    cmd.len += remoter.right_y*0.0008f;
-                    cmd.len = FloatConstrain(cmd.len, MIN_LEG_LEN, MAX_LEG_LEN);
-                }
-                
-                cmd.inair = false;
-                cmd.gostair = false;
-                cmd.prejump = false;
-                cmd.ifjump = false;
-            }
-            else
-            {
-                v_updater.SetPath(0.003f);
-                cmd.dyaw = yaw_updater.UpdateVal(-remoter.right_x*2.0f);//0.0f;//
-                cmd.v = v_updater.UpdateVal(-remoter.left_y*0.9f);
-                if (remoter.jump_sw == Prepared)
-                {
-                    cmd.prejump = true;
-                }
-                else if (remoter.jump_sw == Jump)
-                {
-                    cmd.ifjump = true;
-                    cmd.prejump = false;
-                }
-                else 
-                {
-                    cmd.prejump = false;
-                    cmd.ifjump = false;
-                }
-            }
-        #endif
-        #ifdef STAIR_UP
-            if (remoter.jump_sw == None)
-                cmd.gostair = false;
-
-            if ((remoter.jump_sw == Prepared || remoter.jump_sw == Jump) && !pre_stair)
-            {
-                
-                cmd.roll = 0.0f;
-                cmd.len += remoter.right_y*0.0008f;
-                cmd.len = FloatConstrain(cmd.len, MIN_LEG_LEN, MAX_LEG_LEN);
-                cmd.gostair = true;
-            }
-            else
-            {
-                
-                cmd.dyaw = yaw_updater.UpdateVal(-remoter.right_x*2.0f);
-                cmd.v = v_updater.UpdateVal(-remoter.left_y*0.7f);
-                cmd.roll = 0.0f;
-                if (pre_stair)
-                    cmd.len = NORMAL_LEG_LEN;
-                cmd.len += remoter.right_y*0.0008f;
-                cmd.len = FloatConstrain(cmd.len, MIN_LEG_LEN, MAX_LEG_LEN);
-                cmd.inair = false;
-            }
-        #endif   
-        }
-        else if (remoter.ctrl_sw == Spin)
-        {
-            cmd.move = true;
-            cmd.roll = 0.0f;
-            cmd.dyaw = yaw_updater.UpdateVal(3.0f+5.0f*remoter.right_x);
-            cmd.v = 0.0f;
-            cmd.inair = false;
-            cmd.gostair = false;
-            cmd.spin = true;
-        }
-
-    #endif
 
         if (fabsf(cmd.v) < 0.005f)
         {

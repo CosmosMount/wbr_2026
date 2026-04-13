@@ -22,6 +22,7 @@
 #include <cstdint>
 
 using namespace Numeric;
+using namespace chassis;
 
 extern FDCAN_HandleTypeDef hfdcan1;
 extern FDCAN_HandleTypeDef hfdcan2;
@@ -61,10 +62,6 @@ struct pendulum_debug_t
     float Tpr;
     float Fl;
     float Fr;
-    float Flreal;
-    float Frreal;
-    float Flmodel;
-    float Frmodel;
     float Nl;
     float Nr;
     float N;
@@ -182,9 +179,6 @@ DMMotorHandler *dmmotorhandler = DMMotorHandler::Instance();
     float observedX[10] = {0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f};
     float refX[10] = {0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f};
     LQR lqr(&refX[0], &observedX[0]);
-    /* len */
-    PID rleg_len_pd(6000.0f, 0.0f, -1000.0f, 125.0f, 0.0f, PID_DVEL);
-    PID lleg_len_pd(6000.0f, 0.0f, -1000.0f, 125.0f, 0.0f, PID_DVEL);
     /* roll */
     PID roll_pd(0.7f, 0.0001f, 1.4f, 3.0f, 0.005f);
     /* state machine */
@@ -221,8 +215,8 @@ DMMotorHandler *dmmotorhandler = DMMotorHandler::Instance();
         float dpitch = ins.gyro_p;
         float yaw = ins.total_yaw*DegreeToRad;
         float dyaw = ins.gyro_y;
-        float vlwheel = -LWheel.motorFeedback.speedFdb * WHEEL_RADIUS;
-        float vrwheel = RWheel.motorFeedback.speedFdb * WHEEL_RADIUS;
+        float vlwheel = -LWheel.motorFeedback.speedFdb * Rwheel;
+        float vrwheel = RWheel.motorFeedback.speedFdb * Rwheel;
 
         odom.Update(ins.quaternion, ins.accel,(vlwheel+vrwheel)*0.5f, yaw);
         simple_odom.Update((vlwheel+vrwheel)*0.5f);
@@ -253,7 +247,7 @@ DMMotorHandler *dmmotorhandler = DMMotorHandler::Instance();
         if (check_cnt == 3)
         {
             if ( LWheel.AliveCheck() != DJIMotor::MOTOR_ONLINE 
-                        || RWheel.AliveCheck() != DJIMotor::MOTOR_ONLINE)
+              || RWheel.AliveCheck() != DJIMotor::MOTOR_ONLINE)
             {
                 dead_cnt++;
                 alive_cnt = 0;
@@ -328,10 +322,8 @@ DMMotorHandler *dmmotorhandler = DMMotorHandler::Instance();
                 break;
             }
             
-            lpendulum.DeltaPControl(-recovery_updater.UpdateVal(JOINT_RECOVER_DELTA), 3.0f, 3.0f);
-            rpendulum.DeltaPControl(-recovery_updater.UpdateVal(JOINT_RECOVER_DELTA), 3.0f, 3.0f);
-            // 
-            // rpendulum.SpdControl(-0.5f, 4.0f);
+            lpendulum.DeltaPhiControl(PI, 0.7f, 1.4f);
+            rpendulum.DeltaPhiControl(PI, 0.7f, 1.4f);
             break;
         }
 
@@ -341,12 +333,12 @@ DMMotorHandler *dmmotorhandler = DMMotorHandler::Instance();
             if (lpendulum.flat) 
                 lpendulum.Relax();
             else
-                lpendulum.DeltaPControl(-JOINT_FLAT_DELTA, 1.5f, 12.0f);
+                lpendulum.DeltaPhiControl(PI, 1.5f, 12.0f);
             
             if (rpendulum.flat)
                 rpendulum.Relax();
             else
-                rpendulum.DeltaPControl(-JOINT_FLAT_DELTA, 1.5f, 12.0f);
+                rpendulum.DeltaPhiControl(PI, 1.5f, 12.0f);
             if (lpendulum.flat && rpendulum.flat)
                 chassis_state = NEUTRAL;
             break;
@@ -356,8 +348,8 @@ DMMotorHandler *dmmotorhandler = DMMotorHandler::Instance();
         {
             odom.Reset();
 
-            lpendulum.DeltaPControl(JOINT_STAIR_DELTA, 2.0f, 6.0f);
-            rpendulum.DeltaPControl(JOINT_STAIR_DELTA, 2.0f, 6.0f);
+            lpendulum.DeltaPhiControl(PI, 2.0f, 6.0f);
+            rpendulum.DeltaPhiControl(PI, 2.0f, 6.0f);
 
             if (lpendulum.phi < 1.7f && lpendulum.phi > 0.0f)
                 Twl = 0.1f;
@@ -406,17 +398,8 @@ DMMotorHandler *dmmotorhandler = DMMotorHandler::Instance();
             Twr = lqr.Tout[1];
             Fl[1] = lqr.Tout[2];
             Fr[1] = lqr.Tout[3];
-
-            lleg_len_pd.ref = MIN_LEG_LEN;
-            rleg_len_pd.ref = MIN_LEG_LEN;
-
-            lleg_len_pd.fdb = lpendulum.len;
-            lleg_len_pd.UpdateResult(lpendulum.dlen);
-            Fl[0] = lleg_len_pd.result - GRAVITY_FF;
-            
-            rleg_len_pd.fdb = rpendulum.len;
-            rleg_len_pd.UpdateResult(rpendulum.dlen);
-            Fr[0] = rleg_len_pd.result - GRAVITY_FF;
+            Fl[0] = lpendulum.LenControl(Lmin);
+            Fr[0] = rpendulum.LenControl(Lmin);
 
             if (lpendulum.len>0.19f || rpendulum.len>0.19f) 
             {
@@ -486,14 +469,8 @@ DMMotorHandler *dmmotorhandler = DMMotorHandler::Instance();
             roll_pd.fdb = ins.roll*DegreeToRad;
             roll_pd.UpdateResult(ins.gyro_r);
 
-            lleg_len_pd.ref = cmd.len+roll_pd.result;
-            rleg_len_pd.ref = cmd.len-roll_pd.result;
-            lleg_len_pd.fdb = lpendulum.len;
-            lleg_len_pd.UpdateResult(lpendulum.dlen);
-            Fl[0] = lleg_len_pd.result - GRAVITY_FF;// + 7.0f*lpendulum.len/WHEEL_DIST*odom.v*dyaw;
-            rleg_len_pd.fdb = rpendulum.len;
-            rleg_len_pd.UpdateResult(rpendulum.dlen);
-            Fr[0] = rleg_len_pd.result - GRAVITY_FF;// - 7.0f*rpendulum.len/WHEEL_DIST*odom.v*dyaw;
+            Fl[0] = lpendulum.LenControl(cmd.len+roll_pd.result);
+            Fr[0] = rpendulum.LenControl(cmd.len-roll_pd.result);
 
             lpendulum.TorqueControl(Fl, Twl);
             rpendulum.TorqueControl(Fr, Twr);
@@ -555,14 +532,8 @@ DMMotorHandler *dmmotorhandler = DMMotorHandler::Instance();
             Fl[1] = lqr.Tout[2];
             Fr[1] = lqr.Tout[3];
 
-            lleg_len_pd.ref = MIN_LEG_LEN;
-            rleg_len_pd.ref = MIN_LEG_LEN;
-            lleg_len_pd.fdb = lpendulum.len;
-            lleg_len_pd.UpdateResult(lpendulum.dlen);
-            Fl[0] = lleg_len_pd.result - GRAVITY_FF;
-            rleg_len_pd.fdb = rpendulum.len;
-            rleg_len_pd.UpdateResult(rpendulum.dlen);
-            Fr[0] = rleg_len_pd.result - GRAVITY_FF;
+            Fl[0] = lpendulum.LenControl(Lmin);
+            Fr[0] = rpendulum.LenControl(Lmin);
 
             lpendulum.TorqueControl(Fl, Twl);
             rpendulum.TorqueControl(Fr, Twr);
@@ -596,14 +567,8 @@ DMMotorHandler *dmmotorhandler = DMMotorHandler::Instance();
             Twr = 0.0f;
             Fl[1] = lqr.Tout[2];
             Fr[1] = lqr.Tout[3];
-            lleg_len_pd.ref = 0.30f;
-            rleg_len_pd.ref = 0.30f;
-            lleg_len_pd.fdb = lpendulum.len;
-            lleg_len_pd.UpdateResult(lpendulum.dlen);
-            Fl[0] = lleg_len_pd.result - GRAVITY_FF;
-            rleg_len_pd.fdb = rpendulum.len;
-            rleg_len_pd.UpdateResult(rpendulum.dlen);
-            Fr[0] = rleg_len_pd.result - GRAVITY_FF;
+            Fl[0] = lpendulum.LenControl(Lmax);
+            Fr[0] = rpendulum.LenControl(Lmax);
             lpendulum.TorqueControl(Fl, Twl);
             rpendulum.TorqueControl(Fr, Twr);
 
@@ -654,16 +619,9 @@ DMMotorHandler *dmmotorhandler = DMMotorHandler::Instance();
                 roll_pd.ref = 0.0f;
                 roll_pd.fdb = ins.roll*DegreeToRad;
                 roll_pd.UpdateResult(ins.gyro_r);
-                
-                lleg_len_pd.ref = NORMAL_LEG_LEN+roll_pd.result;
-                rleg_len_pd.ref = NORMAL_LEG_LEN-roll_pd.result;
-                lleg_len_pd.fdb = lpendulum.len;
-                lleg_len_pd.UpdateResult(lpendulum.dlen);
-                Fl[0] = lleg_len_pd.result - GRAVITY_FF;
-                rleg_len_pd.fdb = rpendulum.len;
-                rleg_len_pd.UpdateResult(rpendulum.dlen);
-                Fr[0] = rleg_len_pd.result - GRAVITY_FF;
 
+                Fl[0] = lpendulum.LenControl(Lmin+roll_pd.result);
+                Fr[0] = rpendulum.LenControl(Lmin-roll_pd.result);
 
                 if (cmd.ifjump)
                 {
@@ -731,14 +689,10 @@ DMMotorHandler *dmmotorhandler = DMMotorHandler::Instance();
                 Twr = 0.0f;
                 Fl[1] = lqr.Tout[2];
                 Fr[1] = lqr.Tout[3];
-                lleg_len_pd.ref = MIN_LEG_LEN;
-                rleg_len_pd.ref = MIN_LEG_LEN;
-                lleg_len_pd.fdb = lpendulum.len;
-                lleg_len_pd.UpdateResult(lpendulum.dlen);
-                Fl[0] = lleg_len_pd.result - GRAVITY_FF;
-                rleg_len_pd.fdb = rpendulum.len;
-                rleg_len_pd.UpdateResult(rpendulum.dlen);
-                Fr[0] = rleg_len_pd.result - GRAVITY_FF;
+                Fl[0] = lpendulum.LenControl(Lmin);
+                Fr[0] = rpendulum.LenControl(Lmin);
+                lpendulum.TorqueControl(Fl, Twl);
+                rpendulum.TorqueControl(Fr, Twr);
 
                 if (jumpair_cnt > 150)
                 {
@@ -770,14 +724,8 @@ DMMotorHandler *dmmotorhandler = DMMotorHandler::Instance();
                 Twr = 0.0f;
                 Fl[1] = lqr.Tout[2];
                 Fr[1] = lqr.Tout[3];
-                lleg_len_pd.ref = NORMAL_LEG_LEN;
-                rleg_len_pd.ref = NORMAL_LEG_LEN;
-                lleg_len_pd.fdb = lpendulum.len;
-                lleg_len_pd.UpdateResult(lpendulum.dlen);
-                Fl[0] = lleg_len_pd.result - GRAVITY_FF;
-                rleg_len_pd.fdb = rpendulum.len;
-                rleg_len_pd.UpdateResult(rpendulum.dlen);
-                Fr[0] = rleg_len_pd.result - GRAVITY_FF;
+                Fl[0] = lpendulum.LenControl(Lmin);
+                Fr[0] = rpendulum.LenControl(Lmin);
                 lpendulum.TorqueControl(Fl, Twl);
                 rpendulum.TorqueControl(Fr, Twr);
 
@@ -816,14 +764,8 @@ DMMotorHandler *dmmotorhandler = DMMotorHandler::Instance();
                 roll_pd.fdb = ins.roll*DegreeToRad;
                 roll_pd.UpdateResult(ins.gyro_r);
 
-                lleg_len_pd.ref = MAX_LEG_LEN+roll_pd.result;
-                rleg_len_pd.ref = MAX_LEG_LEN-roll_pd.result;
-                lleg_len_pd.fdb = lpendulum.len;
-                lleg_len_pd.UpdateResult(lpendulum.dlen);
-                Fl[0] = lleg_len_pd.result - GRAVITY_FF;
-                rleg_len_pd.fdb = rpendulum.len;
-                rleg_len_pd.UpdateResult(rpendulum.dlen);
-                Fr[0] = rleg_len_pd.result - GRAVITY_FF;
+                Fl[0] = lpendulum.LenControl(Lmax+roll_pd.result);
+                Fr[0] = rpendulum.LenControl(Lmax-roll_pd.result);
 
                 lpendulum.TorqueControl(Fl, Twl);
                 rpendulum.TorqueControl(Fr, Twr);
@@ -882,8 +824,8 @@ DMMotorHandler *dmmotorhandler = DMMotorHandler::Instance();
         pendulum_debug.v = odom.v;
         pendulum_debug.vref = cmd.v;
         pendulum_debug.l_ref = cmd.len;
-        pendulum_debug.llenref = lleg_len_pd.ref;
-        pendulum_debug.rlenref = rleg_len_pd.ref;
+        pendulum_debug.llenref = lpendulum.len_pd.ref;
+        pendulum_debug.rlenref = rpendulum.len_pd.ref;
         pendulum_debug.llen = lpendulum.len;
         pendulum_debug.rlen = rpendulum.len;
         pendulum_debug.alphal = lpendulum.alpha;
@@ -904,10 +846,6 @@ DMMotorHandler *dmmotorhandler = DMMotorHandler::Instance();
         pendulum_debug.Tpr = lqr.Tout[3];
         pendulum_debug.Fl = Fl[0];
         pendulum_debug.Fr = Fr[0];
-        pendulum_debug.Flreal = lpendulum.Freal;
-        pendulum_debug.Frreal = rpendulum.Freal;
-        pendulum_debug.Flmodel = lpendulum.Freal_model;
-        pendulum_debug.Frmodel = rpendulum.Freal_model;
         pendulum_debug.lair = lpendulum.airborne;
         pendulum_debug.rair = rpendulum.airborne;
         pendulum_debug.lneutral = lpendulum.neutral;
@@ -920,8 +858,8 @@ DMMotorHandler *dmmotorhandler = DMMotorHandler::Instance();
         pendulum_debug.stage = jump_stage;
         pendulum_debug.simple_odom_v = simple_odom.v;
         pendulum_debug.simple_odom_x = simple_odom.x;
-        lleg_len_pd.Tuning(lenpd_tuning.kp, lenpd_tuning.ki, lenpd_tuning.kd);
-        rleg_len_pd.Tuning(lenpd_tuning.kp, lenpd_tuning.ki, lenpd_tuning.kd);
+        lpendulum.len_pd.Tuning(lenpd_tuning.kp, lenpd_tuning.ki, lenpd_tuning.kd);
+        rpendulum.len_pd.Tuning(lenpd_tuning.kp, lenpd_tuning.ki, lenpd_tuning.kd);
         roll_pd.Tuning(rollpd_tuning.kp, rollpd_tuning.ki, rollpd_tuning.kd);
         pendulum_debug.motorL4error = RJoint4.motorFeedback.ERR;
         pendulum_debug.state = chassis_state;

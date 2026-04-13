@@ -7,11 +7,14 @@
 
 using namespace Filter;
 
-#define dt  0.001f
-#define dt2 0.000001f
-#define dt3 0.000000001f
-#define dt4 0.000000000001f
-#define dt5 0.000000000000001f
+namespace chassis
+{
+
+constexpr float dt = 0.001f;
+constexpr float dt2 = 0.000001f;
+constexpr float dt3 = 0.000000001f;
+constexpr float dt4 = 0.000000000001f;
+constexpr float dt5 = 0.000000000000001f;
 
 class VelFusionKF : public KalmanFilter
 {
@@ -133,3 +136,5 @@ public:
         v = 0.0f;
     }
 };
+
+} // namespace chassis

@@ -5,44 +5,11 @@
 #endif
 
 // #define GIMBAL_ONLY
-// #define CHASSIS_ONLY
 
 #define JUMP_UP
 // #define STAIR_UP
 
 #define TOF_DATA_SIZE 9
-
-#define NORMAL_LEG_LEN    0.16f
-#define MIN_LEG_LEN       0.15f//true:14
-#define MID_LEG_LEN       0.24f
-#define MAX_LEG_LEN       0.32f//true:30
-#define LQR_LEN_RESOLUTION     0.01f
-
-/* 腿长，单位m */
-#define VMC_L1 0.220f
-#define VMC_L2 0.260f
-#define VMC_MotorDistance 0.0f
-#define VMC_HalfMotorDistance (VMC_MotorDistance / 2.0f)
-
-#define WHEEL_RADIUS 0.075f
-#define WHEEL_MASS 1.41f
-#define WHEEL_DIST 0.43f
-
-#define BODY_MASS 14.0f
-
-#define MAX_HIP_TOR 40.0f
-#define MAX_WHEEL_TOR 15.0f
-
-#define LEG_NORMAL_STEP 0.005f
-#define LEG_JUMP_STEP 0.01f
-
-#define F_SPRING 250.0f
-
-#define JOINT_FLAT_DELTA 3.71f
-#define JOINT_STAIR_DELTA 1.80f
-#define JOINT_RECOVER_DELTA 4.71f
-
-#define GRAVITY_FF 67.865f
 
 typedef enum
 {
@@ -52,14 +19,14 @@ typedef enum
     INAIR,
     LANDING,
     BACK
-}jump_stage_e;
+} jump_stage_e;
 
 typedef enum
 {
     NONE,
     AIR,
     AIRLAND
-}air_stage_e;
+} air_stage_e;
 
 typedef enum
 {
@@ -76,7 +43,6 @@ typedef enum
 
 #pragma pack(push,1)
 
-
 struct tof_data_t
 {
     uint8_t header[2];
@@ -87,3 +53,40 @@ struct tof_data_t
 };
 
 #pragma pack(pop)
+
+namespace chassis
+{
+
+constexpr float L1 = 0.220f;
+constexpr float L2 = 0.260f;
+constexpr float Lnormal = 0.16f;
+constexpr float Lmin = 0.15f;
+constexpr float Lmid = 0.24f;
+constexpr float Lmax = 0.32f;
+constexpr float Lqr_len_resolution = 0.01f;
+
+constexpr float Rwheel = 0.075f;
+constexpr float Mwheel = 1.41f;
+constexpr float Dwheel = 0.43f;
+constexpr float Mbody = 14.0f;
+
+constexpr float Thip_max = 40.0f;
+constexpr float Twheel_max = 15.0f;
+
+constexpr float Joint_flat_delta = 3.71f;
+constexpr float Joint_stair_delta = 1.80f;
+constexpr float Joint_recover_delta = 4.71f;
+
+constexpr float Fspring = 430.0f;
+constexpr float Dspring1 = 0.0475f;
+constexpr float Dspring2 = 0.05f;
+constexpr float Ang_spring = 1.891415f;
+
+constexpr float Gff = 67.865f;
+
+constexpr float Nliftoff = 20.0f;
+constexpr float Nlanding = 70.0f;
+
+constexpr float alpha_eq_coeff[3] = { 0.280918f, -1.101757f, 1.232768f };
+
+};

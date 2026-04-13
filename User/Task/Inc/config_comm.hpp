@@ -36,7 +36,5 @@ struct comm_cmd_t
     uint8_t reserved;
 };
 
-#define UIMSG_SIZE sizeof(comm_ui_t)
-#define CMDMSG_SIZE sizeof(comm_cmd_t)
-
 #pragma pack(pop)
+

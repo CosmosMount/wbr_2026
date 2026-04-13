@@ -4,6 +4,8 @@
 
 using namespace Numeric;
 
+namespace chassis
+{
 //通过腿长不同区分两套lqr参数
 typedef enum
 {
@@ -13,7 +15,7 @@ typedef enum
     LQR_SPIN
 } lqr_mode_e;
 
-inline static constexpr float LQRKLowcoeffs[40][6] =
+constexpr float LQRKLowcoeffs[40][6] =
 {
     /*Q = [300.00, 100.00, 400.00, 100.00, 10000.00, 50.00, 10000.00, 50.00, 40000.00, 100.00] R = [10.00, 10.00, 1.00, 1.00]*/
     /* a1 + a2*L_len + a3*R_len + a4*L_len^2 + a5*L_len*R_len + a6*R_len^2 */
@@ -59,7 +61,7 @@ inline static constexpr float LQRKLowcoeffs[40][6] =
     { 6.488821 , -6.193592, 18.431061, 7.563986, -3.739829, -14.819121},  
 };
 
-inline static constexpr float LQRKHighcoeffs[40][6] =
+constexpr float LQRKHighcoeffs[40][6] =
 {
     /*Q = [50.00, 200.00, 200.00, 20.00, 3000.00, 50.00, 3000.00, 50.00, 10000.00, 30.00] R = [10.00, 10.00, 1.00, 1.00]*/
     /* a1 + a2*L_len + a3*R_len + a4*L_len^2 + a5*L_len*R_len + a6*R_len^2 */
@@ -105,7 +107,7 @@ inline static constexpr float LQRKHighcoeffs[40][6] =
     { 3.954468 , -5.183901, 13.563615, 6.309976, -2.983010, -10.436446}
 };
 
-inline static constexpr float LQRKStandupcoeffs[40][6] = 
+constexpr float LQRKStandupcoeffs[40][6] = 
 {
     /*Q = [60.00, 100.00, 80.00, 20.00, 1600.00, 70.00, 1600.00, 70.00, 10000.00, 80.00] R = [10.00, 10.00, 1.00, 1.00]*/
     /* a1 + a2*L_len + a3*R_len + a4*L_len^2 + a5*L_len*R_len + a6*R_len^2 */
@@ -151,7 +153,7 @@ inline static constexpr float LQRKStandupcoeffs[40][6] =
     { 4.728287 , -4.848392, 17.936600, 6.645944, -5.014536, -15.963378}, 
 };
 
-inline static constexpr float LQRKSpincoeffs[40][6] =
+constexpr float LQRKSpincoeffs[40][6] =
 {
     /*Q = [100.00, 80.00, 500.00, 120.00, 6000.00, 500.00, 6000.00, 500.00, 40000.00, 100.00] R = [10.00, 10.00, 1.00, 1.00]*/
     /* a1 + a2*L_len + a3*R_len + a4*L_len^2 + a5*L_len*R_len + a6*R_len^2 */
@@ -223,10 +225,10 @@ public:
     /* 根据腿长更新使用的矩阵k */
     void Update(float _llen, float _rlen, bool _stay)
     {
-        _llen = (_llen < MIN_LEG_LEN) ? MIN_LEG_LEN : _llen;
-        _llen = (_llen > MAX_LEG_LEN) ? MAX_LEG_LEN : _llen;
-        _rlen = (_rlen < MIN_LEG_LEN) ? MIN_LEG_LEN : _rlen;
-        _rlen = (_rlen > MAX_LEG_LEN) ? MAX_LEG_LEN : _rlen;
+        _llen = (_llen < Lmin ? Lmin : _llen);
+        _llen = (_llen > Lmax ? Lmax : _llen);
+        _rlen = (_rlen < Lmin ? Lmin : _rlen);
+        _rlen = (_rlen > Lmax ? Lmax : _rlen);
         //保留两位小数
         _llen = roundf(_llen * 100) / 100.0f;
         _rlen = roundf(_rlen * 100) / 100.0f;
@@ -284,4 +286,6 @@ public:
             Tout[i] = temp;
         }
     }
+};
+
 };
