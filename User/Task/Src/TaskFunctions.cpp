@@ -206,6 +206,7 @@ SuperCap* debug_supercap = SuperCap::Instance();
             cmd.v = 0.0f;
             cmd.x = pendulum_data.x;
             cmd.len = chassis::Lnormal;
+            target_len = chassis::Lnormal;
             cmd.dyaw = 0.0f;
             cmd.move = false;
         }
@@ -214,6 +215,7 @@ SuperCap* debug_supercap = SuperCap::Instance();
             cmd.v = 0.0f;
             cmd.x = 0.0f;
             cmd.len = chassis::Lnormal;
+            target_len = chassis::Lnormal;
             cmd.dyaw = 0.0f;
             cmd.move = false;
         }
@@ -222,6 +224,7 @@ SuperCap* debug_supercap = SuperCap::Instance();
             cmd.v = 0.0f;
             cmd.x = 0.0f;
             cmd.len = chassis::Lnormal;
+            target_len = chassis::Lnormal;
             cmd.dyaw = 0.0f;
             cmd.move = true;
         }
@@ -230,6 +233,7 @@ SuperCap* debug_supercap = SuperCap::Instance();
             cmd.v = 0.0f;
             cmd.x = 0.0f;
             cmd.len = chassis::Lnormal;
+            target_len = chassis::Lnormal;
             cmd.dyaw = 0.0f;
             cmd.move = false;
         }
@@ -237,18 +241,16 @@ SuperCap* debug_supercap = SuperCap::Instance();
         {
             cmd.move = true;
 
-            if (pendulum_data.reset_len)
+            if (pendulum_data.ifresetlen)
             {
-                cmd.len = chassis::Lnormal;
-                // target_len = chassis::Lnormal;
+                target_len = pendulum_data.reset_len;
+                len_updater.SetDefault(pendulum_data.len);
             }
             else 
             {
-                // target_len = cmd.len + cmd_msg->dlen * 0.1f * 0.0008f;
-                // target_len = FloatConstrain(target_len, MIN_LEG_LEN, MAX_LEG_LEN);
-                // cmd.len = len_updater.UpdateVal(target_len);
-                cmd.len += cmd_msg->dlen * 0.1f * 0.0006f;
-                cmd.len = FloatConstrain(cmd.len, chassis::Lmin, chassis::Lmax);
+                target_len += cmd_msg->dlen * 0.1f * 0.0008f;
+                target_len = FloatConstrain(target_len, chassis::Lmin, chassis::Lmax);
+                cmd.len = len_updater.UpdateVal(target_len);
             }
             
             cmd.spin = false;

@@ -52,7 +52,6 @@ public:
         this->joint4_pos_init = 0.0f;
         this->flat            = false;
         this->neutral         = false;
-        this->airborne        = false;
         this->liftoff_count   = 0;
         this->landing_count   = 0;
     }
@@ -73,7 +72,6 @@ public:
     bool flat;
     bool neutral;
     bool delta_init = false;
-    bool airborne;       ///< 离地状态（经防抖确认）
 
     PID len_pd = PID(6000.0f, 0.0f, -900.0f, 125.0f, 0.0f, PID_DVEL);
     PID phi_pd = PID(0.7f, 0.0f, 1.4f, 10.0f, 0.005f);
@@ -138,47 +136,6 @@ public:
                 + this->len * this->dalpha * this->dalpha * cos_alpha;
 
         this->N = P + wheel_mass * Zw;
-
-        /* ── 离地检测 ────────────────────────────────────────────────────── */
-        /* N-based 离地检测（沿用上一版计数状态机） */
-        if (!this->airborne)
-        {
-            // 离地候选：N 持续偏小；可叠加 dlen 稳定约束减少抖动
-            if (this->N < Nliftoff)
-            {
-                this->liftoff_count++;
-            }
-            else
-            {
-                this->liftoff_count = 0;
-            }
-
-            if (this->liftoff_count >= 5)
-            {
-                this->airborne = true;
-                this->liftoff_count = 0;
-                this->landing_count = 0;
-            }
-        }
-        else
-        {
-            // 落地候选：N 回升到阈值之上
-            if (this->N > Nlanding)
-            {
-                this->landing_count++;
-            }
-            else
-            {
-                this->landing_count = 0;
-            }
-
-            if (this->landing_count >= 3)
-            {
-                this->airborne = false;
-                this->landing_count = 0;
-                this->liftoff_count = 0;
-            }
-        }
 
         /* ── neutral & flat 检测 ─────────────────────────────────────────── */
         if (Numeric::abs(this->alpha - this->alpha_eq) < 0.2f)

@@ -111,8 +111,9 @@ struct msg_pendulum_t
     float x;
     float v;
     float len;
+    float reset_len;
     bool neutral;
-    bool reset_len;
+    bool ifresetlen;
     bool recovered;
 };
 
