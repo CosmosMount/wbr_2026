@@ -7,6 +7,7 @@
 #include "quaternion_ekf.hpp"
 #include "BMI088.hpp"
 #include "magicmsgs.hpp"
+#include "config_chassis.hpp"
 
 using namespace BMI088;
 using namespace Numeric;
@@ -60,6 +61,7 @@ TX_SEMAPHORE IMUThreadSem;
         {
             imu_handler->ReadAccData(&imu_handler->acc_data);
             imu_handler->ReadGyroData(&imu_handler->gyro_data);
+            imu_handler->acc_data.x += chassis::imu_offset_x*imu_handler->gyro_data.z*imu_handler->gyro_data.z;
             qekf.UpdateKalman(
                 imu_handler->gyro_data.x, imu_handler->gyro_data.y, imu_handler->gyro_data.z,
                 imu_handler->acc_data.x, imu_handler->acc_data.y, imu_handler->acc_data.z,

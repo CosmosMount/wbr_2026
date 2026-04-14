@@ -182,7 +182,7 @@ DMMotorHandler *dmmotorhandler = DMMotorHandler::Instance();
     float refX[10] = {0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f};
     LQR lqr(&refX[0], &observedX[0]);
     /* roll */
-    PID roll_pd(0.7f, 0.0001f, 1.4f, 3.0f, 0.005f);
+    PID roll_pd(0.7f, 0.0001f, 1.4f, 0.05f, 0.005f);
     /* state machine */
     chassis_state_e chassis_state = RELAX;
     jump_stage_e jump_stage = DONT;
@@ -220,7 +220,6 @@ DMMotorHandler *dmmotorhandler = DMMotorHandler::Instance();
         float vlwheel = -LWheel.motorFeedback.speedFdb * Rwheel;
         float vrwheel = RWheel.motorFeedback.speedFdb * Rwheel;
 
-        ins.accel[0] += imu_offset_x * ins.gyro_y * ins.gyro_y;
         odom.Update(ins.quaternion, ins.accel, (vlwheel+vrwheel)*0.5f, yaw);
         lpendulum.Solve(pitch, dpitch, odom.az);
         rpendulum.Solve(pitch, dpitch, odom.az);
@@ -445,8 +444,8 @@ DMMotorHandler *dmmotorhandler = DMMotorHandler::Instance();
             roll_pd.fdb = ins.roll*DegreeToRad;
             roll_pd.UpdateResult(ins.gyro_r);
 
-            Fl[0] = lpendulum.LenControl(cmd.len);//+roll_pd.result);
-            Fr[0] = rpendulum.LenControl(cmd.len);//-roll_pd.result);
+            Fl[0] = lpendulum.LenControl(cmd.len+roll_pd.result);
+            Fr[0] = rpendulum.LenControl(cmd.len-roll_pd.result);
 
             lpendulum.TorqueControl(Fl, Twl);
             rpendulum.TorqueControl(Fr, Twr);
