@@ -23,11 +23,6 @@ protected:
     hiptype*   joint4;
     wheeltype* wheel;
 
-    static constexpr float Tk_wheel      = 1400.0f;
-    static constexpr float wheel_mass    = 15.0f;
-    static constexpr float max_hip_tor   = 40.0f;
-    static constexpr float max_wheel_tor = 15.0f;
-
     float joint1_pos_init;
     float joint4_pos_init;
 
@@ -135,7 +130,7 @@ public:
                 + this->len * ddalpha * sin_alpha
                 + this->len * this->dalpha * this->dalpha * cos_alpha;
 
-        this->N = P + wheel_mass * Zw;
+        this->N = P + Mwheel * Numeric::Gravity + Mwheel * Zw;
 
         /* ── neutral & flat 检测 ─────────────────────────────────────────── */
         if (Numeric::abs(this->alpha - this->alpha_eq) < 0.2f)
@@ -191,11 +186,11 @@ public:
     {
         float T[2] = {0.0f, 0.0f};
         this->vmc.VMCCal(_F, T);
-        this->joint1->torqueSet = Numeric::FloatConstrain(T[0], -max_hip_tor, max_hip_tor)
+        this->joint1->torqueSet = Numeric::FloatConstrain(T[0], -Thip_max, Thip_max)
                                  * (this->reverse ? -1.0f : 1.0f);
-        this->joint4->torqueSet = Numeric::FloatConstrain(T[1], -max_hip_tor, max_hip_tor)
+        this->joint4->torqueSet = Numeric::FloatConstrain(T[1], -Thip_max, Thip_max)
                                  * (this->reverse ? -1.0f : 1.0f);
-        this->wheel->currentSet = Numeric::FloatConstrain(_Tw, -max_wheel_tor, max_wheel_tor)
+        this->wheel->currentSet = Numeric::FloatConstrain(_Tw, -Twheel_max, Twheel_max)
                                  * Tk_wheel * (this->reverse ? 1.0f : -1.0f);
     }
 };
