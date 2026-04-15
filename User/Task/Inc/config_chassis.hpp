@@ -66,17 +66,18 @@ constexpr float Lmax = 0.32f;
 constexpr float Lqr_len_resolution = 0.01f;
 
 constexpr float Rwheel = 0.075f;
-constexpr float Mwheel = 1.41f;
+constexpr float Mwheel = 0.21f;
 constexpr float Dwheel = 0.43f;
 constexpr float Mbody = 14.0f;
 
+constexpr float Tk_wheel = 1400.0f;
 constexpr float Thip_max = 40.0f;
 constexpr float Twheel_max = 15.0f;
 
 constexpr float Fspring = 430.0f;
-constexpr float Dspring1 = 0.0475f;
+constexpr float Dspring1 = 0.2099f;
 constexpr float Dspring2 = 0.05f;
-constexpr float Ang_spring = 1.891415f;
+constexpr float Ang_spring = 0.2164f;
 
 constexpr float Gff = 67.865f;
 

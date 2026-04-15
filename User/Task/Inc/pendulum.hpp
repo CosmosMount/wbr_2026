@@ -68,7 +68,7 @@ public:
     bool neutral;
     bool delta_init = false;
 
-    PID len_pd = PID(6000.0f, 0.0f, -900.0f, 125.0f, 0.0f, PID_DVEL);
+    PID len_pd = PID(5000.0f, 0.0f, -1500.0f, 125.0f, 0.0f, PID_DVEL);
     PID phi_pd = PID(0.7f, 0.0f, 1.4f, 10.0f, 0.005f);
 
     SLOPE phi_updater = SLOPE(0.0f, 0.005f);
@@ -179,7 +179,7 @@ public:
         this->len_pd.ref = _ref;
         this->len_pd.fdb = this->len;
         this->len_pd.UpdateResult(this->dlen);
-        return this->len_pd.result - Gff;
+        return this->len_pd.result;
     }
 
     void TorqueControl(float *_F, float _Tw)

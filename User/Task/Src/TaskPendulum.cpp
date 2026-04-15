@@ -107,7 +107,7 @@ struct pid_tuning_t
 };
 msg_ins_t debug_ins;
 pendulum_debug_t pendulum_debug;
-pid_tuning_t lenpd_tuning = {5000.0f, 0.0f, -900.0f};
+pid_tuning_t lenpd_tuning = {5000.0f, 0.0f, -700.0f};
 pid_tuning_t rollpd_tuning = {0.5f, 0.00f, 0.0f};
 DMMotorHandler *dmmotorhandler = DMMotorHandler::Instance();
 #endif
@@ -284,8 +284,18 @@ DMMotorHandler *dmmotorhandler = DMMotorHandler::Instance();
 
         case RELAX:
         {
-            lpendulum.Relax();
-            rpendulum.Relax();
+            if (lpendulum.len <= 0.25f)
+            {
+                lpendulum.DeltaPhiControl(PI, 5.0f, 10.0f, 0.001f);
+            }
+            else
+                lpendulum.Relax();
+            if (rpendulum.len <= 0.25f)
+            {
+                rpendulum.DeltaPhiControl(PI, 5.0f, 10.0f, 0.001f);
+            }
+            else
+                rpendulum.Relax();
             odom.Reset();
             pendulum_data.ifresetlen = true;
             pendulum_data.recovered = true;
@@ -306,6 +316,7 @@ DMMotorHandler *dmmotorhandler = DMMotorHandler::Instance();
 
         case RECOVER:
         {
+            odom.Reset();
             if (ins.accel[2] > 5.0f)
             {
                 recover_cnt++;
@@ -355,37 +366,46 @@ DMMotorHandler *dmmotorhandler = DMMotorHandler::Instance();
 
         case NEUTRAL:
         {
-            /* [x, dx, yaw, dyaw, alphal, dalphal, alphar, dalphar, theta, dtheta] */
-            refX[0] = cmd.x;
-            refX[1] = cmd.v;
-            refX[2] = cmd.yaw;
-            refX[3] = cmd.dyaw;
-            refX[4] = 0.0f;
-            refX[5] = 0.0f;
-            refX[6] = 0.0f;
-            refX[7] = 0.0f;
-            refX[8] = 0.0f;
-            refX[9] = 0.0f;
-            lqr.lqr_type = LQR_STANDUP;
-            lqr.Update(lpendulum.len, rpendulum.len, false);
-
-            Twl = lqr.Tout[0];
-            Twr = lqr.Tout[1];
-            Fl[1] = lqr.Tout[2];
-            Fr[1] = lqr.Tout[3];
-            Fl[0] = lpendulum.LenControl(Lmin);
-            Fr[0] = rpendulum.LenControl(Lmin);
+            odom.Reset();
+            lpendulum.len_pd.Tuning(3000.0f, 0.0f, -2000.0f);
+            rpendulum.len_pd.Tuning(3000.0f, 0.0f, -2000.0f);
 
             if (lpendulum.len>0.19f || rpendulum.len>0.19f) 
             {
+                Fl[0] = lpendulum.LenControl(Lmin)-lpendulum.Fs;
+                Fr[0] = rpendulum.LenControl(Lmin)-rpendulum.Fs;
                 Fl[1]=0.0f;
                 Fr[1]=0.0f;
+                Twl = 0.0f;
+                Twr = 0.0f;
             }
 
-            if (Numeric::abs(lpendulum.alpha) > 0.5f || Numeric::abs(rpendulum.alpha) > 0.5f) 
+            else
             {
-                Twl=0.0f;
-                Twr=0.0f;
+                /* [x, dx, yaw, dyaw, alphal, dalphal, alphar, dalphar, theta, dtheta] */
+                refX[0] = observedX[0];
+                refX[1] = observedX[1];
+                refX[2] = cmd.yaw;
+                refX[3] = 0.0f;
+                refX[4] = lpendulum.alpha_eq;
+                refX[5] = 0.0f;
+                refX[6] = rpendulum.alpha_eq;
+                refX[7] = 0.0f;
+                refX[8] = pitch_eq;
+                refX[9] = 0.0f;
+                lqr.lqr_type = LQR_STANDUP;
+                lqr.Update(lpendulum.len, rpendulum.len, false);
+
+                Twl = lqr.Tout[0];
+                Twr = lqr.Tout[1];
+                Fl[1] = lqr.Tout[2];
+                Fr[1] = lqr.Tout[3];
+
+                if (Numeric::abs(lpendulum.alpha) > 0.7f || Numeric::abs(rpendulum.alpha) > 0.7f) 
+                {
+                    Twl=0.0f;
+                    Twr=0.0f;
+                }
             }
 
             lpendulum.TorqueControl(Fl, Twl);
@@ -444,8 +464,8 @@ DMMotorHandler *dmmotorhandler = DMMotorHandler::Instance();
             roll_pd.fdb = ins.roll*DegreeToRad;
             roll_pd.UpdateResult(ins.gyro_r);
 
-            Fl[0] = lpendulum.LenControl(cmd.len+roll_pd.result);
-            Fr[0] = rpendulum.LenControl(cmd.len-roll_pd.result);
+            Fl[0] = lpendulum.LenControl(cmd.len+roll_pd.result)+Gff-lpendulum.Fs;
+            Fr[0] = rpendulum.LenControl(cmd.len-roll_pd.result)+Gff-rpendulum.Fs;
 
             lpendulum.TorqueControl(Fl, Twl);
             rpendulum.TorqueControl(Fr, Twr);
@@ -473,12 +493,15 @@ DMMotorHandler *dmmotorhandler = DMMotorHandler::Instance();
                 chassis_state = SPIN;
             }
 
-            if (offground) 
-            {
-                chassis_state = OFFGROUND;
-            }
+            // if (offground) 
+            // {
+            //     chassis_state = OFFGROUND;
+            // }
 
             pre_stair = cmd.gostair;
+
+            lpendulum.len_pd.Tuning(lenpd_tuning.kp, lenpd_tuning.ki, lenpd_tuning.kd);
+            rpendulum.len_pd.Tuning(lenpd_tuning.kp, lenpd_tuning.ki, lenpd_tuning.kd);
             break;
         }
 
@@ -504,8 +527,8 @@ DMMotorHandler *dmmotorhandler = DMMotorHandler::Instance();
             Fl[1] = lqr.Tout[2];
             Fr[1] = lqr.Tout[3];
 
-            Fl[0] = lpendulum.LenControl(Lmin);
-            Fr[0] = rpendulum.LenControl(Lmin);
+            Fl[0] = lpendulum.LenControl(cmd.len+roll_pd.result)+Gff-lpendulum.Fs;
+            Fr[0] = rpendulum.LenControl(cmd.len-roll_pd.result)+Gff-rpendulum.Fs;
 
             lpendulum.TorqueControl(Fl, Twl);
             rpendulum.TorqueControl(Fr, Twr);
@@ -515,6 +538,9 @@ DMMotorHandler *dmmotorhandler = DMMotorHandler::Instance();
                 odom.Reset();
                 chassis_state = NORMAL; 
             }
+
+            lpendulum.len_pd.Tuning(lenpd_tuning.kp, lenpd_tuning.ki, lenpd_tuning.kd);
+            rpendulum.len_pd.Tuning(lenpd_tuning.kp, lenpd_tuning.ki, lenpd_tuning.kd);
             break;
         }
 
@@ -864,13 +890,13 @@ DMMotorHandler *dmmotorhandler = DMMotorHandler::Instance();
         pendulum_debug.N = N;
         pendulum_debug.az = odom.az;
         pendulum_debug.stage = jump_stage;
-        lpendulum.len_pd.Tuning(lenpd_tuning.kp, lenpd_tuning.ki, lenpd_tuning.kd);
-        rpendulum.len_pd.Tuning(lenpd_tuning.kp, lenpd_tuning.ki, lenpd_tuning.kd);
         roll_pd.Tuning(rollpd_tuning.kp, rollpd_tuning.ki, rollpd_tuning.kd);
         pendulum_debug.motorL4error = RJoint4.motorFeedback.ERR;
         pendulum_debug.state = chassis_state;
     #endif
 
-        tx_thread_sleep(MIN(1, 1-(tx_time_get()-thread_start_time)));
+        float time_elapsed = tx_time_get() - thread_start_time;
+        float sleep_time = (time_elapsed >= 1.0f) ? 0.1f : (1.0f - time_elapsed);
+        tx_thread_sleep(sleep_time);
     }
 }
