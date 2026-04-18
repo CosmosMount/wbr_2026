@@ -591,17 +591,11 @@ DMMotorHandler *dmmotorhandler = DMMotorHandler::Instance();
         {
             odom.Reset();
 
-            lpendulum.DeltaPhiControl(PI, 2.0f, 6.0f, 0.002f);
-            rpendulum.DeltaPhiControl(PI, 2.0f, 6.0f, 0.002f);
+            lpendulum.DeltaPhiControl(PI, 10.0f, 5.0f, 0.01f);
+            rpendulum.DeltaPhiControl(PI, 10.0f, 5.0f, 0.01f);
 
-            if (lpendulum.phi < 1.7f && lpendulum.phi > 0.0f)
-                Twl = 0.1f;
-            else
-                Twl = 0.0f;
-            if (rpendulum.phi < 1.7f && rpendulum.phi > 0.0f)
-                Twr = 0.1f;
-            else
-                Twr = 0.0f;
+            Twl = 0.0f;
+            Twr = 0.0f;
             Fl[0] = 0.0f;
             Fl[1] = 0.0f;
             Fr[0] = 0.0f;
@@ -613,6 +607,7 @@ DMMotorHandler *dmmotorhandler = DMMotorHandler::Instance();
             {
                 chassis_state = NEUTRAL;
                 pendulum_data.ifresetlen = true;
+                pendulum_data.reset_len = Lmin;
             }
             break;
         }

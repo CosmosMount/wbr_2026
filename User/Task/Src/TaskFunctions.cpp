@@ -257,7 +257,11 @@ SuperCap* debug_supercap = SuperCap::Instance();
             cmd.inair = false;
             cmd.gostair = false;
 
-            if (cmd_msg->ifspin)
+            if (cmd_msg->ifstair)
+            {
+                cmd.gostair = true;
+            }
+            else if (cmd_msg->ifspin)
             {
                 cmd.spin = true;
                 spin_offset_init = true;
@@ -337,8 +341,8 @@ SuperCap* debug_supercap = SuperCap::Instance();
 
         if (pendulum_data.len > 0.17f)
         {
-            vx_updater.SetPath(0.006f-0.04f*(pendulum_data.len-0.17f));
-            vy_updater.SetPath(0.006f-0.04f*(pendulum_data.len-0.17f));
+            vx_updater.SetPath(0.006f-0.03f*(pendulum_data.len-0.17f));
+            vy_updater.SetPath(0.006f-0.03f*(pendulum_data.len-0.17f));
             vx_updater.SetDecreasePath(0.005f);
             vy_updater.SetDecreasePath(0.005f);
         }
