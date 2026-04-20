@@ -52,6 +52,7 @@ public:
     }
 
     float phi;
+    float dphi;
     float alpha;
     float dalpha;
     float alpha_eq;
@@ -69,7 +70,7 @@ public:
     bool delta_init = false;
 
     PID len_pd = PID(5000.0f, 0.0f, -1500.0f, 125.0f, 0.0f, PID_DVEL);
-    PID phi_pd = PID(0.7f, 0.0f, 1.4f, 10.0f, 0.005f);
+    PID phi_pd = PID(0.7f, 0.0f, 1.4f, 40.0f, 0.005f);
 
     SLOPE phi_updater = SLOPE(0.0f, 0.005f);
 
@@ -102,10 +103,11 @@ public:
 
         /* ── 摆角 ───────────────────────────────────────────────────────── */
         phi = this->vmc.GetPhi();
+        this->dphi = xdot[1];
         if (phi < 0.0f)
             phi += 2.0f * PI; // 将 phi 规范到 [0, 2π] 范围内，方便后续判断
         this->alpha    = Numeric::LoopFloatConstrain(phi - 0.5f*PI + _pitch, -PI, PI);
-        this->dalpha   = xdot[1] + _dpitch;
+        this->dalpha   = this->dphi + _dpitch;
         this->alpha_eq = alpha_eq_coeff[0]
                        + alpha_eq_coeff[1] * this->len
                        + alpha_eq_coeff[2] * this->len * this->len;
@@ -155,7 +157,7 @@ public:
         this->wheel->currentSet = 0.0f;
     }
 
-    void DeltaPhiControl(float _phi, float _kp, float _kd, float _slope)
+    void PhiControl(float _phi, float _kp, float _kd, float _slope)
     {
         if (!this->delta_init)
         {
@@ -167,7 +169,7 @@ public:
         this->phi_pd.Tuning(_kp, 0.0f, _kd);
         this->phi_pd.ref = this->phi_updater.UpdateVal(_phi);
         this->phi_pd.fdb = this->phi;
-        this->phi_pd.UpdateResult(this->dalpha);
+        this->phi_pd.UpdateResult(this->dphi);
         float F[2] = {0.0f, 0.0f};
         F[0] = -this->vmc.GetFs();
         F[1] = this->phi_pd.result;

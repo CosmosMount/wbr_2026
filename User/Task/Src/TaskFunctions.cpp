@@ -204,7 +204,8 @@ SuperCap* debug_supercap = SuperCap::Instance();
         if (isnan(cmd_msg->dlen) || isnan(cmd_msg->vx) || isnan(cmd_msg->vy)) // 如果出现nan错误，将速度设定值设为0
         {
             cmd.v = 0.0f;
-            cmd.x = pendulum_data.x;
+            cmd.x = 0.0f;
+            maintained_x = 0.0f; 
             cmd.len = chassis::Lnormal;
             target_len = chassis::Lnormal;
             cmd.dyaw = 0.0f;
@@ -214,6 +215,7 @@ SuperCap* debug_supercap = SuperCap::Instance();
         {
             cmd.v = 0.0f;
             cmd.x = 0.0f;
+            maintained_x = 0.0f; 
             cmd.len = chassis::Lnormal;
             target_len = chassis::Lnormal;
             cmd.dyaw = 0.0f;
@@ -223,6 +225,7 @@ SuperCap* debug_supercap = SuperCap::Instance();
         {
             cmd.v = 0.0f;
             cmd.x = 0.0f;
+            maintained_x = 0.0f; 
             cmd.len = chassis::Lnormal;
             target_len = chassis::Lnormal;
             cmd.dyaw = 0.0f;
@@ -232,6 +235,7 @@ SuperCap* debug_supercap = SuperCap::Instance();
         {
             cmd.v = 0.0f;
             cmd.x = 0.0f;
+            maintained_x = 0.0f; 
             cmd.len = chassis::Lnormal;
             target_len = chassis::Lnormal;
             cmd.dyaw = 0.0f;
@@ -265,9 +269,17 @@ SuperCap* debug_supercap = SuperCap::Instance();
             {
                 cmd.spin = true;
                 spin_offset_init = true;
-                cmd.dyaw = yaw_updater.UpdateVal(10.0f);
-                cmd.v = vx_updater.UpdateVal(-cmd_msg->vx*0.1f)*arm_cos_f32(relative_angle)
-                       +vy_updater.UpdateVal(cmd_msg->vy*0.1f)*arm_sin_f32(relative_angle);
+                if (pendulum_data.len > 0.17f)
+                {
+                    cmd.dyaw = -relative_angle*4.0f;
+                    cmd.v = 0.0f;
+                }
+                else
+                {
+                    cmd.dyaw = yaw_updater.UpdateVal(10.0f);
+                    cmd.v = vx_updater.UpdateVal(-cmd_msg->vx*0.1f)*arm_cos_f32(relative_angle)
+                        +vy_updater.UpdateVal(cmd_msg->vy*0.1f)*arm_sin_f32(relative_angle);
+                }
                 cmd.roll = 0.0f;
             }
             else 
