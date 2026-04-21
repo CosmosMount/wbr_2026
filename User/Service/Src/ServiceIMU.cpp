@@ -23,7 +23,6 @@ TX_SEMAPHORE IMUThreadSem;
 [[noreturn]] void IMUThreadFun(ULONG initial_input) 
 {
     UNUSED(initial_input);
-    float thread_start_time;
 
     /* INS Topic */
     om_topic_t *ins_topic = om_config_topic(nullptr, "ca", "ins", sizeof(msg_ins_t));
@@ -55,7 +54,6 @@ TX_SEMAPHORE IMUThreadSem;
 
     for (;;) 
     {
-        thread_start_time = tx_time_get();
 
         if (!imu_handler->self_test.INIT_ERR) 
         {
@@ -88,8 +86,7 @@ TX_SEMAPHORE IMUThreadSem;
 
         om_publish(ins_topic, &msg_ins, sizeof(msg_ins), true, false);
 
-        tx_thread_sleep(MIN(1, 1-(tx_time_get()-thread_start_time)));
-
+        tx_thread_sleep(1);
     }
 }
 

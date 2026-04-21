@@ -110,8 +110,6 @@ SuperCap* debug_supercap = SuperCap::Instance();
 
     for (;;)
     {
-        /* Thread start time */
-        ULONG thread_start_time = tx_time_get();
 
         om_suber_export(remoter_suber, &remoter, false);
         om_suber_export(ins_suber, &ins, false);
@@ -182,7 +180,7 @@ SuperCap* debug_supercap = SuperCap::Instance();
         }
         else if (!yaw_init)
         {
-            yaw_motor.currentSet = ((yaw_motor.motorFeedback.positionFdb>yaw_offset1&&yaw_motor.motorFeedback.positionFdb<yaw_offset2) ? -1 : 1)*5000;
+            yaw_motor.currentSet = ((yaw_motor.motorFeedback.positionFdb>yaw_offset1&&yaw_motor.motorFeedback.positionFdb<yaw_offset2) ? -1 : 1)*8000;
             if (fabs(yaw_motor.motorFeedback.positionFdb-yaw_offset1)<0.1f)
             {
                 yaw_init = true;
@@ -404,6 +402,6 @@ SuperCap* debug_supercap = SuperCap::Instance();
     
         /* Thread periodic delay */
         tx_semaphore_put(&FunctionThreadSem);
-        tx_thread_sleep(MIN(1, 1-(tx_time_get()-thread_start_time)));
+        tx_thread_sleep(1);
     }
 }

@@ -14,7 +14,7 @@ class Pendulum
 {
 protected:
     VMCsolver vmc;
-    uint32_t neutral_count;
+
     float prev_dlen;
     float prev_dalpha;
     bool reverse;
@@ -26,9 +26,8 @@ protected:
     float joint1_pos_init;
     float joint4_pos_init;
 
-    // ── 离地检测内部状态 ────────────────────────────────────────────────────
-    uint32_t liftoff_count = 0;   ///< 连续离地投票计数
-    uint32_t landing_count = 0;   ///< 连续落地投票计数
+    /* counters */
+    uint32_t liftoff_count = 0, landing_count = 0, neutral_count = 0;
 
     constexpr static float dlen_stable_threshold = 0.10f; ///< 离地检测时的 dlen 稳定性阈值
 
@@ -150,11 +149,17 @@ public:
     {
         this->neutral    = false;
         this->delta_init = false;
+        this->neutral_count = 0;
+        this->landing_count = 0;
+        this->liftoff_count = 0;
+
         this->joint1->KP = 0.0f; this->joint4->KP = 0.0f;
         this->joint1->KD = 0.0f; this->joint4->KD = 0.0f;
         this->joint1->speedSet  = 0.0f; this->joint1->torqueSet  = 0.0f;
         this->joint4->speedSet  = 0.0f; this->joint4->torqueSet  = 0.0f;
         this->wheel->currentSet = 0.0f;
+        this->len_pd.Clear();
+        this->phi_pd.Clear();
     }
 
     void PhiControl(float _phi, float _kp, float _kd, float _slope)
