@@ -261,7 +261,7 @@ DMMotorHandler *dmmotorhandler = DMMotorHandler::Instance();
                 {
                     lpendulum.delta_init = false;
                     rpendulum.delta_init = false;
-                    chassis_state = RECOVER;
+                    chassis_state = RELAX;
                     flipover_cnt = 0;
                 }
             }
@@ -329,7 +329,7 @@ DMMotorHandler *dmmotorhandler = DMMotorHandler::Instance();
                 if (ins.accel[2] < 0.0f)
                 {
                     pendulum_data.recovered = false;
-                    chassis_state = RECOVER;
+                    chassis_state = FLATTEN;
                 }
                 else
                     chassis_state = FLATTEN;

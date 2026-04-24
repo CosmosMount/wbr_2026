@@ -180,7 +180,7 @@ SuperCap* debug_supercap = SuperCap::Instance();
         }
         else if (!yaw_init)
         {
-            yaw_motor.currentSet = ((yaw_motor.motorFeedback.positionFdb>yaw_offset1&&yaw_motor.motorFeedback.positionFdb<yaw_offset2) ? -1 : 1)*8000;
+            yaw_motor.currentSet = ((yaw_motor.motorFeedback.positionFdb>yaw_offset1&&yaw_motor.motorFeedback.positionFdb<yaw_offset2) ? -1 : 1)*12000;
             if (fabs(yaw_motor.motorFeedback.positionFdb-yaw_offset1)<0.1f)
             {
                 yaw_init = true;
@@ -353,14 +353,17 @@ SuperCap* debug_supercap = SuperCap::Instance();
         {
             vx_updater.SetPath(0.006f-0.03f*(pendulum_data.len-0.17f));
             vy_updater.SetPath(0.006f-0.03f*(pendulum_data.len-0.17f));
-            vx_updater.SetDecreasePath(0.005f);
-            vy_updater.SetDecreasePath(0.005f);
         }
             
         else
         {
             vx_updater.SetPath(0.006f);
             vy_updater.SetPath(0.006f);
+        }
+
+        if (pendulum_data.len > 0.23f)
+        {
+            cmd.v *= 0.5f;
         }
 
     #endif

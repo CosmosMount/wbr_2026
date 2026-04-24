@@ -29,6 +29,7 @@ struct comm_cmd_t
     uint8_t ifspin : 1;
     uint8_t ifturn : 1;
     uint8_t ifstair : 1;
+    uint8_t iffly : 1;
     int16_t yaw_cur;
     int8_t vx;
     int8_t vy;
