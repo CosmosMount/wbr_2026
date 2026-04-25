@@ -23,6 +23,8 @@
 #include "GM6020.hpp"
 #include "DJIMotorHandler.hpp"
 
+using namespace chassis;
+
 TX_THREAD FunctionThread;
 uint8_t FunctionThreadStack[4096] = {0};
 TX_SEMAPHORE TOFGot;
@@ -96,8 +98,6 @@ SuperCap* debug_supercap = SuperCap::Instance();
     trigger_motor.controlMode = DJIMotor::SPD_MODE;
     trigger_motor.gearBox = GearBox_None; // 使用速度×36，其实精度更高
     trigger_motor.speedPid.kp = 100.0f;
-    constexpr float yaw_offset1 = -0.9702433935;
-    constexpr float yaw_offset2 = 2.1836215575;
     bool yaw_init = false, spin_offset_init = false;
     float distance1, distance2, front_offset, relative_angle; 
     
@@ -180,7 +180,7 @@ SuperCap* debug_supercap = SuperCap::Instance();
         }
         else if (!yaw_init)
         {
-            yaw_motor.currentSet = ((yaw_motor.motorFeedback.positionFdb>yaw_offset1&&yaw_motor.motorFeedback.positionFdb<yaw_offset2) ? -1 : 1)*12000;
+            yaw_motor.currentSet = ((yaw_motor.motorFeedback.positionFdb>yaw_offset1&&yaw_motor.motorFeedback.positionFdb<yaw_offset2) ? -1 : 1)*15000;
             if (fabs(yaw_motor.motorFeedback.positionFdb-yaw_offset1)<0.1f)
             {
                 yaw_init = true;

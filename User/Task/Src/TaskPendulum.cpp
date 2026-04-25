@@ -128,32 +128,32 @@ DMMotorHandler *dmmotorhandler = DMMotorHandler::Instance();
     DM8009P LJoint4;
     DM8009P LJoint1;
 
-    DJIMotorHandler::Instance()->registerMotor(&LWheel, &hfdcan2, 0x201);
+    DJIMotorHandler::Instance()->registerMotor(&LWheel, &hfdcan2, 0x202);
     LWheel.currentSet = 0;
     LWheel.gearBox = GearBox_XRoll;
-    DJIMotorHandler::Instance()->registerMotor(&RWheel, &hfdcan2, 0x202);
+    DJIMotorHandler::Instance()->registerMotor(&RWheel, &hfdcan2, 0x201);
     RWheel.currentSet = 0;
     RWheel.gearBox = GearBox_XRoll;
 
-    DMMotorHandler::Instance()->registerMotor(&LJoint4, &hfdcan1, 0x03);
+    DMMotorHandler::Instance()->registerMotor(&LJoint4, &hfdcan1, 0x02);
     LJoint4.controlMode = DMMotor::MIT_MODE;
     LJoint4.canType = DMMotor::DM_FDCAN;
     LJoint4.torqueSet = 0;
     DMMotorHandler::Instance()->EnableMotor_Block(&LJoint4);
 
-    DMMotorHandler::Instance()->registerMotor(&LJoint1, &hfdcan1, 0x02);
+    DMMotorHandler::Instance()->registerMotor(&LJoint1, &hfdcan1, 0x01);
     LJoint1.controlMode = DMMotor::MIT_MODE;
     LJoint1.canType = DMMotor::DM_FDCAN;
     LJoint1.torqueSet = 0;
     DMMotorHandler::Instance()->EnableMotor_Block(&LJoint1);
 
-    DMMotorHandler::Instance()->registerMotor(&RJoint4, &hfdcan1, 0x04);
+    DMMotorHandler::Instance()->registerMotor(&RJoint4, &hfdcan1, 0x03);
     RJoint4.controlMode = DMMotor::MIT_MODE;
     RJoint4.canType = DMMotor::DM_FDCAN;
     RJoint4.torqueSet = 0;
     DMMotorHandler::Instance()->EnableMotor_Block(&RJoint4);
 
-    DMMotorHandler::Instance()->registerMotor(&RJoint1, &hfdcan1, 0x01);
+    DMMotorHandler::Instance()->registerMotor(&RJoint1, &hfdcan1, 0x04);
     RJoint1.controlMode = DMMotor::MIT_MODE;
     RJoint1.canType = DMMotor::DM_FDCAN;
     RJoint1.torqueSet = 0;
@@ -161,8 +161,8 @@ DMMotorHandler *dmmotorhandler = DMMotorHandler::Instance();
 
     /* If need to save zero points */
     // DMMotorHandler::Instance()->SaveZeroPosition(&LJoint4);
-    // DMMotorHandler::Instance()->SaveZeroPosition(&LJoint1);
     // DMMotorHandler::Instance()->SaveZeroPosition(&RJoint4);
+    // DMMotorHandler::Instance()->SaveZeroPosition(&LJoint1);
     // DMMotorHandler::Instance()->SaveZeroPosition(&RJoint1);
 
     /* one message initialization */

@@ -62,11 +62,11 @@ constexpr float L2 = 0.260f;
 constexpr float Lnormal = 0.16f;
 constexpr float Lmin = 0.16f;
 constexpr float Lmid = 0.24f;
-constexpr float Lmax = 0.32f;
+constexpr float Lmax = 0.36f;
 constexpr float Lqr_len_resolution = 0.01f;
 constexpr float Lswitch = 0.21f;
 
-constexpr float Rwheel = 0.075f;
+constexpr float Rwheel = 0.06f;
 constexpr float Mwheel = 0.21f;
 constexpr float Dwheel = 0.43f;
 constexpr float Mbody = 14.0f;
@@ -89,5 +89,15 @@ constexpr float pitch_eq = 0.005f;
 constexpr float alpha_eq_coeff[3] = { 0.280918f, -1.101757f, 1.232768f };
 
 constexpr float imu_offset_x = 0.2f;
+
+constexpr uint8_t ljoint1_id = 0x01;
+constexpr uint8_t ljoint4_id = 0x02;
+constexpr uint8_t rjoint1_id = 0x04;
+constexpr uint8_t rjoint4_id = 0x03;
+constexpr uint8_t lwheel_id = 0x202;
+constexpr uint8_t rwheel_id = 0x201;
+
+constexpr float yaw_offset1 = 0.39499981f;
+constexpr float yaw_offset2 = -2.72741795f;
 
 };
