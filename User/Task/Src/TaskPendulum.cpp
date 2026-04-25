@@ -414,6 +414,7 @@ DMMotorHandler *dmmotorhandler = DMMotorHandler::Instance();
 
         case NEUTRAL:
         {
+            odom.Reset();
             /* [x, dx, yaw, dyaw, alphal, dalphal, alphar, dalphar, theta, dtheta] */
             refX[0] = observedX[0];
             refX[1] = observedX[1];
