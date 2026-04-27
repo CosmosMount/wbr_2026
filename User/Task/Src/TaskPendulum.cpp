@@ -358,26 +358,32 @@ DMMotorHandler *dmmotorhandler = DMMotorHandler::Instance();
                 break;
             }
             
-            if (recover_cnt >= 100)
+            // if (recover_cnt >= 100)
+            // {
+            //     lpendulum.Relax();
+            //     rpendulum.Relax();
+            // }
+            // else
+            // {
+            //     if (!lpendulum.delta_init || !rpendulum.delta_init)
+            //     {
+                    
+            //     }
+            // // }
+
+            if (pitch > 0.0f)
             {
-                lpendulum.Relax();
-                rpendulum.Relax();
+                lpendulum.DeltaPControl(4.71f, 3.0f, 3.0f);
+                rpendulum.DeltaPControl(4.71f, 3.0f, 3.0f);
+                // lpendulum.PhiControl(PI*2.0f, 200.0f, 10.0f, 0.1f);
+                // rpendulum.PhiControl(PI*2.0f, 200.0f, 10.0f, 0.1f);
             }
             else
             {
-                if (!lpendulum.delta_init || !rpendulum.delta_init)
-                {
-                    if (pitch > 0.0f)
-                    {
-                        lpendulum.PhiControl(PI*2.0f, 200.0f, 10.0f, 0.1f);
-                        rpendulum.PhiControl(PI*2.0f, 200.0f, 10.0f, 0.1f);
-                    }
-                    else
-                    {
-                        lpendulum.PhiControl(PI, 200.0f, 10.0f, 0.1f);
-                        rpendulum.PhiControl(PI, 200.0f, 10.0f, 0.1f);
-                    }
-                }
+                lpendulum.DeltaPControl(-4.71f, 3.0f, 3.0f);
+                rpendulum.DeltaPControl(-4.71f, 3.0f, 3.0f);
+                // lpendulum.PhiControl(PI, 200.0f, 10.0f, 0.1f);
+                // rpendulum.PhiControl(PI, 200.0f, 10.0f, 0.1f);
             }
             
             break;
@@ -394,7 +400,11 @@ DMMotorHandler *dmmotorhandler = DMMotorHandler::Instance();
                 lpendulum.phi_updater.SetDefault(0.0f);
             }
             else
-                lpendulum.PhiControl(PI, 5.0f, 10.0f, 0.002f);
+            {
+                lpendulum.DeltaPControl(-3.71f, 1.5f, 12.0f);
+                // lpendulum.PhiControl(PI, 5.0f, 10.0f, 0.002f);
+            }
+                
             
             if (rpendulum.flat)
             {
@@ -403,7 +413,11 @@ DMMotorHandler *dmmotorhandler = DMMotorHandler::Instance();
                 rpendulum.phi_updater.SetDefault(0.0f);
             } 
             else
-                rpendulum.PhiControl(PI, 5.0f, 10.0f, 0.002f);
+            {
+                rpendulum.DeltaPControl(-3.71f, 1.5f, 12.0f);
+                // rpendulum.PhiControl(PI, 5.0f, 10.0f, 0.002f);
+            }
+                
             if (lpendulum.flat && rpendulum.flat)
             {
                 odom.Reset();
@@ -424,7 +438,7 @@ DMMotorHandler *dmmotorhandler = DMMotorHandler::Instance();
             refX[5] = 0.0f;
             refX[6] = rpendulum.alpha_eq;
             refX[7] = 0.0f;
-            refX[8] = pitch_eq;
+            refX[8] = 0.0f;
             refX[9] = 0.0f;
             lqr.lqr_type = LQR_STANDUP;
             lqr.Update(lpendulum.len, rpendulum.len, false);
@@ -471,11 +485,11 @@ DMMotorHandler *dmmotorhandler = DMMotorHandler::Instance();
             refX[1] = cmd.v;
             refX[2] = cmd.yaw;
             refX[3] = cmd.dyaw;
-            refX[4] = lpendulum.alpha_eq;
+            refX[4] = 0.0f;//lpendulum.alpha_eq;
             refX[5] = 0.0f;
-            refX[6] = rpendulum.alpha_eq;
+            refX[6] = 0.0f;//rpendulum.alpha_eq;
             refX[7] = 0.0f;
-            refX[8] = pitch_eq;
+            refX[8] = 0.0f;
             refX[9] = 0.0f;
 
             if ((lpendulum.len+rpendulum.len)*0.5f > Lswitch)
@@ -722,8 +736,8 @@ DMMotorHandler *dmmotorhandler = DMMotorHandler::Instance();
                 Twr = lqr.Tout[1];
                 Fl[1] = lqr.Tout[2];
                 Fr[1] = lqr.Tout[3];
-                Fl[0] = 300.0f;
-                Fr[0] = 300.0f;
+                Fl[0] = 400.0f;
+                Fr[0] = 400.0f;
 
                 if (lpendulum.len>=0.29f && rpendulum.len>=0.29f)
                 {
@@ -736,7 +750,7 @@ DMMotorHandler *dmmotorhandler = DMMotorHandler::Instance();
 
             case INAIR:
             {
-                // odom.Reset();
+                odom.Reset();
 
                 jumpair_cnt++;
 
@@ -801,7 +815,9 @@ DMMotorHandler *dmmotorhandler = DMMotorHandler::Instance();
                 {
                     // airland_cnt = 0;
                     pendulum_data.ifresetlen = true;
-                    jump_stage = BACK;
+                    pendulum_data.reset_len = Lmin;
+                    // jump_stage = BACK;
+                    jump_stage = DONT;
                 }
                 break;
             }

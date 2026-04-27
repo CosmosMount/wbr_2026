@@ -258,6 +258,7 @@ SuperCap* debug_supercap = SuperCap::Instance();
             cmd.spin = false;
             cmd.inair = false;
             cmd.gostair = false;
+            cmd.ifjump = false;
 
             if (cmd_msg->ifstair)
             {
@@ -309,6 +310,12 @@ SuperCap* debug_supercap = SuperCap::Instance();
                     }
                 }
                 cmd.roll = 0.0f;
+                if (pendulum_data.len > 0.25f)
+                {
+                    cmd.v *= 0.5f;
+                }
+                if (cmd_msg->ifjump)
+                    cmd.ifjump = true;
             }
         }
 
@@ -361,11 +368,6 @@ SuperCap* debug_supercap = SuperCap::Instance();
             vy_updater.SetPath(0.006f);
         }
 
-        if (pendulum_data.len > 0.23f)
-        {
-            cmd.v *= 0.5f;
-        }
-
     #endif
 
     chassis_msg.color = referee_data.robot_status.robot_id <= 9 ? 0 : 1;
@@ -373,7 +375,7 @@ SuperCap* debug_supercap = SuperCap::Instance();
     chassis_msg.heatlimit = referee_data.robot_status.shooter_barrel_heat_limit;
     chassis_msg.heatnow = referee_data.heat_now;
 
-    SuperCap::Instance()->supercap_set.set.power_limit_set = 75.0f;
+    SuperCap::Instance()->supercap_set.set.power_limit_set = referee_data.robot_status.chassis_power_limit;
     SuperCap::Instance()->SendCapData();
 
     memcpy(&CommMsg, reinterpret_cast<uint8_t*>(&chassis_msg), sizeof(comm_chassis_t));

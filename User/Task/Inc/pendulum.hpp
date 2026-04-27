@@ -103,13 +103,13 @@ public:
         /* ── 摆角 ───────────────────────────────────────────────────────── */
         phi = this->vmc.GetPhi();
         this->dphi = xdot[1];
-        if (phi < 0.0f)
-            phi += 2.0f * PI; // 将 phi 规范到 [0, 2π] 范围内，方便后续判断
         this->alpha    = Numeric::LoopFloatConstrain(phi - 0.5f*PI + _pitch, -PI, PI);
         this->dalpha   = this->dphi + _dpitch;
         this->alpha_eq = alpha_eq_coeff[0]
                        + alpha_eq_coeff[1] * this->len
                        + alpha_eq_coeff[2] * this->len * this->len;
+        if (phi < 0.0f)
+            phi += 2.0f * PI; // 将 phi 规范到 [0, 2π] 范围内，方便后续判断
 
         /* ── 逆动力学 ────────────────────────────────────────────────────── */
         float Treal[2] = {joint1_tor, joint4_tor};
@@ -199,6 +199,24 @@ public:
                                  * (this->reverse ? -1.0f : 1.0f);
         this->wheel->currentSet = Numeric::FloatConstrain(_Tw, -Twheel_max, Twheel_max)
                                  * Tk_wheel * (this->reverse ? 1.0f : -1.0f);
+    }
+
+    void DeltaPControl(float _pdelta, float _kp, float _kd)
+    {
+        if (!delta_init)
+        {
+            joint1_pos_init = this->joint1->motorFeedback.positionFdb;
+            joint4_pos_init = this->joint4->motorFeedback.positionFdb;
+            delta_init = true;
+        }
+        this->joint1->torqueSet   = 0.0f;
+        this->joint4->torqueSet   = 0.0f;
+        this->joint1->positionSet = joint1_pos_init + (_pdelta * (this->reverse ? -1.0f : 1.0f));
+        this->joint4->positionSet = joint4_pos_init + (_pdelta * (this->reverse ? -1.0f : 1.0f));
+        this->joint1->speedSet    = 0.0f;
+        this->joint4->speedSet    = 0.0f;
+        this->joint1->KP = _kp; this->joint4->KP = _kp;
+        this->joint1->KD = _kd; this->joint4->KD = _kd;
     }
 };
 
