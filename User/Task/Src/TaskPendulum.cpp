@@ -426,7 +426,7 @@ DMMotorHandler *dmmotorhandler = DMMotorHandler::Instance();
             refX[8] = pitch_eq;
             refX[9] = 0.0f;
             lqr.lqr_type = LQR_STANDUP;
-            lqr.Update(lpendulum.len, rpendulum.len, false);
+            lqr.Update(lpendulum.len, rpendulum.len);
 
             Twl = lqr.Tout[0];
             Twr = lqr.Tout[1];
@@ -480,18 +480,18 @@ DMMotorHandler *dmmotorhandler = DMMotorHandler::Instance();
             if ((lpendulum.len+rpendulum.len)*0.5f > Lswitch)
             {
                 lqr.lqr_type = LQR_HIGH;
-                lqr.Update(lpendulum.len, rpendulum.len, false);
+                lqr.Update(lpendulum.len, rpendulum.len);
             }
             else
             {
                 lqr.lqr_type = LQR_LOW;
                 if (cmd.v == 0.0f)
                 {
-                    lqr.Update(lpendulum.len, rpendulum.len, true);
+                    lqr.Update(lpendulum.len, rpendulum.len);
                 }
                 else
                 {
-                    lqr.Update(lpendulum.len, rpendulum.len, false);
+                    lqr.Update(lpendulum.len, rpendulum.len);
                 }
             }
 
@@ -560,7 +560,7 @@ DMMotorHandler *dmmotorhandler = DMMotorHandler::Instance();
             refX[8] = observedX[8];
             refX[9] = observedX[9];
             lqr.lqr_type = LQR_LOW;
-            lqr.Update(lpendulum.len, rpendulum.len,false);
+            lqr.Update(lpendulum.len, rpendulum.len);
 
             // Twl = 0.0f;
             // Twr = 0.0f;
@@ -599,7 +599,7 @@ DMMotorHandler *dmmotorhandler = DMMotorHandler::Instance();
             refX[9] = 0.0f;
 
             lqr.lqr_type = LQR_LOW;
-            lqr.Update(lpendulum.len, rpendulum.len, true);
+            lqr.Update(lpendulum.len, rpendulum.len);
 
             Twl = lqr.Tout[0];
             Twr = lqr.Tout[1];
@@ -676,7 +676,7 @@ DMMotorHandler *dmmotorhandler = DMMotorHandler::Instance();
                 refX[9] = 0.0f;
 
                 lqr.lqr_type = LQR_LOW;
-                lqr.Update(lpendulum.len, rpendulum.len, false);
+                lqr.Update(lpendulum.len, rpendulum.len);
 
                 Twl = lqr.Tout[0];
                 Twr = lqr.Tout[1];
@@ -715,7 +715,7 @@ DMMotorHandler *dmmotorhandler = DMMotorHandler::Instance();
                 refX[9] = 0.0f;
 
                 lqr.lqr_type = LQR_LOW;
-                lqr.Update(lpendulum.len, rpendulum.len, false);
+                lqr.Update(lpendulum.len, rpendulum.len);
 
                 Twl = lqr.Tout[0];
                 Twr = lqr.Tout[1];
@@ -750,7 +750,7 @@ DMMotorHandler *dmmotorhandler = DMMotorHandler::Instance();
                 refX[8] = observedX[8];
                 refX[9] = observedX[9];
                 lqr.lqr_type = LQR_LOW;
-                lqr.Update(lpendulum.len, rpendulum.len, false);
+                lqr.Update(lpendulum.len, rpendulum.len);
 
                 Twl = 0.0f;
                 Twr = 0.0f;
@@ -785,7 +785,7 @@ DMMotorHandler *dmmotorhandler = DMMotorHandler::Instance();
                 refX[8] = observedX[8];
                 refX[9] = observedX[9];
                 lqr.lqr_type = LQR_LOW;
-                lqr.Update(lpendulum.len, rpendulum.len,false);
+                lqr.Update(lpendulum.len, rpendulum.len);
 
                 Twl = 0.0f;
                 Twr = 0.0f;
@@ -820,7 +820,7 @@ DMMotorHandler *dmmotorhandler = DMMotorHandler::Instance();
                 refX[9] = 0.0f;
 
                 lqr.lqr_type = LQR_LOW;
-                lqr.Update(lpendulum.len, rpendulum.len, false);
+                lqr.Update(lpendulum.len, rpendulum.len);
 
                 Twl = lqr.Tout[0];
                 Twr = lqr.Tout[1];

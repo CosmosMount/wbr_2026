@@ -279,7 +279,7 @@ SuperCap* debug_supercap = SuperCap::Instance();
                 {
                     cmd.dyaw = yaw_updater.UpdateVal(10.0f);
                     cmd.v = vx_updater.UpdateVal(-cmd_msg->vx*0.1f)*arm_cos_f32(relative_angle)
-                        +vy_updater.UpdateVal(cmd_msg->vy*0.1f)*arm_sin_f32(relative_angle);
+                          + vy_updater.UpdateVal(cmd_msg->vy*0.1f)*arm_sin_f32(relative_angle);
                 }
                 cmd.roll = 0.0f;
             }
@@ -310,6 +310,10 @@ SuperCap* debug_supercap = SuperCap::Instance();
                     }
                 }
                 cmd.roll = 0.0f;
+                if (front_offset == yaw_offset2)
+                {
+                    cmd.v *= -1.0f;
+                }
             }
         }
 
@@ -326,10 +330,6 @@ SuperCap* debug_supercap = SuperCap::Instance();
         else
         {   
             maintained_x = false;
-            if (front_offset == yaw_offset2)
-            {
-                cmd.v *= -1.0f;
-            }
             cmd.x = pendulum_data.x+cmd.v*0.001f;
             lock_offset = true;
         }

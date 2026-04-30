@@ -223,7 +223,7 @@ public:
     }
 
     /* 根据腿长更新使用的矩阵k */
-    void Update(float _llen, float _rlen, bool _stay)
+    void Update(float _llen, float _rlen)
     {
         _llen = (_llen < Lmin ? Lmin : _llen);
         _llen = (_llen > Lmax ? Lmax : _llen);
