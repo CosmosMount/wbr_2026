@@ -94,10 +94,10 @@ constexpr uint8_t ljoint1_id = 0x01;
 constexpr uint8_t ljoint4_id = 0x02;
 constexpr uint8_t rjoint1_id = 0x04;
 constexpr uint8_t rjoint4_id = 0x03;
-constexpr uint8_t lwheel_id = 0x202;
-constexpr uint8_t rwheel_id = 0x201;
+constexpr uint16_t lwheel_id = 0x202;
+constexpr uint16_t rwheel_id = 0x201;
 
-constexpr float yaw_offset1 = 0.39499981f;
-constexpr float yaw_offset2 = -2.72741795f;
+constexpr float yaw_offset1 = 0.40389235f;
+constexpr float yaw_offset2 = -2.7377723f;
 
 };

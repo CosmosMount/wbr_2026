@@ -535,10 +535,10 @@ DMMotorHandler *dmmotorhandler = DMMotorHandler::Instance();
                 chassis_state = SPIN;
             }
 
-            if (offground) 
-            {
-                chassis_state = OFFGROUND;
-            }
+            // if (offground) 
+            // {
+            //     chassis_state = OFFGROUND;
+            // }
 
             pre_stair = cmd.gostair;
 
@@ -598,7 +598,7 @@ DMMotorHandler *dmmotorhandler = DMMotorHandler::Instance();
             refX[8] = pitch_eq;
             refX[9] = 0.0f;
 
-            lqr.lqr_type = LQR_SPIN;
+            lqr.lqr_type = LQR_LOW;
             lqr.Update(lpendulum.len, rpendulum.len, true);
 
             Twl = lqr.Tout[0];

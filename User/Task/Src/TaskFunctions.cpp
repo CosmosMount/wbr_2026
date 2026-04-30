@@ -98,7 +98,7 @@ SuperCap* debug_supercap = SuperCap::Instance();
     trigger_motor.controlMode = DJIMotor::SPD_MODE;
     trigger_motor.gearBox = GearBox_None; // 使用速度×36，其实精度更高
     trigger_motor.speedPid.kp = 100.0f;
-    bool yaw_init = false, spin_offset_init = false;
+    bool yaw_init = false, lock_offset = false;
     float distance1, distance2, front_offset, relative_angle; 
     
     /* Communication with Gimbal */
@@ -158,11 +158,15 @@ SuperCap* debug_supercap = SuperCap::Instance();
         /* Handle Gimbal Motors */
         distance1 = fabs(yaw_motor.motorFeedback.positionFdb-yaw_offset1);
         distance2 = fabs(yaw_motor.motorFeedback.positionFdb-yaw_offset2);
-        if (!spin_offset_init)
+        if (!lock_offset)
         {
             front_offset = distance1 < distance2 ? yaw_offset1 : yaw_offset2;
         }
-        relative_angle = yaw_motor.motorFeedback.positionFdb - front_offset;
+
+        relative_angle = LoopFloatConstrain(
+            yaw_motor.motorFeedback.positionFdb - front_offset,
+            -PI, PI
+        );
         
         if (!cmd_msg->ifmove)
         {
@@ -266,7 +270,6 @@ SuperCap* debug_supercap = SuperCap::Instance();
             else if (cmd_msg->ifspin)
             {
                 cmd.spin = true;
-                spin_offset_init = true;
                 if (pendulum_data.len > 0.17f)
                 {
                     cmd.dyaw = -relative_angle*4.0f;
@@ -282,7 +285,6 @@ SuperCap* debug_supercap = SuperCap::Instance();
             }
             else 
             {
-                spin_offset_init = false;
                 if (fabs(yaw_updater.GetVal()) > 1.0f)
                 {
                     maintained_x = false;
@@ -294,12 +296,11 @@ SuperCap* debug_supercap = SuperCap::Instance();
                     if (fabs(cmd_msg->vx*0.1f) > 0.005f)
                     {
                         cmd.dyaw = -relative_angle*4.0f;
-                        cmd.v = vx_updater.UpdateVal(cmd_msg->vx*0.1f*2.0f);
+                        cmd.v = vx_updater.UpdateVal(cmd_msg->vx*0.1f*2.5f);
                     }
                     else if (fabs(cmd_msg->vy*0.1f) > 0.005f)
                     {
-                        relative_angle += PI*0.5f;
-                        cmd.dyaw = -relative_angle*4.0f;
+                        cmd.dyaw = -Numeric::LoopFloatConstrain(relative_angle + PI * 0.5f, -PI, PI) * 4.0f;
                         cmd.v = vy_updater.UpdateVal(cmd_msg->vy*0.1f*2.0f);
                     }
                     else
@@ -320,6 +321,7 @@ SuperCap* debug_supercap = SuperCap::Instance();
                 maintained_x = true;
             }
             cmd.x = x_maintain;
+            lock_offset = false;
         }
         else
         {   
@@ -329,6 +331,7 @@ SuperCap* debug_supercap = SuperCap::Instance();
                 cmd.v *= -1.0f;
             }
             cmd.x = pendulum_data.x+cmd.v*0.001f;
+            lock_offset = true;
         }
         
         if (fabs(cmd.dyaw)<0.002f)
