@@ -269,6 +269,7 @@ SuperCap* debug_supercap = SuperCap::Instance();
             }
             else if (cmd_msg->ifspin)
             {
+                lock_offset = true;
                 cmd.spin = true;
                 if (pendulum_data.len > 0.17f)
                 {
@@ -278,8 +279,8 @@ SuperCap* debug_supercap = SuperCap::Instance();
                 else
                 {
                     cmd.dyaw = yaw_updater.UpdateVal(10.0f);
-                    cmd.v = vx_updater.UpdateVal(-cmd_msg->vx*0.1f)*arm_cos_f32(relative_angle)
-                          + vy_updater.UpdateVal(cmd_msg->vy*0.1f)*arm_sin_f32(relative_angle);
+                    cmd.v = - vx_updater.UpdateVal(cmd_msg->vx*0.1f)*arm_sin_f32(relative_angle)
+                            - vy_updater.UpdateVal(cmd_msg->vy*0.1f)*arm_cos_f32(relative_angle);
                 }
                 cmd.roll = 0.0f;
             }
@@ -325,7 +326,10 @@ SuperCap* debug_supercap = SuperCap::Instance();
                 maintained_x = true;
             }
             cmd.x = x_maintain;
-            lock_offset = false;
+            if (!cmd.spin)
+            {
+                lock_offset = false;
+            }
         }
         else
         {   

@@ -369,13 +369,13 @@ DMMotorHandler *dmmotorhandler = DMMotorHandler::Instance();
                 {
                     if (pitch > 0.0f)
                     {
-                        lpendulum.PhiControl(PI*2.0f, 200.0f, 10.0f, 0.1f);
-                        rpendulum.PhiControl(PI*2.0f, 200.0f, 10.0f, 0.1f);
+                        lpendulum.PhiControl(PI, 200.0f, 10.0f, 0.1f, true);
+                        rpendulum.PhiControl(PI, 200.0f, 10.0f, 0.1f, true);
                     }
                     else
                     {
-                        lpendulum.PhiControl(PI, 200.0f, 10.0f, 0.1f);
-                        rpendulum.PhiControl(PI, 200.0f, 10.0f, 0.1f);
+                        lpendulum.PhiControl(PI, 200.0f, 10.0f, 0.1f, true);
+                        rpendulum.PhiControl(PI, 200.0f, 10.0f, 0.1f, true);
                     }
                 }
             }
@@ -389,21 +389,34 @@ DMMotorHandler *dmmotorhandler = DMMotorHandler::Instance();
             pendulum_data.recovered = true;
             if (lpendulum.flat) 
             {
+                Fl[0] = 0.0f;
+                Fl[1] = 0.0f;
                 lpendulum.Relax();
                 lpendulum.delta_init = false;
                 lpendulum.phi_updater.SetDefault(0.0f);
             }
             else
-                lpendulum.PhiControl(PI, 5.0f, 10.0f, 0.002f);
+                Fl[1] = lpendulum.PhiControl(PI, 5.0f, 10.0f, 0.002f, false);
             
             if (rpendulum.flat)
             {
+                Fr[0] = 0.0f;
+                Fr[1] = 0.0f;
                 rpendulum.Relax();
                 rpendulum.delta_init = false;
                 rpendulum.phi_updater.SetDefault(0.0f);
             } 
             else
-                rpendulum.PhiControl(PI, 5.0f, 10.0f, 0.002f);
+                Fr[1] = rpendulum.PhiControl(PI, 5.0f, 10.0f, 0.002f, false);
+            
+            Fl[0] = 0.0f;
+            Fr[0] = 0.0f;
+            Twl = (cmd.v>0.0f)?1.5f:0.0f;
+            Twr = (cmd.v>0.0f)?1.5f:0.0f;
+
+            lpendulum.TorqueControl(Fl, Twl);
+            rpendulum.TorqueControl(Fr, Twr);
+
             if (lpendulum.flat && rpendulum.flat)
             {
                 odom.Reset();
@@ -627,8 +640,8 @@ DMMotorHandler *dmmotorhandler = DMMotorHandler::Instance();
         {
             // odom.Reset();
 
-            lpendulum.PhiControl(PI, 10.0f, 5.0f, 0.01f);
-            rpendulum.PhiControl(PI, 10.0f, 5.0f, 0.01f);
+            lpendulum.PhiControl(PI, 10.0f, 5.0f, 0.01f, false);
+            rpendulum.PhiControl(PI, 10.0f, 5.0f, 0.01f, false);
 
             Twl = 0.0f;
             Twr = 0.0f;

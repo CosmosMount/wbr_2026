@@ -26,10 +26,16 @@ protected:
     float joint1_pos_init;
     float joint4_pos_init;
 
+    float total_phi;
+    float last_phi;
+    bool  phi_init;
+
+    int dir = 1;
+
     /* counters */
     uint32_t liftoff_count = 0, landing_count = 0, neutral_count = 0;
 
-    constexpr static float dlen_stable_threshold = 0.10f; ///< 离地检测时的 dlen 稳定性阈值
+    constexpr static float dlen_stable_threshold = 0.10f;
 
 public:
 
@@ -48,6 +54,10 @@ public:
         this->neutral         = false;
         this->liftoff_count   = 0;
         this->landing_count   = 0;
+
+        this->total_phi = 0.0f;
+        this->last_phi  = 0.0f;
+        this->phi_init  = false;
     }
 
     float phi;
@@ -75,7 +85,6 @@ public:
 
     void Solve(float _pitch, float _dpitch, float _az)
     {
-        /* ── 逆运动学 & VMC ─────────────────────────────────────────────── */
         float joint1_pos = this->joint1->motorFeedback.positionFdb;
         float joint4_pos = this->joint4->motorFeedback.positionFdb;
         float joint1_vel = this->joint1->motorFeedback.speedFdb;
@@ -96,22 +105,35 @@ public:
         float xdot[2] = {0.0f, 0.0f};
         this->vmc.VMCVelCal(qdot, xdot);
 
-        /* ── 摆长 ───────────────────────────────────────────────────────── */
         this->len  = this->vmc.GetLen();
         this->dlen = xdot[0];
 
-        /* ── 摆角 ───────────────────────────────────────────────────────── */
         phi = this->vmc.GetPhi();
         this->dphi = xdot[1];
+
+        /*
         if (phi < 0.0f)
-            phi += 2.0f * PI; // 将 phi 规范到 [0, 2π] 范围内，方便后续判断
+            phi += 2.0f * PI;
+        */
+
+        if (!this->phi_init)
+        {
+            this->total_phi = phi;
+            this->last_phi  = phi;
+            this->phi_init  = true;
+        }
+        else
+        {
+            this->total_phi += LoopFloatConstrain(phi - this->last_phi, -PI, PI);
+            this->last_phi = phi;
+        }
+
         this->alpha    = Numeric::LoopFloatConstrain(phi - 0.5f*PI + _pitch, -PI, PI);
         this->dalpha   = this->dphi + _dpitch;
         this->alpha_eq = alpha_eq_coeff[0]
                        + alpha_eq_coeff[1] * this->len
                        + alpha_eq_coeff[2] * this->len * this->len;
 
-        /* ── 逆动力学 ────────────────────────────────────────────────────── */
         float Treal[2] = {joint1_tor, joint4_tor};
         float Trev[2]  = {0.0f, 0.0f};
         this->vmc.VMCRevCal(Trev, Treal);
@@ -133,7 +155,6 @@ public:
 
         this->N = P + Mwheel * Numeric::Gravity + Mwheel * Zw;
 
-        /* ── neutral & flat 检测 ─────────────────────────────────────────── */
         if (Numeric::abs(this->alpha - this->alpha_eq) < 0.2f)
             this->neutral_count++;
         else
@@ -153,6 +174,8 @@ public:
         this->landing_count = 0;
         this->liftoff_count = 0;
 
+        this->phi_init = false;
+
         this->joint1->KP = 0.0f; this->joint4->KP = 0.0f;
         this->joint1->KD = 0.0f; this->joint4->KD = 0.0f;
         this->joint1->speedSet  = 0.0f; this->joint1->torqueSet  = 0.0f;
@@ -162,23 +185,38 @@ public:
         this->phi_pd.Clear();
     }
 
-    void PhiControl(float _phi, float _kp, float _kd, float _slope)
+    float PhiControl(float _phi, float _kp, float _kd, float _slope, bool positive)
     {
         if (!this->delta_init)
         {
+            /*
             this->phi_updater.SetDefault(this->phi);
+            */
+            this->phi_updater.SetDefault(this->total_phi);
             this->phi_updater.SetPath(_slope);
             this->delta_init = true;
         }
 
         this->phi_pd.Tuning(_kp, 0.0f, _kd);
+
+        /*
         this->phi_pd.ref = this->phi_updater.UpdateVal(_phi);
         this->phi_pd.fdb = this->phi;
+        */
+
+        float target = _phi;
+
+        if (positive && target < this->total_phi)
+            target += 2.0f * PI;
+        else if (!positive && target > this->total_phi)
+            target -= 2.0f * PI;
+
+        this->phi_pd.ref = this->phi_updater.UpdateVal(target);
+        this->phi_pd.fdb = this->total_phi;
+
         this->phi_pd.UpdateResult(this->dphi);
-        float F[2] = {0.0f, 0.0f};
-        F[0] = -this->vmc.GetFs();
-        F[1] = this->phi_pd.result;
-        TorqueControl(F, 0.0f);
+
+        return this->phi_pd.result;
     }
 
     float LenControl(float _ref)
