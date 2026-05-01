@@ -368,9 +368,9 @@ SuperCap* debug_supercap = SuperCap::Instance();
             vy_updater.SetPath(0.006f);
         }
 
-        if (pendulum_data.len > 0.23f)
+        if (pendulum_data.len > 0.17f)
         {
-            cmd.v *= 0.5f;
+            cmd.v *= (0.17f / pendulum_data.len)*0.8f;
         }
 
     #endif

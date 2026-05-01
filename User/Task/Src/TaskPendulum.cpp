@@ -548,10 +548,10 @@ DMMotorHandler *dmmotorhandler = DMMotorHandler::Instance();
                 chassis_state = SPIN;
             }
 
-            // if (offground) 
-            // {
-            //     chassis_state = OFFGROUND;
-            // }
+            if (offground) 
+            {
+                chassis_state = OFFGROUND;
+            }
 
             pre_stair = cmd.gostair;
 
@@ -600,15 +600,15 @@ DMMotorHandler *dmmotorhandler = DMMotorHandler::Instance();
         case SPIN:
         {
             /* [x, dx, yaw, dyaw, alphal, dalphal, alphar, dalphar, theta, dtheta] */
-            refX[0] = cmd.x;
+            refX[0] = odom.x;//cmd.x;
             refX[1] = cmd.v;
             refX[2] = cmd.yaw;
             refX[3] = cmd.dyaw;
-            refX[4] = lpendulum.alpha_eq;
+            refX[4] = 0.0f;//lpendulum.alpha_eq;
             refX[5] = 0.0f;
-            refX[6] = rpendulum.alpha_eq;
+            refX[6] = 0.0f;//rpendulum.alpha_eq;
             refX[7] = 0.0f;
-            refX[8] = pitch_eq;
+            refX[8] = 0.0f;//pitch_eq;
             refX[9] = 0.0f;
 
             lqr.lqr_type = LQR_LOW;
