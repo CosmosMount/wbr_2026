@@ -28,6 +28,7 @@ protected:
 
     float total_phi;
     float last_phi;
+    float target_phi;
     bool  phi_init;
 
     int dir = 1;
@@ -191,19 +192,24 @@ public:
         {
             this->phi_updater.SetDefault(this->total_phi);
             this->phi_updater.SetPath(_slope);
+            this->target_phi = _phi;
+            while (this->target_phi - this->total_phi > PI)
+                this->target_phi -= 2.0f * PI;
+
+            while (this->target_phi - this->total_phi < -PI)
+                this->target_phi += 2.0f * PI;
+
+            if (positive && this->target_phi < this->total_phi)
+                this->target_phi += 2.0f * PI;
+            else if (!positive && this->target_phi > this->total_phi)
+                this->target_phi -= 2.0f * PI;
+
             this->delta_init = true;
         }
 
         this->phi_pd.Tuning(_kp, 0.0f, _kd);
 
-        float target = _phi;
-
-        if (positive && target < this->total_phi)
-            target += 2.0f * PI;
-        else if (!positive && target > this->total_phi)
-            target -= 2.0f * PI;
-
-        this->phi_pd.ref = this->phi_updater.UpdateVal(target);
+        this->phi_pd.ref = this->phi_updater.UpdateVal(this->target_phi);
         this->phi_pd.fdb = this->total_phi;
 
         this->phi_pd.UpdateResult(this->dphi);
