@@ -455,7 +455,7 @@ DMMotorHandler *dmmotorhandler = DMMotorHandler::Instance();
                 Fr[1] = 0.0f;
             }
 
-            if (Numeric::abs(lpendulum.alpha) > 0.7f || Numeric::abs(rpendulum.alpha) > 0.7f) 
+            if (Numeric::abs(lpendulum.alpha) > 0.8f || Numeric::abs(rpendulum.alpha) > 0.8f) 
             {
                 Twl=0.0f;
                 Twr=0.0f;

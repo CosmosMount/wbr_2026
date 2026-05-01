@@ -184,7 +184,7 @@ SuperCap* debug_supercap = SuperCap::Instance();
         }
         else if (!yaw_init)
         {
-            yaw_motor.currentSet = ((yaw_motor.motorFeedback.positionFdb>yaw_offset1&&yaw_motor.motorFeedback.positionFdb<yaw_offset2) ? -1 : 1)*15000;
+            yaw_motor.currentSet = (((yaw_motor.motorFeedback.positionFdb - yaw_offset1) > 0.0f) ? -1 : 1)*20000;
             if (fabs(yaw_motor.motorFeedback.positionFdb-yaw_offset1)<0.1f)
             {
                 yaw_init = true;
