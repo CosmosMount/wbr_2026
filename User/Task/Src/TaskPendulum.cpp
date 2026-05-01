@@ -639,16 +639,12 @@ DMMotorHandler *dmmotorhandler = DMMotorHandler::Instance();
         case GOSTAIR:
         {
             // odom.Reset();
-
-            lpendulum.PhiControl(PI, 10.0f, 5.0f, 0.01f, false);
-            rpendulum.PhiControl(PI, 10.0f, 5.0f, 0.01f, false);
-
             Twl = 0.0f;
             Twr = 0.0f;
             Fl[0] = 0.0f;
-            Fl[1] = 0.0f;
+            Fl[1] = lpendulum.PhiControl(PI, 10.0f, 5.0f, 0.01f, true);
             Fr[0] = 0.0f;
-            Fr[1] = 0.0f;
+            Fr[1] = rpendulum.PhiControl(PI, 10.0f, 5.0f, 0.01f, true);
             lpendulum.TorqueControl(Fl, Twl);
             rpendulum.TorqueControl(Fr, Twr);
 

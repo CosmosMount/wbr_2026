@@ -189,20 +189,12 @@ public:
     {
         if (!this->delta_init)
         {
-            /*
-            this->phi_updater.SetDefault(this->phi);
-            */
             this->phi_updater.SetDefault(this->total_phi);
             this->phi_updater.SetPath(_slope);
             this->delta_init = true;
         }
 
         this->phi_pd.Tuning(_kp, 0.0f, _kd);
-
-        /*
-        this->phi_pd.ref = this->phi_updater.UpdateVal(_phi);
-        this->phi_pd.fdb = this->phi;
-        */
 
         float target = _phi;
 
