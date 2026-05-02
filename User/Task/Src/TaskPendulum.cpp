@@ -110,7 +110,7 @@ struct pid_tuning_t
 };
 msg_ins_t debug_ins;
 pendulum_debug_t pendulum_debug;
-pid_tuning_t lenpd_tuning = {3200.0f, 0.0f, -700.0f};
+pid_tuning_t lenpd_tuning = {2000.0f, 0.0f, -1000.0f};
 pid_tuning_t rollpd_tuning = {0.5f, 0.00f, 0.0f};
 DMMotorHandler *dmmotorhandler = DMMotorHandler::Instance();
 #endif
@@ -548,18 +548,16 @@ DMMotorHandler *dmmotorhandler = DMMotorHandler::Instance();
             lqr.lqr_type = LQR_LOW;
             lqr.Update(lpendulum.len, rpendulum.len);
 
-            // Twl = 0.0f;
-            // Twr = 0.0f;
-            Twl = lqr.Tout[0];
-            Twr = lqr.Tout[1];
+            Twl = 0.0f;
+            Twr = 0.0f;
             Fl[1] = lqr.Tout[2];
             Fr[1] = lqr.Tout[3];
-            Fl[0] = lpendulum.LenControl(cmd.len);
-            Fr[0] = rpendulum.LenControl(cmd.len);
+            Fl[0] = lpendulum.LenControl(Lmax);
+            Fr[0] = rpendulum.LenControl(Lmax);
             lpendulum.TorqueControl(Fl, Twl);
             rpendulum.TorqueControl(Fr, Twr);
 
-            landing = (N>50.0f) && (lpendulum.Freal>-100.0f) && (rpendulum.Freal>-100.0f);
+            landing = (N>50.0f);
             if (landing) 
             {
                 pendulum_data.ifresetlen = true;

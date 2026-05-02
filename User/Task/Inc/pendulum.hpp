@@ -112,11 +112,6 @@ public:
         phi = this->vmc.GetPhi();
         this->dphi = xdot[1];
 
-        /*
-        if (phi < 0.0f)
-            phi += 2.0f * PI;
-        */
-
         if (!this->phi_init)
         {
             this->total_phi = phi;
@@ -143,8 +138,8 @@ public:
         this->Fs = this->vmc.GetFs();
         float cos_alpha = arm_cos_f32(this->alpha);
         float sin_alpha = arm_sin_f32(this->alpha);
-        float P  = (Trev[0]+this->Fs) * cos_alpha
-                  + Trev[1] / this->len * sin_alpha;
+        float P  = (Trev[0]+this->Fs) * cos_alpha;
+                //   + Trev[1] / this->len * sin_alpha;
         float ddlen   = this->dlen - this->prev_dlen;
         float ddalpha = this->dalpha - this->prev_dalpha;
 
