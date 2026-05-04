@@ -75,8 +75,8 @@ constexpr float Tk_wheel = 1400.0f;
 constexpr float Thip_max = 40.0f;
 constexpr float Twheel_max = 15.0f;
 
-constexpr float Fspring = 430.0f;
-constexpr float Dspring1 = 0.2099f;
+constexpr float Fspring = 450.0f;
+constexpr float Dspring1 = 0.03f;
 constexpr float Dspring2 = 0.05f;
 constexpr float Ang_spring = 0.2164f;
 

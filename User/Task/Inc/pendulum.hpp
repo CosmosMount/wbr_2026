@@ -79,7 +79,7 @@ public:
     bool neutral;
     bool delta_init = false;
 
-    PID len_pd = PID(5000.0f, 0.0f, -1500.0f, 125.0f, 0.0f, PID_DVEL);
+    PID len_pd = PID(5000.0f, 0.0f, -1500.0f, 80.0f, 0.0f, PID_DVEL);
     PID phi_pd = PID(0.7f, 0.0f, 1.4f, 40.0f, 0.005f);
 
     SLOPE phi_updater = SLOPE(0.0f, 0.005f);

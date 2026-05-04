@@ -98,8 +98,10 @@ SuperCap* debug_supercap = SuperCap::Instance();
     trigger_motor.controlMode = DJIMotor::SPD_MODE;
     trigger_motor.gearBox = GearBox_None; // 使用速度×36，其实精度更高
     trigger_motor.speedPid.kp = 100.0f;
-    bool yaw_init = false, lock_offset = false;
-    float distance1, distance2, front_offset, relative_angle; 
+    bool yaw_init = false, lock_offset = false, comm_lost = false;
+    float distance1, distance2, front_offset, relative_angle;
+    int16_t prev_yaw_cur = 0;
+    uint32_t comm_lost_cnt = 0;
     
     /* Communication with Gimbal */
     uint8_t CommMsg[8] = {0};
@@ -136,6 +138,19 @@ SuperCap* debug_supercap = SuperCap::Instance();
 
         comm_cmd_t *cmd_msg = reinterpret_cast<comm_cmd_t*>(CmdMsg);
         cmd_msg_debug = cmd_msg;
+        if (cmd_msg->ifmove && cmd_msg->yaw_cur == prev_yaw_cur)
+        {
+            comm_lost_cnt++;
+            if (comm_lost_cnt > 100)
+            {
+                comm_lost = true;
+            }
+        }
+        else
+        {
+            comm_lost_cnt = 0;
+            comm_lost = false;
+        }
 
     #ifdef GIMBAL_ONLY
         chassis_msg.inited = true;
@@ -203,7 +218,7 @@ SuperCap* debug_supercap = SuperCap::Instance();
 
         cmd.roll = 0.0f;
 
-        if (isnan(cmd_msg->dlen) || isnan(cmd_msg->vx) || isnan(cmd_msg->vy)) // 如果出现nan错误，将速度设定值设为0
+        if (isnan(cmd_msg->dlen) || isnan(cmd_msg->vx) || isnan(cmd_msg->vy) || comm_lost)
         {
             cmd.v = 0.0f;
             cmd.x = 0.0f;
@@ -370,30 +385,30 @@ SuperCap* debug_supercap = SuperCap::Instance();
 
         if (pendulum_data.len > 0.17f)
         {
-            cmd.v *= (0.17f / pendulum_data.len)*0.8f;
+            cmd.v *= 0.17f / pendulum_data.len;
         }
 
     #endif
 
-    chassis_msg.color = referee_data.robot_status.robot_id <= 9 ? 0 : 1;
-    chassis_msg.level = referee_data.robot_status.robot_level;
-    chassis_msg.heatlimit = referee_data.robot_status.shooter_barrel_heat_limit;
-    chassis_msg.heatnow = referee_data.heat_now;
+        chassis_msg.color = referee_data.robot_status.robot_id <= 9 ? 0 : 1;
+        chassis_msg.level = referee_data.robot_status.robot_level;
+        chassis_msg.heatlimit = referee_data.robot_status.shooter_barrel_heat_limit;
+        chassis_msg.heatnow = referee_data.heat_now;
 
-    SuperCap::Instance()->supercap_set.set.power_limit_set = 75.0f;
-    SuperCap::Instance()->SendCapData();
+        SuperCap::Instance()->supercap_set.set.power_limit_set = referee_data.robot_status.chassis_power_limit;
+        SuperCap::Instance()->SendCapData();
 
-    memcpy(&CommMsg, reinterpret_cast<uint8_t*>(&chassis_msg), sizeof(comm_chassis_t));
-    CAN_Transmit(&hfdcan3, 0xC1, CommMsg, 8);
+        memcpy(&CommMsg, reinterpret_cast<uint8_t*>(&chassis_msg), sizeof(comm_chassis_t));
+        CAN_Transmit(&hfdcan3, 0xC1, CommMsg, 8);
 
-    chassisui.relative_angle = yaw_motor.motorFeedback.positionFdb - yaw_offset2 + PI;
-    chassisui.len = pendulum_data.len;
-    chassisui.v = pendulum_data.v;
+        chassisui.relative_angle = yaw_motor.motorFeedback.positionFdb - yaw_offset2 + PI;
+        chassisui.len = pendulum_data.len;
+        chassisui.v = pendulum_data.v;
 
-    /* Publish cmd msg */
-    om_publish(cmd_topic, &cmd, sizeof(msg_cmd_t), true, false);
-    om_publish(chassisui_topic, &chassisui, sizeof(msg_chassisui_t), true, false);
-    pre_stair = cmd.gostair;
+        /* Publish cmd msg */
+        om_publish(cmd_topic, &cmd, sizeof(msg_cmd_t), true, false);
+        om_publish(chassisui_topic, &chassisui, sizeof(msg_chassisui_t), true, false);
+        pre_stair = cmd.gostair;
 
     #ifdef DEBUG
         debug_dist = tof_distance;
