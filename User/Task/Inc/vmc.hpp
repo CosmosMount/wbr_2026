@@ -36,6 +36,64 @@ protected:
     /* Spring Force */
     float Fs = 0.0f;
 
+    void CalcSpringForce()
+    {
+        // ── P点（固定在L1上，随phi1转动）────────────────────────────
+        float ang_P = phi1 + Ang_spring - PI * 0.5f;
+        float Px =  Dspring1 * arm_cos_f32(ang_P);
+        float Py =  Dspring1 * arm_sin_f32(ang_P);
+
+        // ── Q点（B + d2沿phi2方向）──────────────────────────────────
+        float cos1 = arm_cos_f32(phi1);
+        float sin1 = arm_sin_f32(phi1);
+        float cos2 = arm_cos_f32(U2);
+        float sin2 = arm_sin_f32(U2);
+        float Qx = L1 * cos1 + Dspring2 * cos2;
+        float Qy = L1 * sin1 + Dspring2 * sin2;
+
+        // ── 弹簧力向量（恒力）───────────────────────────────────────
+        float dPQx = Qx - Px;
+        float dPQy = Qy - Py;
+        float ls   = sqrtf(dPQx * dPQx + dPQy * dPQy);
+        if (ls < 1e-5f) { Fs = 0.0f; return; }
+
+        float Fsx = Fspring * dPQx / ls;
+        float Fsy = Fspring * dPQy / ls;
+
+        // ── ∂phi2/∂phi_i ─────────────────────────────────────────────
+        float s23 = arm_sin_f32(U2 - U3);
+        if (fabsf(s23) < 0.05f) { Fs = 0.0f; return; }
+
+        float inv_L2s23    = 1.0f / (L2 * s23);
+        float dphi2_dphi1  =  L1 * arm_sin_f32(U3 - phi1) * inv_L2s23;
+        float dphi2_dphi4  =  L1 * arm_sin_f32(phi4 - U3) * inv_L2s23;
+
+        // ── ∂(Q-P)/∂phi_i ────────────────────────────────────────────
+        // ∂P/∂phi1 = (-Dspring1*sin(ang_P), Dspring1*cos(ang_P)) = (Py, -Px)旋转
+        // 注意ang_P = phi1 + const，所以∂ang_P/∂phi1 = 1
+        float dPx_d1 = -Dspring1 * arm_sin_f32(ang_P);  // = -Py
+        float dPy_d1 =  Dspring1 * arm_cos_f32(ang_P);  // =  Px
+
+        // ∂Q/∂phi1
+        float dQx_d1 = -L1 * sin1 - Dspring2 * sin2 * dphi2_dphi1;
+        float dQy_d1 =  L1 * cos1 + Dspring2 * cos2 * dphi2_dphi1;
+
+        // ∂Q/∂phi4（P不依赖phi4）
+        float dQx_d4 = -Dspring2 * sin2 * dphi2_dphi4;
+        float dQy_d4 =  Dspring2 * cos2 * dphi2_dphi4;
+
+        // ── 等效关节力矩 τ = Js^T * Fs ───────────────────────────────
+        float ddx_d1 = dQx_d1 - dPx_d1;  // ∂(Q-P)x/∂phi1
+        float ddy_d1 = dQy_d1 - dPy_d1;  // ∂(Q-P)y/∂phi1
+
+        float tau_s1 = Fsx * ddx_d1 + Fsy * ddy_d1;
+        float tau_s4 = Fsx * dQx_d4 + Fsy * dQy_d4;  // ∂P/∂phi4=0
+
+        // ── 映射到虚腿广义力 [F_eq, tau_p] ───────────────────────────
+        Fs = JT_inv_mat[0] * tau_s1 + JT_inv_mat[1] * tau_s4;
+        // Fs_tau = JT_inv_mat[2] * tau_s1 + JT_inv_mat[3] * tau_s4;
+    }
+
 public:
 
     void Resolve(float _phi1, float _phi4)
@@ -106,10 +164,7 @@ public:
         JT_inv_mat[2] = sin02 * len / (sin12 * L1);
         JT_inv_mat[3] = -sin03 * len / (sin34 * L1);
 
-        /* 计算弹簧等效力 */
-        float theta = PI - this->phi1 + this->U2;
-        float Ls = sqrtf(Dspring1*Dspring1+Dspring2*Dspring2-2.0f*Dspring1*Dspring2*arm_cos_f32(theta-Ang_spring));
-        this->Fs = Fspring*this->len*Dspring1*Dspring2*arm_sin_f32(theta-Ang_spring)/(Ls*L1*L2*arm_sin_f32(theta));
+        this->CalcSpringForce();
     }
 
     void VMCCal(float *F, float *T)

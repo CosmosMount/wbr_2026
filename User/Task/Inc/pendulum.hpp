@@ -151,11 +151,7 @@ public:
 
         this->N = P + Mwheel * Numeric::Gravity + Mwheel * Zw;
 
-        if (Numeric::abs(this->alpha - this->alpha_eq) < 0.2f)
-            this->neutral_count++;
-        else
-            this->neutral_count = 0;
-        this->neutral = this->neutral_count > 150;
+        this->neutral = Numeric::abs(this->alpha) < 0.5f;
         this->flat    = (2.5f <= phi && phi <= 3.1f);
 
         this->prev_dlen = this->dlen;
