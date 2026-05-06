@@ -487,14 +487,6 @@ DMMotorHandler *dmmotorhandler = DMMotorHandler::Instance();
             
             pendulum_data.ifresetlen = false;
 
-            airprotect_cnt ++;
-            if (airprotect_cnt < 500)
-                pendulum_data.normal = false;
-            else
-                pendulum_data.normal = true;
-
-            offground = (N<0.0f) && (lpendulum.dlen > 0.05f) && (rpendulum.dlen > 0.05f) && (airprotect_cnt>500);
-
             if (cmd.gostair && !pre_stair) 
             {
                 going_stair = true;
@@ -507,6 +499,7 @@ DMMotorHandler *dmmotorhandler = DMMotorHandler::Instance();
                 going_stair = false;
                 airprotect_cnt = 0;
             }
+            pre_stair = cmd.gostair;
 
             if (cmd.prejump) 
             { 
@@ -520,12 +513,24 @@ DMMotorHandler *dmmotorhandler = DMMotorHandler::Instance();
                 chassis_state = SPIN;
             }
 
+            airprotect_cnt ++;
+            if (airprotect_cnt < 500)
+                pendulum_data.normal = false;
+            else
+                pendulum_data.normal = true;
+            offground = (N<0.0f) && (lpendulum.dlen > 0.05f) && (rpendulum.dlen > 0.05f) && (airprotect_cnt>500);
             if (offground) 
             {
                 chassis_state = OFFGROUND;
             }
 
-            pre_stair = cmd.gostair;
+            if (lpendulum.alpha >= 0.8f || rpendulum.alpha >= 0.8f)
+            {
+                chassis_state = RELAX;
+                lpendulum.delta_init = false;
+                rpendulum.delta_init = false;
+                break;
+            }
 
             lpendulum.len_pd.Tuning(lenpd_tuning.kp, lenpd_tuning.ki, lenpd_tuning.kd);
             rpendulum.len_pd.Tuning(lenpd_tuning.kp, lenpd_tuning.ki, lenpd_tuning.kd);
@@ -557,6 +562,15 @@ DMMotorHandler *dmmotorhandler = DMMotorHandler::Instance();
             rpendulum.TorqueControl(Fr, Twr);
 
             landing = lpendulum.dlen < -0.03f && rpendulum.dlen < -0.03f;
+
+            if (lpendulum.alpha >= 0.8f || rpendulum.alpha >= 0.8f)
+            {
+                chassis_state = RELAX;
+                lpendulum.delta_init = false;
+                rpendulum.delta_init = false;
+                break;
+            }
+
             if (landing) 
             {
                 pendulum_data.ifresetlen = true;
