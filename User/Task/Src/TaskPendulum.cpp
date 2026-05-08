@@ -543,9 +543,9 @@ DMMotorHandler *dmmotorhandler = DMMotorHandler::Instance();
             refX[1] = observedX[1];
             refX[2] = observedX[2];
             refX[3] = observedX[3];
-            refX[4] = lpendulum.alpha_eq;
+            refX[4] = lpendulum.alpha_eq+pitch;
             refX[5] = 0.0f;
-            refX[6] = rpendulum.alpha_eq;
+            refX[6] = rpendulum.alpha_eq+pitch;
             refX[7] = 0.0f;
             refX[8] = 0.0f;
             refX[9] = 0.0f;            
@@ -556,12 +556,12 @@ DMMotorHandler *dmmotorhandler = DMMotorHandler::Instance();
             Twr = 0.0f;
             Fl[1] = lqr.Tout[2];
             Fr[1] = lqr.Tout[3];
-            Fl[0] = lpendulum.LenControl(Lmax);
-            Fr[0] = rpendulum.LenControl(Lmax);
+            Fl[0] = 0.0f;//lpendulum.LenControl(Lmax);
+            Fr[0] = 0.0f;//rpendulum.LenControl(Lmax);
             lpendulum.TorqueControl(Fl, Twl);
             rpendulum.TorqueControl(Fr, Twr);
 
-            landing = lpendulum.dlen < -0.03f && rpendulum.dlen < -0.03f;
+            landing = (N>50.0f) && (lpendulum.dlen < -0.05f) && (rpendulum.dlen < -0.05f);
 
             if (lpendulum.alpha >= 0.8f || rpendulum.alpha >= 0.8f)
             {
@@ -926,6 +926,8 @@ DMMotorHandler *dmmotorhandler = DMMotorHandler::Instance();
         pendulum_debug.rphi = rpendulum.phi;
         pendulum_debug.Tphil = lpendulum.phi_pd.result;
         pendulum_debug.Tphir = rpendulum.phi_pd.result;
+        pendulum_debug.llendot = lpendulum.dlen;
+        pendulum_debug.rlendot = rpendulum.dlen;
         roll_pd.Tuning(rollpd_tuning.kp, rollpd_tuning.ki, rollpd_tuning.kd);
         pendulum_debug.motorL4error = RJoint4.motorFeedback.ERR;
         pendulum_debug.state = chassis_state;
