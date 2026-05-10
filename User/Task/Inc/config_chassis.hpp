@@ -60,13 +60,13 @@ namespace chassis
 constexpr float L1 = 0.220f;
 constexpr float L2 = 0.260f;
 constexpr float Lnormal = 0.16f;
-constexpr float Lmin = 0.16f;
+constexpr float Lmin = 0.15f;
 constexpr float Lmid = 0.24f;
-constexpr float Lmax = 0.36f;
+constexpr float Lmax = 0.33f;
 constexpr float Lqr_len_resolution = 0.01f;
 constexpr float Lswitch = 0.21f;
 
-constexpr float Rwheel = 0.06f;
+constexpr float Rwheel = 0.075f;
 constexpr float Mwheel = 0.21f;
 constexpr float Dwheel = 0.43f;
 constexpr float Mbody = 14.0f;
@@ -97,7 +97,7 @@ constexpr uint8_t rjoint4_id = 0x03;
 constexpr uint16_t lwheel_id = 0x202;
 constexpr uint16_t rwheel_id = 0x201;
 
-constexpr float yaw_offset1 = 0.40389235f;
-constexpr float yaw_offset2 = -2.7377723f;
+constexpr float yaw_offset1 = -0.9702433935f;
+constexpr float yaw_offset2 = 2.1836215575f;
 
 };

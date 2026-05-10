@@ -110,7 +110,7 @@ struct pid_tuning_t
 };
 msg_ins_t debug_ins;
 pendulum_debug_t pendulum_debug;
-pid_tuning_t lenpd_tuning = {2000.0f, 0.0f, -1000.0f};
+pid_tuning_t lenpd_tuning = {2400.0f, 0.0f, -700.0f};
 pid_tuning_t rollpd_tuning = {0.5f, 0.00f, 0.0f};
 DMMotorHandler *dmmotorhandler = DMMotorHandler::Instance();
 #endif
@@ -128,32 +128,32 @@ DMMotorHandler *dmmotorhandler = DMMotorHandler::Instance();
     DM8009P LJoint4;
     DM8009P LJoint1;
 
-    DJIMotorHandler::Instance()->registerMotor(&LWheel, &hfdcan2, 0x202);
+    DJIMotorHandler::Instance()->registerMotor(&LWheel, &hfdcan2, 0x201);
     LWheel.currentSet = 0;
     LWheel.gearBox = GearBox_XRoll;
-    DJIMotorHandler::Instance()->registerMotor(&RWheel, &hfdcan2, 0x201);
+    DJIMotorHandler::Instance()->registerMotor(&RWheel, &hfdcan2, 0x202);
     RWheel.currentSet = 0;
     RWheel.gearBox = GearBox_XRoll;
 
-    DMMotorHandler::Instance()->registerMotor(&LJoint4, &hfdcan1, 0x02);
+    DMMotorHandler::Instance()->registerMotor(&LJoint4, &hfdcan1, 0x03);
     LJoint4.controlMode = DMMotor::MIT_MODE;
     LJoint4.canType = DMMotor::DM_FDCAN;
     LJoint4.torqueSet = 0;
     DMMotorHandler::Instance()->EnableMotor_Block(&LJoint4);
 
-    DMMotorHandler::Instance()->registerMotor(&LJoint1, &hfdcan1, 0x01);
+    DMMotorHandler::Instance()->registerMotor(&LJoint1, &hfdcan1, 0x02);
     LJoint1.controlMode = DMMotor::MIT_MODE;
     LJoint1.canType = DMMotor::DM_FDCAN;
     LJoint1.torqueSet = 0;
     DMMotorHandler::Instance()->EnableMotor_Block(&LJoint1);
 
-    DMMotorHandler::Instance()->registerMotor(&RJoint4, &hfdcan1, 0x03);
+    DMMotorHandler::Instance()->registerMotor(&RJoint4, &hfdcan1, 0x04);
     RJoint4.controlMode = DMMotor::MIT_MODE;
     RJoint4.canType = DMMotor::DM_FDCAN;
     RJoint4.torqueSet = 0;
     DMMotorHandler::Instance()->EnableMotor_Block(&RJoint4);
 
-    DMMotorHandler::Instance()->registerMotor(&RJoint1, &hfdcan1, 0x04);
+    DMMotorHandler::Instance()->registerMotor(&RJoint1, &hfdcan1, 0x01);
     RJoint1.controlMode = DMMotor::MIT_MODE;
     RJoint1.canType = DMMotor::DM_FDCAN;
     RJoint1.torqueSet = 0;
