@@ -110,7 +110,7 @@ struct pid_tuning_t
 };
 msg_ins_t debug_ins;
 pendulum_debug_t pendulum_debug;
-pid_tuning_t lenpd_tuning = {2000.0f, 0.0f, -1000.0f};
+pid_tuning_t lenpd_tuning = {2400.0f, 0.0f, -600.0f};
 pid_tuning_t rollpd_tuning = {0.5f, 0.00f, 0.0f};
 DMMotorHandler *dmmotorhandler = DMMotorHandler::Instance();
 #endif
@@ -202,10 +202,10 @@ DMMotorHandler *dmmotorhandler = DMMotorHandler::Instance();
     uint32_t recover_cnt = 0, jumpair_cnt = 0;
     uint8_t check_cnt = 0;
     uint32_t dead_cnt = 0, alive_cnt = 0;
-    uint32_t airprotect_cnt = 0, flipover_cnt = 0;
+    uint32_t airprotect_cnt = 0, flipover_cnt = 0, landing_cnt = 0;
 
     /* flags */
-    bool offground = false, landing = false;
+    bool offground = false, landing = false, just_offground = false;
     bool pre_stair = false, first_jump = false, going_stair = false;
 
     /* helper */
@@ -378,7 +378,7 @@ DMMotorHandler *dmmotorhandler = DMMotorHandler::Instance();
 
         case FLATTEN:
         {
-            
+            pendulum_data.normal = true;
             pendulum_data.recovered = true;
             if (lpendulum.flat) 
             {
@@ -517,7 +517,19 @@ DMMotorHandler *dmmotorhandler = DMMotorHandler::Instance();
             if (airprotect_cnt < 500)
                 pendulum_data.normal = false;
             else
+            {
                 pendulum_data.normal = true;
+                if (just_offground)
+                {
+                    if (airprotect_cnt>2000)
+                    {
+                        just_offground = false;
+                        pendulum_data.ifresetlen = true;
+                        pendulum_data.reset_len = Lmin;
+                    }
+                }
+            }
+                
             offground = (N<0.0f) && (lpendulum.dlen > 0.05f) && (rpendulum.dlen > 0.05f) && (airprotect_cnt>500);
             if (offground) 
             {
@@ -543,25 +555,27 @@ DMMotorHandler *dmmotorhandler = DMMotorHandler::Instance();
             refX[1] = observedX[1];
             refX[2] = observedX[2];
             refX[3] = observedX[3];
-            refX[4] = lpendulum.alpha_eq+pitch;
+            refX[4] = pitch;
             refX[5] = 0.0f;
-            refX[6] = rpendulum.alpha_eq+pitch;
+            refX[6] = pitch;
             refX[7] = 0.0f;
-            refX[8] = 0.0f;
-            refX[9] = 0.0f;            
+            refX[8] = observedX[8];
+            refX[9] = observedX[9];            
             lqr.lqr_type = LQR_LOW;
             lqr.Update(lpendulum.len, rpendulum.len);
 
             Twl = 0.0f;
             Twr = 0.0f;
-            Fl[1] = lqr.Tout[2];
-            Fr[1] = lqr.Tout[3];
-            Fl[0] = 0.0f;//lpendulum.LenControl(Lmax);
-            Fr[0] = 0.0f;//rpendulum.LenControl(Lmax);
+            Fl[1] = lqr.Tout[2]*0.4f;
+            Fr[1] = lqr.Tout[3]*0.4f;
+            Fl[0] = lpendulum.LenControl(Lmax); //0.0f;
+            Fr[0] = rpendulum.LenControl(Lmax); //0.0f;
             lpendulum.TorqueControl(Fl, Twl);
             rpendulum.TorqueControl(Fr, Twr);
 
-            landing = (N>50.0f) && (lpendulum.dlen < -0.05f) && (rpendulum.dlen < -0.05f);
+            landing_cnt++;
+
+            landing = (lpendulum.dlen < -0.05f) && (rpendulum.dlen < -0.05f) && landing_cnt > 100;
 
             if (lpendulum.alpha >= 0.8f || rpendulum.alpha >= 0.8f)
             {
@@ -573,9 +587,9 @@ DMMotorHandler *dmmotorhandler = DMMotorHandler::Instance();
 
             if (landing) 
             {
-                pendulum_data.ifresetlen = true;
-                pendulum_data.reset_len = 0.18f;
+                landing_cnt = 0;
                 airprotect_cnt = 0;
+                just_offground = true;
                 chassis_state = NORMAL;
             }
             break;

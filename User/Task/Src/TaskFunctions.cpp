@@ -190,13 +190,6 @@ SuperCap* debug_supercap = SuperCap::Instance();
             yaw_motor.currentSet = 0;
             trigger_motor.speedSet = 0.0f;
         }
-        // else if (!pendulum_data.recovered)
-        // {
-        //     yaw_init = false;
-        //     chassis_msg.inited = false;
-        //     yaw_motor.currentSet = 0;
-        //     trigger_motor.speedSet = 0.0f;
-        // }
         else if (!yaw_init)
         {
             yaw_motor.currentSet = (((yaw_motor.motorFeedback.positionFdb - yaw_offset1) > 0.0f) ? -1 : 1)*20000;
@@ -333,7 +326,7 @@ SuperCap* debug_supercap = SuperCap::Instance();
             }
         }
 
-        if (fabsf(cmd.v) < 0.005f)
+        if ((fabsf(cmd.v) < 0.005f) && (fabsf(cmd.v-pendulum_data.v) < 0.5f))
         {
             if (!maintained_x)
             {
