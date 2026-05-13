@@ -303,11 +303,12 @@ SuperCap* debug_supercap = SuperCap::Instance();
                     }
                 }
                 cmd.roll = 0.0f;
-                if (front_offset == yaw_offset2)
-                {
-                    cmd.v *= -1.0f;
-                }
             }
+        }
+
+        if (front_offset == yaw_offset2)
+        {
+            cmd.v *= -1.0f;
         }
 
         if ((fabsf(cmd.v) < 0.005f) && (fabsf(cmd.v-pendulum_data.v) < 0.5f))

@@ -209,7 +209,7 @@ DMMotorHandler *dmmotorhandler = DMMotorHandler::Instance();
     uint32_t airprotect_cnt = 0, flipover_cnt = 0, landing_cnt = 0;
 
     /* flags */
-    bool offground = false, landing = false;
+    bool offground = false, landing = false, just_offground = false;
     bool pre_stair = false, first_jump = false, going_stair = false;
 
     /* helper */
@@ -438,8 +438,16 @@ DMMotorHandler *dmmotorhandler = DMMotorHandler::Instance();
             Fr[0] = rpendulum.LenControl(rpendulum.len+(Lmin-rpendulum.len)*0.6f)-rpendulum.Fs;
             Fl[1] = lpendulum.PhiControl(PI*0.5f, 25.0f, 10.0f, 0.003f, false);
             Fr[1] = rpendulum.PhiControl(PI*0.5f, 25.0f, 10.0f, 0.003f, false);
-            Twl = 0.0f;
-            Twr = 0.0f;
+            if (cmd.v > 0.005f)
+            {
+                Twl = 1.5f;
+                Twr = 1.5f;
+            }
+            else if (cmd.v < -0.005f)
+            {
+                Twl = -1.5f;
+                Twr = -1.5f;
+            }
 
             lpendulum.TorqueControl(Fl, Twl);
             rpendulum.TorqueControl(Fr, Twr);
@@ -513,7 +521,7 @@ DMMotorHandler *dmmotorhandler = DMMotorHandler::Instance();
             if (going_stair)
             {
                 target_len = chassis::Lmax;
-                len_slope.SetPath(0.0003f);
+                len_slope.SetPath(0.0002f);
                 if ((lpendulum.alpha-lpendulum.alpha_eq>0.2f) && (rpendulum.alpha-rpendulum.alpha_eq>0.2f))
                 {
                     lpendulum.delta_init = false;
@@ -544,8 +552,9 @@ DMMotorHandler *dmmotorhandler = DMMotorHandler::Instance();
             else
             {
                 pendulum_data.normal = true;
-                if (airprotect_cnt>2000)
+                if (just_offground && airprotect_cnt>2000)
                 {
+                    just_offground = false;
                     len_slope.SetPath(0.005f);
                 }
             }
@@ -588,14 +597,14 @@ DMMotorHandler *dmmotorhandler = DMMotorHandler::Instance();
             Twr = 0.0f;
             Fl[1] = lqr.Tout[2]*0.4f;
             Fr[1] = lqr.Tout[3]*0.4f;
-            Fl[0] = lpendulum.LenControl(Lmax); //0.0f;
-            Fr[0] = rpendulum.LenControl(Lmax); //0.0f;
+            Fl[0] = 0.0f;
+            Fr[0] = 0.0f;
             lpendulum.TorqueControl(Fl, Twl);
             rpendulum.TorqueControl(Fr, Twr);
 
             landing_cnt++;
 
-            landing = (lpendulum.dlen < -0.05f) && (rpendulum.dlen < -0.05f) && landing_cnt > 100;
+            landing = (lpendulum.dlen < -0.05f) && (rpendulum.dlen < -0.05f);
 
             if (lpendulum.alpha >= 0.8f || rpendulum.alpha >= 0.8f)
             {
@@ -610,6 +619,7 @@ DMMotorHandler *dmmotorhandler = DMMotorHandler::Instance();
                 landing_cnt = 0;
                 airprotect_cnt = 0;
                 chassis_state = NORMAL;
+                just_offground = true;
                 target_len = chassis::Lmin;
                 len_slope.SetDefault(lpendulum.len);
                 len_slope.SetPath(0.0008f);
