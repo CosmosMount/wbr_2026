@@ -65,13 +65,11 @@ SuperCap* debug_supercap = SuperCap::Instance();
     float yaw_maintain;
     bool maintained_yaw = false;
     bool pre_stair = false;
-    float target_len;
 
     /* Slope Updaters */
     SLOPE yaw_updater(0.0f, 0.006f);
     SLOPE vx_updater(0.0f,0.006f);
     SLOPE vy_updater(0.0f,0.006f);
-    SLOPE len_updater(0.15f, 0.005f);
 
     /* om publishers */
     om_topic_t *cmd_topic = om_config_topic(nullptr, "ca", "cmd", sizeof(msg_cmd_t));
@@ -216,8 +214,7 @@ SuperCap* debug_supercap = SuperCap::Instance();
             cmd.v = 0.0f;
             cmd.x = 0.0f;
             maintained_x = 0.0f; 
-            cmd.len = chassis::Lnormal;
-            target_len = chassis::Lnormal;
+            cmd.dlen = 0.0f;
             cmd.dyaw = 0.0f;
             cmd.move = false;
         }
@@ -226,8 +223,7 @@ SuperCap* debug_supercap = SuperCap::Instance();
             cmd.v = 0.0f;
             cmd.x = 0.0f;
             maintained_x = 0.0f; 
-            cmd.len = chassis::Lnormal;
-            target_len = chassis::Lnormal;
+            cmd.dlen = 0.0f;
             cmd.dyaw = 0.0f;
             cmd.move = false;
         }
@@ -236,8 +232,7 @@ SuperCap* debug_supercap = SuperCap::Instance();
             cmd.v = 0.0f;
             cmd.x = 0.0f;
             maintained_x = 0.0f; 
-            cmd.len = chassis::Lnormal;
-            target_len = chassis::Lnormal;
+            cmd.dlen = 0.0f;
             cmd.dyaw = 0.0f;
             cmd.move = true;
         }
@@ -246,8 +241,7 @@ SuperCap* debug_supercap = SuperCap::Instance();
             cmd.v = 0.0f;
             cmd.x = 0.0f;
             maintained_x = 0.0f; 
-            cmd.len = chassis::Lnormal;
-            target_len = chassis::Lnormal;
+            cmd.dlen = 0.0f;
             cmd.dyaw = 0.0f;
             cmd.move = false;
         }
@@ -255,18 +249,8 @@ SuperCap* debug_supercap = SuperCap::Instance();
         {
             cmd.move = true;
 
-            if (pendulum_data.ifresetlen)
-            {
-                target_len = pendulum_data.reset_len;
-                len_updater.SetDefault(pendulum_data.len);
-            }
-            else 
-            {
-                target_len += cmd_msg->dlen * 0.1f * 0.0008f;
-                target_len = FloatConstrain(target_len, chassis::Lmin, chassis::Lmax);
-                cmd.len = len_updater.UpdateVal(target_len);
-            }
-            
+            cmd.dlen = cmd_msg->dlen * 0.1f;
+
             cmd.spin = false;
             cmd.inair = false;
             cmd.gostair = false;
