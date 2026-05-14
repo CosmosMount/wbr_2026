@@ -147,13 +147,13 @@ DMMotorHandler *dmmotorhandler = DMMotorHandler::Instance();
     LJoint1.torqueSet = 0;
     DMMotorHandler::Instance()->EnableMotor_Block(&LJoint1);
 
-    DMMotorHandler::Instance()->registerMotor(&RJoint4, &hfdcan1, 0x03);
+    DMMotorHandler::Instance()->registerMotor(&RJoint4, &hfdcan1, 0x04);
     RJoint4.controlMode = DMMotor::MIT_MODE;
     RJoint4.canType = DMMotor::DM_FDCAN;
     RJoint4.torqueSet = 0;
     DMMotorHandler::Instance()->EnableMotor_Block(&RJoint4);
 
-    DMMotorHandler::Instance()->registerMotor(&RJoint1, &hfdcan1, 0x04);
+    DMMotorHandler::Instance()->registerMotor(&RJoint1, &hfdcan1, 0x03);
     RJoint1.controlMode = DMMotor::MIT_MODE;
     RJoint1.canType = DMMotor::DM_FDCAN;
     RJoint1.torqueSet = 0;
@@ -210,7 +210,7 @@ DMMotorHandler *dmmotorhandler = DMMotorHandler::Instance();
 
     /* flags */
     bool offground = false, landing = false, just_offground = false;
-    bool pre_stair = false, first_jump = false, going_stair = false;
+    bool pre_stair = false, first_jump = false, going_stair = false, flying = false;
 
     /* helper */
     float maintain_yaw = 0.0f;
@@ -546,6 +546,13 @@ DMMotorHandler *dmmotorhandler = DMMotorHandler::Instance();
                 chassis_state = SPIN;
             }
 
+            if (cmd.iffly)
+            {
+                flying = true;
+                target_len = Lfly;
+                len_slope.SetPath(0.0005f);
+            }
+
             airprotect_cnt ++;
             if (airprotect_cnt < 500)
                 pendulum_data.normal = false;
@@ -604,7 +611,10 @@ DMMotorHandler *dmmotorhandler = DMMotorHandler::Instance();
 
             landing_cnt++;
 
-            landing = (lpendulum.dlen < -0.05f) && (rpendulum.dlen < -0.05f);
+            if (flying)
+                landing = (lpendulum.dlen < -0.05f) && (rpendulum.dlen < -0.05f) && (landing_cnt>100);
+            else
+                landing = (lpendulum.dlen < -0.03f) && (rpendulum.dlen < -0.03f);
 
             if (lpendulum.alpha >= 0.8f || rpendulum.alpha >= 0.8f)
             {
@@ -623,6 +633,7 @@ DMMotorHandler *dmmotorhandler = DMMotorHandler::Instance();
                 target_len = chassis::Lmin;
                 len_slope.SetDefault(lpendulum.len);
                 len_slope.SetPath(0.0008f);
+                flying = false;
             }
             break;
         }

@@ -136,7 +136,7 @@ SuperCap* debug_supercap = SuperCap::Instance();
 
         comm_cmd_t *cmd_msg = reinterpret_cast<comm_cmd_t*>(CmdMsg);
         cmd_msg_debug = cmd_msg;
-        if (cmd_msg->ifmove && cmd_msg->yaw_cur == prev_yaw_cur)
+        if (cmd_msg->yaw_cur == prev_yaw_cur)
         {
             comm_lost_cnt++;
             if (comm_lost_cnt > 100)
@@ -253,13 +253,10 @@ SuperCap* debug_supercap = SuperCap::Instance();
 
             cmd.spin = false;
             cmd.inair = false;
+            cmd.iffly = false;
             cmd.gostair = false;
 
-            if (cmd_msg->ifstair)
-            {
-                cmd.gostair = true;
-            }
-            else if (cmd_msg->ifspin)
+            if (cmd_msg->ifspin)
             {
                 lock_offset = true;
                 cmd.spin = true;
@@ -278,6 +275,14 @@ SuperCap* debug_supercap = SuperCap::Instance();
             }
             else 
             {
+                if (cmd_msg->ifstair)
+                {
+                    cmd.gostair = true;
+                }
+                if (cmd_msg->iffly)
+                {
+                    cmd.iffly = true;
+                }
                 if (fabs(yaw_updater.GetVal()) > 1.0f)
                 {
                     maintained_x = false;
