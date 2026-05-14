@@ -209,11 +209,21 @@ SuperCap* debug_supercap = SuperCap::Instance();
 
         cmd.roll = 0.0f;
 
-        if (isnan(cmd_msg->dlen) || isnan(cmd_msg->vx) || isnan(cmd_msg->vy) || comm_lost)
+        float len_target = Lmin;
+        int8_t len_level = cmd_msg->len_level;
+        if (len_level <= 0)
+            len_target = Lmin;
+        else if (len_level == 1)
+            len_target = Lmid;
+        else
+            len_target = Lmax;
+
+        if (isnan(cmd_msg->vx) || isnan(cmd_msg->vy) || comm_lost)
         {
             cmd.v = 0.0f;
             cmd.x = 0.0f;
             maintained_x = 0.0f; 
+            cmd.len = Lmin;
             cmd.dlen = 0.0f;
             cmd.dyaw = 0.0f;
             cmd.move = false;
@@ -223,6 +233,7 @@ SuperCap* debug_supercap = SuperCap::Instance();
             cmd.v = 0.0f;
             cmd.x = 0.0f;
             maintained_x = 0.0f; 
+            cmd.len = Lmin;
             cmd.dlen = 0.0f;
             cmd.dyaw = 0.0f;
             cmd.move = false;
@@ -232,6 +243,7 @@ SuperCap* debug_supercap = SuperCap::Instance();
             cmd.v = 0.0f;
             cmd.x = 0.0f;
             maintained_x = 0.0f; 
+            cmd.len = Lmin;
             cmd.dlen = 0.0f;
             cmd.dyaw = 0.0f;
             cmd.move = true;
@@ -241,6 +253,7 @@ SuperCap* debug_supercap = SuperCap::Instance();
             cmd.v = 0.0f;
             cmd.x = 0.0f;
             maintained_x = 0.0f; 
+            cmd.len = Lmin;
             cmd.dlen = 0.0f;
             cmd.dyaw = 0.0f;
             cmd.move = false;
@@ -248,8 +261,8 @@ SuperCap* debug_supercap = SuperCap::Instance();
         else
         {
             cmd.move = true;
-
-            cmd.dlen = cmd_msg->dlen * 0.1f;
+            cmd.len = len_target;
+            cmd.dlen = 0.0f;
 
             cmd.spin = false;
             cmd.inair = false;

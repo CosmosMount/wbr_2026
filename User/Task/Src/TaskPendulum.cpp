@@ -110,7 +110,7 @@ struct pid_tuning_t
 };
 msg_ins_t debug_ins;
 pendulum_debug_t pendulum_debug;
-pid_tuning_t lenpd_tuning = {2400.0f, 0.0f, -600.0f};
+pid_tuning_t lenpd_tuning = {2000.0f, 0.0f, -400.0f};
 pid_tuning_t rollpd_tuning = {0.5f, 0.00f, 0.0f};
 DMMotorHandler *dmmotorhandler = DMMotorHandler::Instance();
 #endif
@@ -175,7 +175,7 @@ DMMotorHandler *dmmotorhandler = DMMotorHandler::Instance();
     msg_pendulum_t pendulum_data{};
 
     /* leg length control */
-    SLOPE len_slope(chassis::Lmin, 0.005f);
+    SLOPE len_slope(chassis::Lmin, 0.0002f);
     float target_len = chassis::Lmin;
     float cmd_len = chassis::Lmin;
 
@@ -479,7 +479,7 @@ DMMotorHandler *dmmotorhandler = DMMotorHandler::Instance();
 
             if ((lpendulum.len+rpendulum.len)*0.5f > Lswitch)
             {
-                lqr.lqr_type = LQR_HIGH;
+                lqr.lqr_type = LQR_LOW;
                 lqr.Update(lpendulum.len, rpendulum.len);
             }
             else
@@ -504,16 +504,6 @@ DMMotorHandler *dmmotorhandler = DMMotorHandler::Instance();
             roll_pd.fdb = ins.roll*DegreeToRad;
             roll_pd.UpdateResult(ins.gyro_r);
 
-            target_len += cmd.dlen * 0.0008f;
-            target_len = FloatConstrain(target_len, chassis::Lmin, chassis::Lmax);
-            cmd_len = len_slope.UpdateVal(target_len);
-
-            Fl[0] = lpendulum.LenControl(cmd_len+roll_pd.result) + Gff - lpendulum.Fs;
-            Fr[0] = rpendulum.LenControl(cmd_len-roll_pd.result) + Gff - rpendulum.Fs;
-
-            lpendulum.TorqueControl(Fl, Twl);
-            rpendulum.TorqueControl(Fr, Twr);
-
             if (cmd.gostair && !pre_stair)
             {
                 going_stair = true;
@@ -529,7 +519,6 @@ DMMotorHandler *dmmotorhandler = DMMotorHandler::Instance();
                     chassis_state = GOSTAIR;
                     going_stair = false;
                     airprotect_cnt = 0;
-                    len_slope.SetPath(0.005f);
                 }
             }
             pre_stair = cmd.gostair;
@@ -550,8 +539,20 @@ DMMotorHandler *dmmotorhandler = DMMotorHandler::Instance();
             {
                 flying = true;
                 target_len = Lfly;
-                len_slope.SetPath(0.0005f);
             }
+
+            if (!going_stair && !flying)
+            {
+                target_len = FloatConstrain(cmd.len, chassis::Lmin, chassis::Lmax);
+            }
+
+            cmd_len = len_slope.UpdateVal(target_len);
+
+            Fl[0] = lpendulum.LenControl(cmd_len+roll_pd.result) + Gff - lpendulum.Fs;
+            Fr[0] = rpendulum.LenControl(cmd_len-roll_pd.result) + Gff - rpendulum.Fs;
+
+            lpendulum.TorqueControl(Fl, Twl);
+            rpendulum.TorqueControl(Fr, Twr);
 
             airprotect_cnt ++;
             if (airprotect_cnt < 500)
@@ -562,7 +563,6 @@ DMMotorHandler *dmmotorhandler = DMMotorHandler::Instance();
                 if (just_offground && airprotect_cnt>2000)
                 {
                     just_offground = false;
-                    len_slope.SetPath(0.005f);
                 }
             }
                 
