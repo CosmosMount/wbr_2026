@@ -479,7 +479,7 @@ DMMotorHandler *dmmotorhandler = DMMotorHandler::Instance();
 
             if ((lpendulum.len+rpendulum.len)*0.5f > Lswitch)
             {
-                lqr.lqr_type = LQR_LOW;
+                lqr.lqr_type = LQR_HIGH;
                 lqr.Update(lpendulum.len, rpendulum.len);
             }
             else
@@ -511,7 +511,6 @@ DMMotorHandler *dmmotorhandler = DMMotorHandler::Instance();
             if (going_stair)
             {
                 target_len = chassis::Lmax;
-                len_slope.SetPath(0.0002f);
                 if ((lpendulum.alpha-lpendulum.alpha_eq>0.2f) && (rpendulum.alpha-rpendulum.alpha_eq>0.2f))
                 {
                     lpendulum.delta_init = false;
@@ -523,11 +522,13 @@ DMMotorHandler *dmmotorhandler = DMMotorHandler::Instance();
             }
             pre_stair = cmd.gostair;
 
-            if (cmd.prejump) 
+            if (cmd.ifjump) 
             { 
                 chassis_state = JUMP; 
-                jump_stage = START;
+                jump_stage = EXTENDING;
                 jumpair_cnt = 0;
+                airprotect_cnt = 0;
+                maintain_yaw = yaw;
             }
 
             if (cmd.spin)
@@ -560,10 +561,7 @@ DMMotorHandler *dmmotorhandler = DMMotorHandler::Instance();
             else
             {
                 pendulum_data.normal = true;
-                if (just_offground && airprotect_cnt>2000)
-                {
-                    just_offground = false;
-                }
+                len_slope.SetPath(0.0002f);
             }
                 
             offground = (N<0.0f) && (lpendulum.dlen > 0.05f) && (rpendulum.dlen > 0.05f) && (airprotect_cnt>500);
@@ -699,205 +697,122 @@ DMMotorHandler *dmmotorhandler = DMMotorHandler::Instance();
 
         case JUMP:
         {
-
             switch (jump_stage) 
             {
-            case DONT:
-            {
-                chassis_state = NORMAL;
-                break;
-            }
-
-            case START:
-            {
-                first_jump = true;
-
-                /* [x, dx, yaw, dyaw, alphal, dalphal, alphar, dalphar, theta, dtheta] */
-                refX[0] = cmd.x;
-                refX[1] = cmd.v;
-                refX[2] = cmd.yaw;
-                refX[3] = cmd.dyaw;
-                refX[4] = lpendulum.alpha_eq;
-                refX[5] = 0.0f;
-                refX[6] = rpendulum.alpha_eq;
-                refX[7] = 0.0f;
-                refX[8] = 0.0f;
-                refX[9] = 0.0f;
-
-                lqr.lqr_type = LQR_LOW;
-                lqr.Update(lpendulum.len, rpendulum.len);
-
-                Twl = lqr.Tout[0];
-                Twr = lqr.Tout[1];
-                Fl[1] = lqr.Tout[2];
-                Fr[1] = lqr.Tout[3];
-
-                roll_pd.ref = 0.0f;
-                roll_pd.fdb = ins.roll*DegreeToRad;
-                roll_pd.UpdateResult(ins.gyro_r);
-
-                Fl[0] = lpendulum.LenControl(Lmin+roll_pd.result);
-                Fr[0] = rpendulum.LenControl(Lmin-roll_pd.result);
-
-                if (cmd.ifjump)
+                case DONT:
                 {
-                    jump_stage = EXTENDING;
+                    chassis_state = NORMAL;
+                    break;
                 }
 
-                break;
-            }
-
-            case EXTENDING:
-            {
-                if (first_jump)
-                    maintain_yaw = yaw;
-
-                refX[0] = observedX[0];
-                refX[1] = observedX[1];
-                refX[2] = maintain_yaw;
-                refX[3] = 0.0f;
-                refX[4] = lpendulum.alpha_eq;
-                refX[5] = 0.0f;
-                refX[6] = rpendulum.alpha_eq;
-                refX[7] = 0.0f;
-                refX[8] = 0.0f;
-                refX[9] = 0.0f;
-
-                lqr.lqr_type = LQR_LOW;
-                lqr.Update(lpendulum.len, rpendulum.len);
-
-                Twl = lqr.Tout[0];
-                Twr = lqr.Tout[1];
-                Fl[1] = lqr.Tout[2];
-                Fr[1] = lqr.Tout[3];
-                Fl[0] = 300.0f;
-                Fr[0] = 300.0f;
-
-                if (lpendulum.len>=0.29f && rpendulum.len>=0.29f)
+                case EXTENDING:
                 {
-                    jumpair_cnt = 0;
-                    jump_stage = INAIR;
+                    refX[0] = 0.0f;
+                    refX[1] = 0.0f;
+                    refX[2] = maintain_yaw;
+                    refX[3] = 0.0f;
+                    refX[4] = lpendulum.alpha_eq;
+                    refX[5] = 0.0f;
+                    refX[6] = rpendulum.alpha_eq;
+                    refX[7] = 0.0f;
+                    refX[8] = 0.0f;
+                    refX[9] = 0.0f;
+
+                    lqr.lqr_type = LQR_LOW;
+                    lqr.Update(lpendulum.len, rpendulum.len);
+
+                    Twl = lqr.Tout[0];
+                    Twr = lqr.Tout[1];
+                    Fl[1] = lqr.Tout[2];
+                    Fr[1] = lqr.Tout[3];
+                    Fl[0] = 700.0f;
+                    Fr[0] = 700.0f;
+
+                    if (lpendulum.len>=0.32f && rpendulum.len>=0.32f)
+                    {
+                        jumpair_cnt = 0;
+                        jump_stage = INAIR;
+                    }
+
+                    break;
                 }
 
-                break;
-            }
-
-            case INAIR:
-            {
-                // odom.Reset();
-
-                jumpair_cnt++;
-
-                refX[0] = observedX[0];
-                refX[1] = observedX[1];
-                refX[2] = observedX[2];
-                refX[3] = observedX[3];
-                refX[4] = pitch;
-                refX[5] = 0.0f;
-                refX[6] = pitch;
-                refX[7] = 0.0f;
-                refX[8] = observedX[8];
-                refX[9] = observedX[9];
-                lqr.lqr_type = LQR_LOW;
-                lqr.Update(lpendulum.len, rpendulum.len);
-
-                Twl = 0.0f;
-                Twr = 0.0f;
-                Fl[1] = lqr.Tout[2];
-                Fr[1] = lqr.Tout[3];
-                Fl[0] = lpendulum.LenControl(Lmin);
-                Fr[0] = rpendulum.LenControl(Lmin);
-                lpendulum.TorqueControl(Fl, Twl);
-                rpendulum.TorqueControl(Fr, Twr);
-
-                if (jumpair_cnt > 150)
+                case INAIR:
                 {
-                    jump_stage = LANDING;
+                    odom.Reset();
+
+                    jumpair_cnt++;
+
+                    refX[0] = observedX[0];
+                    refX[1] = observedX[1];
+                    refX[2] = observedX[2];
+                    refX[3] = observedX[3];
+                    refX[4] = 0.0f;
+                    refX[5] = 0.0f;
+                    refX[6] = 0.0f;
+                    refX[7] = 0.0f;
+                    refX[8] = 0.0f;
+                    refX[9] = 0.0f;            
+                    lqr.lqr_type = LQR_LOW;
+                    lqr.Update(lpendulum.len, rpendulum.len);
+
+                    Twl = 0.0f;
+                    Twr = 0.0f;
+                    Fl[1] = lqr.Tout[2]*0.4f;
+                    Fr[1] = lqr.Tout[3]*0.4f;
+                    Fl[0] = lpendulum.LenControl(Lmin)-lpendulum.Fs;
+                    Fr[0] = rpendulum.LenControl(Lmin)-rpendulum.Fs;
+
+                    if (jumpair_cnt > 1200)
+                    {
+                        target_len = chassis::Lmin;
+                        len_slope.SetDefault(lpendulum.len);
+                        chassis_state = OFFGROUND;
+                        jump_stage = DONT;
+                    }
+
+                    break;
                 }
 
-                break;
+                // case LANDING:
+                // {
+
+                //     odom.Reset();
+
+                //     refX[0] = observedX[0];
+                //     refX[1] = observedX[1];
+                //     refX[2] = observedX[2];
+                //     refX[3] = observedX[3];
+                //     refX[4] = pitch;
+                //     refX[5] = 0.0f;
+                //     refX[6] = pitch;
+                //     refX[7] = 0.0f;
+                //     refX[8] = observedX[8];
+                //     refX[9] = observedX[9];
+                //     lqr.lqr_type = LQR_LOW;
+                //     lqr.Update(lpendulum.len, rpendulum.len);
+
+                //     Twl = 0.0f;
+                //     Twr = 0.0f;
+                //     Fl[1] = lqr.Tout[2]*0.4f;
+                //     Fr[1] = lqr.Tout[3]*0.4f;
+                //     Fl[0] = lpendulum.LenControl(Lmin) + Gff - lpendulum.Fs;
+                //     Fr[0] = rpendulum.LenControl(Lmin) + Gff - rpendulum.Fs;
+
+                //     if (ins.accel[2] > 40.0f)
+                //     {
+                //         target_len = chassis::Lmin;
+                //         len_slope.SetDefault(lpendulum.len);
+                //         chassis_state = NORMAL;
+                //         jump_stage = DONT;
+                //     }
+                //     break;
+                // }
+
+                default:
+                    break;
             }
 
-            case LANDING:
-            {
-
-                // odom.Reset();
-
-                refX[0] = observedX[0];
-                refX[1] = observedX[1];
-                refX[2] = observedX[2];
-                refX[3] = observedX[3];
-                refX[4] = pitch;
-                refX[5] = 0.0f;
-                refX[6] = pitch;
-                refX[7] = 0.0f;
-                refX[8] = observedX[8];
-                refX[9] = observedX[9];
-                lqr.lqr_type = LQR_LOW;
-                lqr.Update(lpendulum.len, rpendulum.len);
-
-                Twl = 0.0f;
-                Twr = 0.0f;
-                Fl[1] = lqr.Tout[2];
-                Fr[1] = lqr.Tout[3];
-                Fl[0] = lpendulum.LenControl(Lmin);
-                Fr[0] = rpendulum.LenControl(Lmin);
-                lpendulum.TorqueControl(Fl, Twl);
-                rpendulum.TorqueControl(Fr, Twr);
-
-                if (ins.accel[2] > 40.0f)
-                {
-                    target_len = chassis::Lmin;
-                    len_slope.SetDefault(lpendulum.len);
-                    jump_stage = BACK;
-                }
-                break;
-            }
-
-            case BACK:
-            {
-                /* [x, dx, yaw, dyaw, alphal, dalphal, alphar, dalphar, theta, dtheta] */
-                refX[0] = observedX[0]+0.0015f;
-                refX[1] = observedX[1]+0.15f;
-                refX[2] = maintain_yaw;
-                refX[3] = 0.0f;
-                refX[4] = lpendulum.alpha_eq;
-                refX[5] = 0.0f;
-                refX[6] = rpendulum.alpha_eq;
-                refX[7] = 0.0f;
-                refX[8] = 0.0f;
-                refX[9] = 0.0f;
-
-                lqr.lqr_type = LQR_LOW;
-                lqr.Update(lpendulum.len, rpendulum.len);
-
-                Twl = lqr.Tout[0];
-                Twr = lqr.Tout[1];
-                Fl[1] = lqr.Tout[2];
-                Fr[1] = lqr.Tout[3];
-
-                roll_pd.ref = 0.0f;
-                roll_pd.fdb = ins.roll*DegreeToRad;
-                roll_pd.UpdateResult(ins.gyro_r);
-
-                Fl[0] = lpendulum.LenControl(Lmax+roll_pd.result);
-                Fr[0] = rpendulum.LenControl(Lmax-roll_pd.result);
-
-                lpendulum.TorqueControl(Fl, Twl);
-                rpendulum.TorqueControl(Fr, Twr);
-
-                // airland_cnt ++;
-                
-                if (first_jump)// && airland_cnt > 800)
-                {
-                    first_jump = false;
-                    chassis_state = GOSTAIR;
-                    // airland_cnt = 0;
-                }
-                break;
-            }
-
-            }
             lpendulum.TorqueControl(Fl, Twl);
             rpendulum.TorqueControl(Fr, Twr);
             break;

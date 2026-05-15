@@ -146,7 +146,6 @@ struct msg_cmd_t
     bool spin;
     bool gostair;
     bool inair;
-    bool prejump;
     bool ifjump;
 };
 

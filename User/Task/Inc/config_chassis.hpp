@@ -14,11 +14,9 @@
 typedef enum
 {
     DONT,
-    START,
     EXTENDING,
     INAIR,
-    LANDING,
-    BACK
+    LANDING
 } jump_stage_e;
 
 typedef enum

@@ -267,6 +267,7 @@ SuperCap* debug_supercap = SuperCap::Instance();
             cmd.spin = false;
             cmd.inair = false;
             cmd.iffly = false;
+            cmd.ifjump = false;
             cmd.gostair = false;
 
             if (cmd_msg->ifspin)
@@ -296,6 +297,10 @@ SuperCap* debug_supercap = SuperCap::Instance();
                 {
                     cmd.iffly = true;
                 }
+                if (cmd_msg->ifjump)
+                {
+                    cmd.ifjump = true;
+                }
                 if (fabs(yaw_updater.GetVal()) > 1.0f)
                 {
                     maintained_x = false;
@@ -307,7 +312,7 @@ SuperCap* debug_supercap = SuperCap::Instance();
                     if (fabs(cmd_msg->vx*0.1f) > 0.005f)
                     {
                         cmd.dyaw = -relative_angle*4.0f;
-                        cmd.v = vx_updater.UpdateVal(cmd_msg->vx*0.1f*2.5f);
+                        cmd.v = vx_updater.UpdateVal(cmd_msg->vx*0.1f*1.5f);
                     }
                     else if (fabs(cmd_msg->vy*0.1f) > 0.005f)
                     {
