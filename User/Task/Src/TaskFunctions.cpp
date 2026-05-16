@@ -31,7 +31,7 @@ TX_SEMAPHORE TOFGot;
 TX_SEMAPHORE FunctionThreadSem;
 
 extern uint8_t CmdMsg[8];
-__attribute__((section(".RAM_D1"))) uint8_t tof_rx[TOF_DATA_SIZE];
+extern uint8_t tof_rx[TOF_DATA_SIZE];
 
 extern TX_SEMAPHORE IMUThreadSem;
 
