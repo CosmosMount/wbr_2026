@@ -363,11 +363,27 @@ DMMotorHandler *dmmotorhandler = DMMotorHandler::Instance();
             {
                 Fl[1] = lpendulum.PhiControl(0, 20.0f, 10.0f, 0.005f, true);
                 Fr[1] = rpendulum.PhiControl(0, 20.0f, 10.0f, 0.005f, true);
+
+                const bool both_zero = (fabsf(lpendulum.phi) < 0.1f) && (fabsf(rpendulum.phi) < 0.1f);
+
+                if (both_zero)
+                {
+                    Fl[1] = -5.0f;
+                    Fr[1] = 5.0f;
+                }
             }
             else
             {
                 Fl[1] = lpendulum.PhiControl(PI, 20.0f, 10.0f, 0.005f, false);
                 Fr[1] = rpendulum.PhiControl(PI, 20.0f, 10.0f, 0.005f, false);
+
+                const bool both_pi = (fabsf(lpendulum.phi - PI) < 0.1f) && (fabsf(rpendulum.phi - PI) < 0.1f);
+
+                if (both_pi)
+                {
+                    Fl[1] = 5.0f;
+                    Fr[1] = -5.0f;
+                }
             }
 
             Fl[0] = 0.0f;
@@ -504,10 +520,19 @@ DMMotorHandler *dmmotorhandler = DMMotorHandler::Instance();
             roll_pd.fdb = ins.roll*DegreeToRad;
             roll_pd.UpdateResult(ins.gyro_r);
 
-            if (cmd.gostair && !pre_stair)
+            if (cmd.gostair)
             {
-                going_stair = true;
+                if (!going_stair)
+                {
+                    going_stair = true;
+                }
+                else
+                {
+                    target_len = chassis::Lmin;
+                    going_stair = false;
+                }
             }
+            
             if (going_stair)
             {
                 target_len = chassis::Lmax;
@@ -520,7 +545,6 @@ DMMotorHandler *dmmotorhandler = DMMotorHandler::Instance();
                     airprotect_cnt = 0;
                 }
             }
-            pre_stair = cmd.gostair;
 
             if (cmd.ifjump) 
             { 
@@ -538,8 +562,16 @@ DMMotorHandler *dmmotorhandler = DMMotorHandler::Instance();
 
             if (cmd.iffly)
             {
-                flying = true;
-                target_len = Lfly;
+                if (!flying)
+                {
+                    flying = true;
+                    target_len = Lfly;
+                }
+                else
+                {
+                    flying = false;
+                    target_len = Lmin;
+                }
             }
 
             if (!going_stair && !flying)
@@ -639,7 +671,7 @@ DMMotorHandler *dmmotorhandler = DMMotorHandler::Instance();
         case SPIN:
         {
             /* [x, dx, yaw, dyaw, alphal, dalphal, alphar, dalphar, theta, dtheta] */
-            refX[0] = odom.x;//cmd.x;
+            refX[0] = cmd.x;
             refX[1] = cmd.v;
             refX[2] = cmd.yaw;
             refX[3] = cmd.dyaw;

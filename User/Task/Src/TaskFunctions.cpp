@@ -305,9 +305,17 @@ SuperCap* debug_supercap = SuperCap::Instance();
 
                 if (cmd_msg->ifjump)
                 {
-                    jumping = true;
-                    jump_start_time = tx_time_get();
+                    if (!jumping)
+                    {
+                        jumping = true;
+                        jump_start_time = tx_time_get();
+                    }
+                    else
+                    {
+                        jumping = false;
+                    }
                 }
+
                 if (jumping)
                 {
                     if (tof_distance <= 80.0f)
