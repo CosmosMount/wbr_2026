@@ -747,9 +747,9 @@ DMMotorHandler *dmmotorhandler = DMMotorHandler::Instance();
                     refX[1] = observedX[1];
                     refX[2] = observedX[2];
                     refX[3] = observedX[3];
-                    refX[4] = 0.0f;
+                    refX[4] = lpendulum.alpha_eq;
                     refX[5] = 0.0f;
-                    refX[6] = 0.0f;
+                    refX[6] = rpendulum.alpha_eq;
                     refX[7] = 0.0f;
                     refX[8] = 0.0f;
                     refX[9] = 0.0f;            
@@ -767,47 +767,12 @@ DMMotorHandler *dmmotorhandler = DMMotorHandler::Instance();
                     {
                         target_len = chassis::Lmin;
                         len_slope.SetDefault(lpendulum.len);
-                        chassis_state = OFFGROUND;
+                        chassis_state = NORMAL;
                         jump_stage = DONT;
                     }
 
                     break;
                 }
-
-                // case LANDING:
-                // {
-
-                //     odom.Reset();
-
-                //     refX[0] = observedX[0];
-                //     refX[1] = observedX[1];
-                //     refX[2] = observedX[2];
-                //     refX[3] = observedX[3];
-                //     refX[4] = pitch;
-                //     refX[5] = 0.0f;
-                //     refX[6] = pitch;
-                //     refX[7] = 0.0f;
-                //     refX[8] = observedX[8];
-                //     refX[9] = observedX[9];
-                //     lqr.lqr_type = LQR_LOW;
-                //     lqr.Update(lpendulum.len, rpendulum.len);
-
-                //     Twl = 0.0f;
-                //     Twr = 0.0f;
-                //     Fl[1] = lqr.Tout[2]*0.4f;
-                //     Fr[1] = lqr.Tout[3]*0.4f;
-                //     Fl[0] = lpendulum.LenControl(Lmin) + Gff - lpendulum.Fs;
-                //     Fr[0] = rpendulum.LenControl(Lmin) + Gff - rpendulum.Fs;
-
-                //     if (ins.accel[2] > 40.0f)
-                //     {
-                //         target_len = chassis::Lmin;
-                //         len_slope.SetDefault(lpendulum.len);
-                //         chassis_state = NORMAL;
-                //         jump_stage = DONT;
-                //     }
-                //     break;
-                // }
 
                 default:
                     break;

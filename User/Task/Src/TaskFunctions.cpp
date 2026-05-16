@@ -108,6 +108,10 @@ SuperCap* debug_supercap = SuperCap::Instance();
     DJIMotorHandler::Instance()->registerMotor(&yaw_motor, &hfdcan2, 0x205);
     DJIMotorHandler::Instance()->registerMotor(&trigger_motor, &hfdcan2, 0x203);
 
+    /* Jump Handling */
+    bool jumping = false;
+    uint32_t jump_start_time = 0;
+
     for (;;)
     {
 
@@ -293,14 +297,31 @@ SuperCap* debug_supercap = SuperCap::Instance();
                 {
                     cmd.gostair = true;
                 }
+
                 if (cmd_msg->iffly)
                 {
                     cmd.iffly = true;
                 }
+
                 if (cmd_msg->ifjump)
                 {
-                    cmd.ifjump = true;
+                    jumping = true;
+                    jump_start_time = tx_time_get();
                 }
+                if (jumping)
+                {
+                    if (tof_distance <= 80.0f)
+                    {
+                        cmd.ifjump = true;
+                        jumping = false;
+                    }
+                    if (tx_time_get() - jump_start_time > 10000)
+                    {
+                        cmd.ifjump = false;
+                        jumping = false;
+                    }
+                }
+
                 if (fabs(yaw_updater.GetVal()) > 1.0f)
                 {
                     maintained_x = false;
@@ -309,20 +330,31 @@ SuperCap* debug_supercap = SuperCap::Instance();
                 }
                 else
                 {
-                    if (fabs(cmd_msg->vx*0.1f) > 0.005f)
+                    if (jumping)
                     {
-                        cmd.dyaw = -relative_angle*4.0f;
-                        cmd.v = vx_updater.UpdateVal(cmd_msg->vx*0.1f*1.5f);
-                    }
-                    else if (fabs(cmd_msg->vy*0.1f) > 0.005f)
-                    {
-                        cmd.dyaw = -Numeric::LoopFloatConstrain(relative_angle + PI * 0.5f, -PI, PI) * 4.0f;
-                        cmd.v = vy_updater.UpdateVal(cmd_msg->vy*0.1f*2.0f);
+                        if (fabs(cmd_msg->vx*0.1f) > 0.005f)
+                        {
+                            cmd.dyaw = -relative_angle*4.0f;
+                            cmd.v = vx_updater.UpdateVal(cmd_msg->vx*0.1f*1.5f);
+                        }
                     }
                     else
                     {
-                        cmd.dyaw = -relative_angle*4.0f;
-                        cmd.v = 0.0f;
+                        if (fabs(cmd_msg->vx*0.1f) > 0.005f)
+                        {
+                            cmd.dyaw = -relative_angle*4.0f;
+                            cmd.v = vx_updater.UpdateVal(cmd_msg->vx*0.1f*2.5f);
+                        }
+                        else if (fabs(cmd_msg->vy*0.1f) > 0.005f)
+                        {
+                            cmd.dyaw = -Numeric::LoopFloatConstrain(relative_angle + PI * 0.5f, -PI, PI) * 4.0f;
+                            cmd.v = vy_updater.UpdateVal(cmd_msg->vy*0.1f*2.0f);
+                        }
+                        else
+                        {
+                            cmd.dyaw = -relative_angle*4.0f;
+                            cmd.v = 0.0f;
+                        }
                     }
                 }
                 cmd.roll = 0.0f;
