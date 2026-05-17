@@ -15,6 +15,7 @@ uint8_t UIThreadStack[2048] = {0};
 extern uint8_t UIMsg[8];
 
 using namespace Numeric;
+uint8_t debug_ui_reset;
 
 [[noreturn]] void UIThreadFun(ULONG initial_input)
 {
@@ -40,7 +41,7 @@ using namespace Numeric;
     int8_t LINE_SUPERCAP;
     int8_t RECT_AIM,RECT_ROBOT,RECT_RUNE;
     int8_t CIRC_AIM,CIRC_AIMER;
-    int8_t FLOAT_V,FLOAT_LEN;
+    int8_t FLOAT_V,FLOAT_LEN,FLOAT_DIST;
     int8_t STR_ALERT;
     int8_t ARC_FRONT;
     int8_t INT_TARGET;
@@ -56,9 +57,10 @@ using namespace Numeric;
     {
         comm_ui_t *gimbal_ui = reinterpret_cast<comm_ui_t*>(&UIMsg);
 
-        // om_suber_export(cmd_suber, &cmd, false);
         om_suber_export(referee_suber, &referee_data, false);
         om_suber_export(chassisui_suber, &chassisui, false);
+
+        debug_ui_reset = gimbal_ui->reset;
 
         if (gimbal_ui->reset)
         {
@@ -69,7 +71,6 @@ using namespace Numeric;
         {
             if (referee_data.robot_status.robot_id != 0)
             {
-                // ui.SetSenderReceiverId(1, 0x0101);
                 ui.SetSenderReceiverId(referee_data.robot_status.robot_id, 
                                 referee_data.robot_status.robot_id+256);
 
@@ -78,6 +79,7 @@ using namespace Numeric;
                 ARC_FRONT = ui.CreateArc(10, UIObjectColor::Yellow, 2, 960, 540, 90, 90, arc_start_ang, arc_end_ang);
                 FLOAT_V = ui.CreateFloat(2, UIObjectColor::Yellow, 2, 120, 750, 20, 0);
                 FLOAT_LEN = ui.CreateFloat(2, UIObjectColor::Yellow, 2, 120, 800, 20, 0);
+                FLOAT_DIST = ui.CreateFloat(2, UIObjectColor::Yellow, 2, 120, 700, 20, 0);
                 
                 /* aim UI */
                 RECT_AIM = ui.CreateRect(3, UIObjectColor::White, 3, 695, 700, 1155, 330);
@@ -91,7 +93,6 @@ using namespace Numeric;
                 
                 ui.SetVisible(RECT_RUNE, false);
                 ui.SetVisible(RECT_ROBOT, false);
-                ui.SetVisible(LINE_SUPERCAP, false);
                 ui.SetVisible(ARC_FRONT, false);
                 ui.SetVisible(CIRC_AIM, false);
                 ui_reset = false;
@@ -100,13 +101,14 @@ using namespace Numeric;
         else 
         {
             ui.SetVisible(ARC_FRONT, true);
-            ui.MoveP2To(LINE_SUPERCAP, 600+SuperCap::Instance()->GetCapEnergy()*0.245, 100);
+            ui.MoveP2To(LINE_SUPERCAP, 695+SuperCap::Instance()->GetCapEnergy()*0.245, 300);
             
             ui.SetStartAngle(ARC_FRONT, LoopFloatConstrain(arc_start_ang-chassisui.relative_angle*RadToDegree,0.0f,360.0f));
             ui.SetEndAngle(ARC_FRONT, LoopFloatConstrain(arc_end_ang-chassisui.relative_angle*RadToDegree,0.0f,360.0f));
 
             ui.SetFloat(FLOAT_V, chassisui.v);
             ui.SetFloat(FLOAT_LEN, chassisui.len);
+            ui.SetFloat(FLOAT_DIST, chassisui.dist);
 
             if (gimbal_ui->aim_rune)
             {

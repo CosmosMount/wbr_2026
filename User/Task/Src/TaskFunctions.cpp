@@ -448,8 +448,9 @@ SuperCap* debug_supercap = SuperCap::Instance();
         CAN_Transmit(&hfdcan3, 0xC1, CommMsg, 8);
 
         chassisui.relative_angle = yaw_motor.motorFeedback.positionFdb - yaw_offset2 + PI;
-        chassisui.len = pendulum_data.len;
-        chassisui.v = pendulum_data.v;
+        chassisui.len = pendulum_data.len*100.0f;
+        chassisui.v = fabs(pendulum_data.v);
+        chassisui.dist = tof_distance;
 
         /* Publish cmd msg */
         om_publish(cmd_topic, &cmd, sizeof(msg_cmd_t), true, false);
