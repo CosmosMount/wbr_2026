@@ -96,7 +96,7 @@ constexpr uint8_t rjoint4_id = 0x03;
 constexpr uint16_t lwheel_id = 0x202;
 constexpr uint16_t rwheel_id = 0x201;
 
-constexpr float yaw_offset1 = 0.40389235f;
-constexpr float yaw_offset2 = -2.7377723f;
+constexpr float yaw_offset1 = -2.28699344f;
+constexpr float yaw_offset2 = 0.852893309f;
 
 };
