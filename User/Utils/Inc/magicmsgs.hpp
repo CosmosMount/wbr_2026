@@ -161,4 +161,5 @@ struct msg_chassisui_t
     float relative_angle;
     float len;
     float v;
+    float dist;
 };
