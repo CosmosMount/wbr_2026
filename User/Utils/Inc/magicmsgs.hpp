@@ -111,9 +111,7 @@ struct msg_pendulum_t
     float x;
     float v;
     float len;
-    float reset_len;
     bool normal;
-    bool ifresetlen;
     bool recovered;
 };
 
@@ -137,6 +135,7 @@ struct msg_cmd_t
     float x;
     float v;
     float len;
+    float dlen;
     float yaw;
     float dyaw;
     float roll;

@@ -60,7 +60,7 @@ namespace chassis
 constexpr float L1 = 0.220f;
 constexpr float L2 = 0.260f;
 constexpr float Lnormal = 0.16f;
-constexpr float Lmin = 0.15f;
+constexpr float Lmin = 0.16f;
 constexpr float Lmid = 0.24f;
 constexpr float Lmax = 0.33f;
 constexpr float Lqr_len_resolution = 0.01f;
