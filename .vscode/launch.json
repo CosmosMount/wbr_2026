@@ -30,7 +30,7 @@
             "request": "launch",
             "servertype": "openocd",
             "cwd": "${workspaceFolder}",
-            "executable": "${workspaceFolder}/build/Debug/RM26_H7.elf",
+            "executable": "${workspaceFolder}/build/Debug/wbr_chassis.elf",
             "configFiles": [
                 "interface/stlink.cfg",
                 "target/stm32h7x.cfg"

@@ -373,7 +373,7 @@ SuperCap* debug_supercap = SuperCap::Instance();
             cmd.v *= -1.0f;
         }
 
-        if ((fabsf(cmd.v) < 0.005f) && (fabsf(cmd.v-pendulum_data.v) < 0.5f))
+        if ((fabsf(cmd.v) < 0.005f) && (fabsf(cmd.v-pendulum_data.v) < 0.6f))
         {
             if (!maintained_x)
             {

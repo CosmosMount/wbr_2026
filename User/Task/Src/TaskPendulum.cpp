@@ -452,8 +452,8 @@ DMMotorHandler *dmmotorhandler = DMMotorHandler::Instance();
             odom.Reset();
             Fl[0] = lpendulum.LenControl(lpendulum.len+(Lmin-lpendulum.len)*0.6f)-lpendulum.Fs;
             Fr[0] = rpendulum.LenControl(rpendulum.len+(Lmin-rpendulum.len)*0.6f)-rpendulum.Fs;
-            Fl[1] = lpendulum.PhiControl(PI*0.5f, 25.0f, 10.0f, 0.003f, false);
-            Fr[1] = rpendulum.PhiControl(PI*0.5f, 25.0f, 10.0f, 0.003f, false);
+            Fl[1] = lpendulum.PhiControl(PI*0.5f, 30.0f, 10.0f, 0.003f, false);
+            Fr[1] = rpendulum.PhiControl(PI*0.5f, 30.0f, 10.0f, 0.003f, false);
             if (cmd.v > 0.005f)
             {
                 Twl = 1.5f;
@@ -486,9 +486,9 @@ DMMotorHandler *dmmotorhandler = DMMotorHandler::Instance();
             refX[1] = cmd.v;
             refX[2] = cmd.yaw;
             refX[3] = cmd.dyaw;
-            refX[4] = lpendulum.alpha_eq;
+            refX[4] = lpendulum.alpha_eq - 0.03f;// - 0.03f
             refX[5] = 0.0f;
-            refX[6] = rpendulum.alpha_eq;
+            refX[6] = rpendulum.alpha_eq - 0.03f;
             refX[7] = 0.0f;
             refX[8] = 0.0f;
             refX[9] = 0.0f;
@@ -682,7 +682,7 @@ DMMotorHandler *dmmotorhandler = DMMotorHandler::Instance();
             refX[8] = 0.0f;//pitch_eq;
             refX[9] = 0.0f;
 
-            lqr.lqr_type = LQR_LOW;
+            lqr.lqr_type = LQR_SPIN;
             lqr.Update(lpendulum.len, rpendulum.len);
 
             Twl = lqr.Tout[0];
