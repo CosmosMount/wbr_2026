@@ -100,6 +100,8 @@ SuperCap* debug_supercap = SuperCap::Instance();
     float distance1, distance2, front_offset, relative_angle;
     int16_t prev_yaw_cur = 0;
     uint32_t comm_lost_cnt = 0;
+    PID yaw_init_pos_pid(80.0f, 0.0f, 1800.0f, 500.0f, 10.0f, PID_POSITION | PID_Derivative_On_Measurement);
+    PID yaw_init_spd_pid(4000.0f, 0.0f, 0.0f, 25000.0f, 100.0f, PID_POSITION);
     
     /* Communication with Gimbal */
     uint8_t CommMsg[8] = {0};
@@ -173,32 +175,47 @@ SuperCap* debug_supercap = SuperCap::Instance();
     #else
 
         /* Handle Gimbal Motors */
-        distance1 = fabs(yaw_motor.motorFeedback.positionFdb-yaw_offset1);
-        distance2 = fabs(yaw_motor.motorFeedback.positionFdb-yaw_offset2);
-        if (!lock_offset)
-        {
-            front_offset = distance1 < distance2 ? yaw_offset1 : yaw_offset2;
-        }
+        // distance1 = fabs(yaw_motor.motorFeedback.positionFdb-yaw_offset1);
+        // distance2 = fabs(yaw_motor.motorFeedback.positionFdb-yaw_offset2);
+        // if (!lock_offset)
+        // {
+        //     front_offset = distance1 < distance2 ? yaw_offset1 : yaw_offset2;
+        // }
+        front_offset = yaw_offset1;
 
         relative_angle = LoopFloatConstrain(
             yaw_motor.motorFeedback.positionFdb - front_offset,
             -PI, PI
         );
+
+        /* Signals */
+        bool invalid_input = isnan(cmd_msg->vx) || isnan(cmd_msg->vy) || comm_lost;
+        bool disabled = !cmd_msg->ifmove;
+        bool not_recovered = !pendulum_data.recovered;
+        bool not_ready = !yaw_init;
         
-        if (!cmd_msg->ifmove)
+        if (disabled)
         {
             yaw_init = false;
             chassis_msg.inited = false;
             yaw_motor.currentSet = 0;
             trigger_motor.speedSet = 0.0f;
         }
-        else if (!yaw_init)
+        else if (not_ready || not_recovered)
         {
-            yaw_motor.currentSet = (((yaw_motor.motorFeedback.positionFdb - yaw_offset1) > 0.0f) ? -1 : 1)*20000;
-            if (fabs(yaw_motor.motorFeedback.positionFdb-yaw_offset1)<0.1f)
+            float err = LoopFloatConstrain(yaw_offset1 - yaw_motor.motorFeedback.positionFdb, -PI, PI);
+            yaw_init_pos_pid.ref = err;
+            yaw_init_pos_pid.fdb = 0.0f;
+            yaw_init_pos_pid.UpdateResult();
+            yaw_init_spd_pid.ref = yaw_init_pos_pid.result;
+            yaw_init_spd_pid.fdb = yaw_motor.motorFeedback.speedFdb;
+            yaw_init_spd_pid.UpdateResult();
+            yaw_motor.currentSet = yaw_init_spd_pid.result;
+            if (fabs(yaw_motor.motorFeedback.positionFdb-yaw_offset1)<0.2f)
             {
                 yaw_init = true;
-                chassis_msg.inited = true;
+                if (pendulum_data.recovered)
+                    chassis_msg.inited = true;
             } 
         }
         else
@@ -222,41 +239,28 @@ SuperCap* debug_supercap = SuperCap::Instance();
         else
             len_target = Lmax;
 
-        if (isnan(cmd_msg->vx) || isnan(cmd_msg->vy) || comm_lost)
+        if (invalid_input || disabled)
         {
             cmd.v = 0.0f;
             cmd.x = 0.0f;
-            maintained_x = 0.0f; 
             cmd.len = Lmin;
             cmd.dlen = 0.0f;
             cmd.dyaw = 0.0f;
             cmd.move = false;
         }
-        else if (!cmd_msg->ifmove)
+        else if (not_recovered)
         {
             cmd.v = 0.0f;
             cmd.x = 0.0f;
-            maintained_x = 0.0f; 
-            cmd.len = Lmin;
-            cmd.dlen = 0.0f;
-            cmd.dyaw = 0.0f;
-            cmd.move = false;
-        }
-        else if (!pendulum_data.recovered)
-        {
-            cmd.v = 0.0f;
-            cmd.x = 0.0f;
-            maintained_x = 0.0f; 
             cmd.len = Lmin;
             cmd.dlen = 0.0f;
             cmd.dyaw = 0.0f;
             cmd.move = true;
         }
-        else if (!yaw_init) 
+        else if (not_ready)
         {
             cmd.v = 0.0f;
             cmd.x = 0.0f;
-            maintained_x = 0.0f; 
             cmd.len = Lmin;
             cmd.dlen = 0.0f;
             cmd.dyaw = 0.0f;
@@ -318,7 +322,7 @@ SuperCap* debug_supercap = SuperCap::Instance();
 
                 if (jumping)
                 {
-                    if (tof_distance <= 80.0f)
+                    if (tof_distance <= 80.0f && tof_valid)
                     {
                         cmd.ifjump = true;
                         jumping = false;
@@ -343,7 +347,7 @@ SuperCap* debug_supercap = SuperCap::Instance();
                         if (fabs(cmd_msg->vx*0.1f) > 0.005f)
                         {
                             cmd.dyaw = -relative_angle*4.0f;
-                            cmd.v = vx_updater.UpdateVal(cmd_msg->vx*0.1f*1.5f);
+                            cmd.v = vx_updater.UpdateVal(cmd_msg->vx*0.1f*1.7f);
                         }
                     }
                     else
@@ -351,12 +355,15 @@ SuperCap* debug_supercap = SuperCap::Instance();
                         if (fabs(cmd_msg->vx*0.1f) > 0.005f)
                         {
                             cmd.dyaw = -relative_angle*4.0f;
-                            cmd.v = vx_updater.UpdateVal(cmd_msg->vx*0.1f*2.5f);
+                            if (!pendulum_data.flying)
+                                cmd.v = vx_updater.UpdateVal(cmd_msg->vx*0.1f*2.0f);
+                            else
+                                cmd.v = vx_updater.UpdateVal(cmd_msg->vx*0.1f*2.5f);
                         }
                         else if (fabs(cmd_msg->vy*0.1f) > 0.005f)
                         {
                             cmd.dyaw = -Numeric::LoopFloatConstrain(relative_angle + PI * 0.5f, -PI, PI) * 4.0f;
-                            cmd.v = vy_updater.UpdateVal(cmd_msg->vy*0.1f*2.0f);
+                            cmd.v = vy_updater.UpdateVal(cmd_msg->vy*0.1f*1.8f);
                         }
                         else
                         {
@@ -374,7 +381,7 @@ SuperCap* debug_supercap = SuperCap::Instance();
             cmd.v *= -1.0f;
         }
 
-        if ((fabsf(cmd.v) < 0.005f) && (fabsf(cmd.v-pendulum_data.v) < 0.5f))
+        if ((fabsf(cmd.v) < 0.005f) && (fabsf(cmd.v-pendulum_data.v) < 0.3f))
         {
             if (!maintained_x)
             {
@@ -442,6 +449,8 @@ SuperCap* debug_supercap = SuperCap::Instance();
         chassis_msg.heatlimit = referee_data.robot_status.shooter_barrel_heat_limit;
         chassis_msg.heatnow = referee_data.heat_now;
 
+        float power_limit = referee_data.robot_status.chassis_power_limit;
+        float power_buffer = referee_data.power_buffer;
         SuperCap::Instance()->supercap_set.set.power_limit_set = referee_data.robot_status.chassis_power_limit;
         SuperCap::Instance()->SendCapData();
 

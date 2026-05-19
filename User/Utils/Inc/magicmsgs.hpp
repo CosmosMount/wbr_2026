@@ -111,6 +111,7 @@ struct msg_pendulum_t
     float x;
     float v;
     float len;
+    bool flying;
     bool normal;
     bool recovered;
 };
