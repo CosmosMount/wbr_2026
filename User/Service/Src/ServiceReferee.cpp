@@ -18,6 +18,8 @@ RefereeRingBuffer referee_fifo;
     om_topic_t *referee_pub = om_config_topic(nullptr, "ca", "referee", sizeof(msg_referee_t));
     msg_referee_t referee_data{};
 
+    uint16_t reset_hurt_cnt = 0; 
+
     for(;;)
     {
         static uint8_t rx_byte;
@@ -175,8 +177,16 @@ RefereeRingBuffer referee_fifo;
         referee_data.robot_status = GameRobotStatus;
         referee_data.heat_now = PowerHeatData.shoot_id1_17mm_cooling_heat;
         referee_data.power_buffer = PowerHeatData.chassis_power_buffer;
+        referee_data.remained_energy = Buff.remained_energy;
+        referee_data.robot_hurt = RobotHurt;
 
         om_publish(referee_pub, &referee_data, sizeof(msg_referee_t), true, false);
+        reset_hurt_cnt ++;
+        if (reset_hurt_cnt == 1000)
+        {
+            memset(&RobotHurt, 0, sizeof(RobotHurt_t));
+            reset_hurt_cnt = 0;
+        }
         tx_semaphore_put(&RefereeThreadSem);
         tx_thread_sleep(1);
     }

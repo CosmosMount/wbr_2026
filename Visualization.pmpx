@@ -137,7 +137,7 @@
 			<member name="unit" type="string">unit</member>
 			<member name="period" type="sint32">1000</member>
 			<member name="address" type="string">pendulum_debug.pitch</member>
-			<member name="last_addr" type="uint32">0x20008A98</member>
+			<member name="last_addr" type="uint32">0x20008A9C</member>
 			<member name="byte_size" type="sint32">4</member>
 			<member name="description" type="string"/>
 			<member name="comment" type="string"/>
@@ -186,7 +186,7 @@
 			<member name="unit" type="string">unit</member>
 			<member name="period" type="sint32">1000</member>
 			<member name="address" type="string">pendulum_debug.x</member>
-			<member name="last_addr" type="uint32">0x20008A74</member>
+			<member name="last_addr" type="uint32">0x20008A78</member>
 			<member name="byte_size" type="sint32">4</member>
 			<member name="description" type="string"/>
 			<member name="comment" type="string"/>
@@ -235,7 +235,7 @@
 			<member name="unit" type="string">unit</member>
 			<member name="period" type="sint32">1000</member>
 			<member name="address" type="string">pendulum_debug.Fl</member>
-			<member name="last_addr" type="uint32">0x20008AC0</member>
+			<member name="last_addr" type="uint32">0x20008AC4</member>
 			<member name="byte_size" type="sint32">4</member>
 			<member name="description" type="string"/>
 			<member name="comment" type="string"/>
@@ -284,7 +284,7 @@
 			<member name="unit" type="string">unit</member>
 			<member name="period" type="sint32">1000</member>
 			<member name="address" type="string">pendulum_debug.v</member>
-			<member name="last_addr" type="uint32">0x20008A7C</member>
+			<member name="last_addr" type="uint32">0x20008A80</member>
 			<member name="byte_size" type="sint32">4</member>
 			<member name="description" type="string"/>
 			<member name="comment" type="string"/>
@@ -333,7 +333,7 @@
 			<member name="unit" type="string">unit</member>
 			<member name="period" type="sint32">1000</member>
 			<member name="address" type="string">pendulum_debug.Fr</member>
-			<member name="last_addr" type="uint32">0x20008AC4</member>
+			<member name="last_addr" type="uint32">0x20008AC8</member>
 			<member name="byte_size" type="sint32">4</member>
 			<member name="description" type="string"/>
 			<member name="comment" type="string"/>
@@ -382,7 +382,7 @@
 			<member name="unit" type="string">unit</member>
 			<member name="period" type="sint32">1000</member>
 			<member name="address" type="string">pendulum_debug.pitch_dot</member>
-			<member name="last_addr" type="uint32">0x20008A9C</member>
+			<member name="last_addr" type="uint32">0x20008AA0</member>
 			<member name="byte_size" type="sint32">4</member>
 			<member name="description" type="string"/>
 			<member name="comment" type="string"/>
@@ -431,7 +431,7 @@
 			<member name="unit" type="string">unit</member>
 			<member name="period" type="sint32">1000</member>
 			<member name="address" type="string">pendulum_debug.l_ref</member>
-			<member name="last_addr" type="uint32">0x20008A8C</member>
+			<member name="last_addr" type="uint32">0x20008A90</member>
 			<member name="byte_size" type="sint32">4</member>
 			<member name="description" type="string"/>
 			<member name="comment" type="string"/>
@@ -627,7 +627,7 @@
 			<member name="unit" type="string">unit</member>
 			<member name="period" type="sint32">1000</member>
 			<member name="address" type="string">pendulum_debug.rlendot</member>
-			<member name="last_addr" type="uint32">0x20008ADC</member>
+			<member name="last_addr" type="uint32">0x20008AE0</member>
 			<member name="byte_size" type="sint32">4</member>
 			<member name="description" type="string"/>
 			<member name="comment" type="string"/>
@@ -676,7 +676,7 @@
 			<member name="unit" type="string">unit</member>
 			<member name="period" type="sint32">1000</member>
 			<member name="address" type="string">pendulum_debug.llendot</member>
-			<member name="last_addr" type="uint32">0x20008AD8</member>
+			<member name="last_addr" type="uint32">0x20008ADC</member>
 			<member name="byte_size" type="sint32">4</member>
 			<member name="description" type="string"/>
 			<member name="comment" type="string"/>
@@ -725,7 +725,7 @@
 			<member name="unit" type="string">unit</member>
 			<member name="period" type="sint32">1000</member>
 			<member name="address" type="string">pendulum_debug.vref</member>
-			<member name="last_addr" type="uint32">0x20008A80</member>
+			<member name="last_addr" type="uint32">0x20008A84</member>
 			<member name="byte_size" type="sint32">4</member>
 			<member name="description" type="string"/>
 			<member name="comment" type="string"/>
@@ -774,7 +774,7 @@
 			<member name="unit" type="string">unit</member>
 			<member name="period" type="sint32">1000</member>
 			<member name="address" type="string">pendulum_debug.xref</member>
-			<member name="last_addr" type="uint32">0x20008A78</member>
+			<member name="last_addr" type="uint32">0x20008A7C</member>
 			<member name="byte_size" type="sint32">4</member>
 			<member name="description" type="string"/>
 			<member name="comment" type="string"/>
@@ -823,7 +823,7 @@
 			<member name="unit" type="string">unit</member>
 			<member name="period" type="sint32">1000</member>
 			<member name="address" type="string">pendulum_debug.yaw</member>
-			<member name="last_addr" type="uint32">0x20008AE0</member>
+			<member name="last_addr" type="uint32">0x20008AE4</member>
 			<member name="byte_size" type="sint32">4</member>
 			<member name="description" type="string"/>
 			<member name="comment" type="string"/>
@@ -872,7 +872,7 @@
 			<member name="unit" type="string">unit</member>
 			<member name="period" type="sint32">1000</member>
 			<member name="address" type="string">pendulum_debug.yaw_dot</member>
-			<member name="last_addr" type="uint32">0x20008AE8</member>
+			<member name="last_addr" type="uint32">0x20008AEC</member>
 			<member name="byte_size" type="sint32">4</member>
 			<member name="description" type="string"/>
 			<member name="comment" type="string"/>
@@ -921,7 +921,7 @@
 			<member name="unit" type="string">unit</member>
 			<member name="period" type="sint32">1000</member>
 			<member name="address" type="string">pendulum_debug.yaw_out</member>
-			<member name="last_addr" type="uint32">0x20008AEC</member>
+			<member name="last_addr" type="uint32">0x20008AF0</member>
 			<member name="byte_size" type="sint32">4</member>
 			<member name="description" type="string"/>
 			<member name="comment" type="string"/>
@@ -970,7 +970,7 @@
 			<member name="unit" type="string">unit</member>
 			<member name="period" type="sint32">1000</member>
 			<member name="address" type="string">pendulum_debug.yawref</member>
-			<member name="last_addr" type="uint32">0x20008AE4</member>
+			<member name="last_addr" type="uint32">0x20008AE8</member>
 			<member name="byte_size" type="sint32">4</member>
 			<member name="description" type="string"/>
 			<member name="comment" type="string"/>
@@ -1019,7 +1019,7 @@
 			<member name="unit" type="string">unit</member>
 			<member name="period" type="sint32">1000</member>
 			<member name="address" type="string">debug_ins.pitch</member>
-			<member name="last_addr" type="uint32">0x20008A38</member>
+			<member name="last_addr" type="uint32">0x20008A3C</member>
 			<member name="byte_size" type="sint32">4</member>
 			<member name="description" type="string"/>
 			<member name="comment" type="string"/>
@@ -1068,7 +1068,7 @@
 			<member name="unit" type="string">unit</member>
 			<member name="period" type="sint32">1000</member>
 			<member name="address" type="string">debug_ins.gyro_p</member>
-			<member name="last_addr" type="uint32">0x20008A48</member>
+			<member name="last_addr" type="uint32">0x20008A4C</member>
 			<member name="byte_size" type="sint32">4</member>
 			<member name="description" type="string"/>
 			<member name="comment" type="string"/>
@@ -1117,7 +1117,7 @@
 			<member name="unit" type="string">unit</member>
 			<member name="period" type="sint32">1000</member>
 			<member name="address" type="string">debug_ins.accel[0]</member>
-			<member name="last_addr" type="uint32">0x20008A50</member>
+			<member name="last_addr" type="uint32">0x20008A54</member>
 			<member name="byte_size" type="sint32">4</member>
 			<member name="description" type="string"/>
 			<member name="comment" type="string"/>
@@ -1166,7 +1166,7 @@
 			<member name="unit" type="string">unit</member>
 			<member name="period" type="sint32">1000</member>
 			<member name="address" type="string">debug_ins.gyro_r</member>
-			<member name="last_addr" type="uint32">0x20008A44</member>
+			<member name="last_addr" type="uint32">0x20008A48</member>
 			<member name="byte_size" type="sint32">4</member>
 			<member name="description" type="string"/>
 			<member name="comment" type="string"/>
@@ -1215,7 +1215,7 @@
 			<member name="unit" type="string">unit</member>
 			<member name="period" type="sint32">1000</member>
 			<member name="address" type="string">debug_ins.quaternion[0]</member>
-			<member name="last_addr" type="uint32">0x20008A24</member>
+			<member name="last_addr" type="uint32">0x20008A28</member>
 			<member name="byte_size" type="sint32">4</member>
 			<member name="description" type="string"/>
 			<member name="comment" type="string"/>
@@ -1264,7 +1264,7 @@
 			<member name="unit" type="string">unit</member>
 			<member name="period" type="sint32">1000</member>
 			<member name="address" type="string">debug_ins.roll</member>
-			<member name="last_addr" type="uint32">0x20008A34</member>
+			<member name="last_addr" type="uint32">0x20008A38</member>
 			<member name="byte_size" type="sint32">4</member>
 			<member name="description" type="string"/>
 			<member name="comment" type="string"/>
@@ -1313,7 +1313,7 @@
 			<member name="unit" type="string">unit</member>
 			<member name="period" type="sint32">1000</member>
 			<member name="address" type="string">debug_ins.yaw</member>
-			<member name="last_addr" type="uint32">0x20008A3C</member>
+			<member name="last_addr" type="uint32">0x20008A40</member>
 			<member name="byte_size" type="sint32">4</member>
 			<member name="description" type="string"/>
 			<member name="comment" type="string"/>
@@ -1362,7 +1362,7 @@
 			<member name="unit" type="string">unit</member>
 			<member name="period" type="sint32">1000</member>
 			<member name="address" type="string">debug_ins.gyro_y</member>
-			<member name="last_addr" type="uint32">0x20008A4C</member>
+			<member name="last_addr" type="uint32">0x20008A50</member>
 			<member name="byte_size" type="sint32">4</member>
 			<member name="description" type="string"/>
 			<member name="comment" type="string"/>
@@ -1411,7 +1411,7 @@
 			<member name="unit" type="string">unit</member>
 			<member name="period" type="sint32">1000</member>
 			<member name="address" type="string">debug_ins.total_yaw</member>
-			<member name="last_addr" type="uint32">0x20008A40</member>
+			<member name="last_addr" type="uint32">0x20008A44</member>
 			<member name="byte_size" type="sint32">4</member>
 			<member name="description" type="string"/>
 			<member name="comment" type="string"/>
@@ -1460,7 +1460,7 @@
 			<member name="unit" type="string">unit</member>
 			<member name="period" type="sint32">1000</member>
 			<member name="address" type="string">debug_ins.accel[1]</member>
-			<member name="last_addr" type="uint32">0x20008A54</member>
+			<member name="last_addr" type="uint32">0x20008A58</member>
 			<member name="byte_size" type="sint32">4</member>
 			<member name="description" type="string"/>
 			<member name="comment" type="string"/>
@@ -1509,7 +1509,7 @@
 			<member name="unit" type="string">unit</member>
 			<member name="period" type="sint32">1000</member>
 			<member name="address" type="string">debug_ins.accel[2]</member>
-			<member name="last_addr" type="uint32">0x20008A58</member>
+			<member name="last_addr" type="uint32">0x20008A5C</member>
 			<member name="byte_size" type="sint32">4</member>
 			<member name="description" type="string"/>
 			<member name="comment" type="string"/>
@@ -1558,7 +1558,7 @@
 			<member name="unit" type="string">unit</member>
 			<member name="period" type="sint32">1000</member>
 			<member name="address" type="string">pendulum_debug.llen</member>
-			<member name="last_addr" type="uint32">0x20008A84</member>
+			<member name="last_addr" type="uint32">0x20008A88</member>
 			<member name="byte_size" type="sint32">4</member>
 			<member name="description" type="string"/>
 			<member name="comment" type="string"/>
@@ -1607,7 +1607,7 @@
 			<member name="unit" type="string">unit</member>
 			<member name="period" type="sint32">1000</member>
 			<member name="address" type="string">pendulum_debug.rlen</member>
-			<member name="last_addr" type="uint32">0x20008A88</member>
+			<member name="last_addr" type="uint32">0x20008A8C</member>
 			<member name="byte_size" type="sint32">4</member>
 			<member name="description" type="string"/>
 			<member name="comment" type="string"/>
@@ -1656,7 +1656,7 @@
 			<member name="unit" type="string">unit</member>
 			<member name="period" type="sint32">1000</member>
 			<member name="address" type="string">pendulum_debug.alphar_dot</member>
-			<member name="last_addr" type="uint32">0x20008A70</member>
+			<member name="last_addr" type="uint32">0x20008A74</member>
 			<member name="byte_size" type="sint32">4</member>
 			<member name="description" type="string"/>
 			<member name="comment" type="string"/>
@@ -1705,7 +1705,7 @@
 			<member name="unit" type="string">unit</member>
 			<member name="period" type="sint32">1000</member>
 			<member name="address" type="string">pendulum_debug.alphal_dot</member>
-			<member name="last_addr" type="uint32">0x20008A68</member>
+			<member name="last_addr" type="uint32">0x20008A6C</member>
 			<member name="byte_size" type="sint32">4</member>
 			<member name="description" type="string"/>
 			<member name="comment" type="string"/>
@@ -1754,7 +1754,7 @@
 			<member name="unit" type="string">unit</member>
 			<member name="period" type="sint32">1000</member>
 			<member name="address" type="string">pendulum_debug.alphar</member>
-			<member name="last_addr" type="uint32">0x20008A6C</member>
+			<member name="last_addr" type="uint32">0x20008A70</member>
 			<member name="byte_size" type="sint32">4</member>
 			<member name="description" type="string"/>
 			<member name="comment" type="string"/>
@@ -1803,7 +1803,7 @@
 			<member name="unit" type="string">unit</member>
 			<member name="period" type="sint32">1000</member>
 			<member name="address" type="string">pendulum_debug.alphal</member>
-			<member name="last_addr" type="uint32">0x20008A64</member>
+			<member name="last_addr" type="uint32">0x20008A68</member>
 			<member name="byte_size" type="sint32">4</member>
 			<member name="description" type="string"/>
 			<member name="comment" type="string"/>
@@ -1852,7 +1852,7 @@
 			<member name="unit" type="string">unit</member>
 			<member name="period" type="sint32">1000</member>
 			<member name="address" type="string">pendulum_debug.Twl</member>
-			<member name="last_addr" type="uint32">0x20008AA8</member>
+			<member name="last_addr" type="uint32">0x20008AAC</member>
 			<member name="byte_size" type="sint32">4</member>
 			<member name="description" type="string"/>
 			<member name="comment" type="string"/>
@@ -1901,7 +1901,7 @@
 			<member name="unit" type="string">unit</member>
 			<member name="period" type="sint32">1000</member>
 			<member name="address" type="string">pendulum_debug.Twr</member>
-			<member name="last_addr" type="uint32">0x20008AAC</member>
+			<member name="last_addr" type="uint32">0x20008AB0</member>
 			<member name="byte_size" type="sint32">4</member>
 			<member name="description" type="string"/>
 			<member name="comment" type="string"/>
@@ -1950,7 +1950,7 @@
 			<member name="unit" type="string">unit</member>
 			<member name="period" type="sint32">1000</member>
 			<member name="address" type="string">pendulum_debug.Tpl</member>
-			<member name="last_addr" type="uint32">0x20008AB0</member>
+			<member name="last_addr" type="uint32">0x20008AB4</member>
 			<member name="byte_size" type="sint32">4</member>
 			<member name="description" type="string"/>
 			<member name="comment" type="string"/>
@@ -1999,7 +1999,7 @@
 			<member name="unit" type="string">unit</member>
 			<member name="period" type="sint32">1000</member>
 			<member name="address" type="string">pendulum_debug.Tpr</member>
-			<member name="last_addr" type="uint32">0x20008AB4</member>
+			<member name="last_addr" type="uint32">0x20008AB8</member>
 			<member name="byte_size" type="sint32">4</member>
 			<member name="description" type="string"/>
 			<member name="comment" type="string"/>
@@ -2048,7 +2048,7 @@
 			<member name="unit" type="string">unit</member>
 			<member name="period" type="sint32">1000</member>
 			<member name="address" type="string">pendulum_debug.rneutral</member>
-			<member name="last_addr" type="uint32">0x20008AFB</member>
+			<member name="last_addr" type="uint32">0x20008AFF</member>
 			<member name="byte_size" type="sint32">1</member>
 			<member name="description" type="string"/>
 			<member name="comment" type="string"/>
@@ -2097,7 +2097,7 @@
 			<member name="unit" type="string">unit</member>
 			<member name="period" type="sint32">1000</member>
 			<member name="address" type="string">pendulum_debug.lneutral</member>
-			<member name="last_addr" type="uint32">0x20008AFA</member>
+			<member name="last_addr" type="uint32">0x20008AFE</member>
 			<member name="byte_size" type="sint32">1</member>
 			<member name="description" type="string"/>
 			<member name="comment" type="string"/>
@@ -2146,7 +2146,7 @@
 			<member name="unit" type="string">unit</member>
 			<member name="period" type="sint32">1000</member>
 			<member name="address" type="string">pendulum_debug.Nl</member>
-			<member name="last_addr" type="uint32">0x20008AC8</member>
+			<member name="last_addr" type="uint32">0x20008ACC</member>
 			<member name="byte_size" type="sint32">4</member>
 			<member name="description" type="string"/>
 			<member name="comment" type="string"/>
@@ -2195,7 +2195,7 @@
 			<member name="unit" type="string">unit</member>
 			<member name="period" type="sint32">1000</member>
 			<member name="address" type="string">pendulum_debug.Nr</member>
-			<member name="last_addr" type="uint32">0x20008ACC</member>
+			<member name="last_addr" type="uint32">0x20008AD0</member>
 			<member name="byte_size" type="sint32">4</member>
 			<member name="description" type="string"/>
 			<member name="comment" type="string"/>
@@ -2244,7 +2244,7 @@
 			<member name="unit" type="string">unit</member>
 			<member name="period" type="sint32">1000</member>
 			<member name="address" type="string">pendulum_debug.rjoint4_pos</member>
-			<member name="last_addr" type="uint32">0x20008B20</member>
+			<member name="last_addr" type="uint32">0x20008B24</member>
 			<member name="byte_size" type="sint32">4</member>
 			<member name="description" type="string"/>
 			<member name="comment" type="string"/>
@@ -2293,7 +2293,7 @@
 			<member name="unit" type="string">unit</member>
 			<member name="period" type="sint32">1000</member>
 			<member name="address" type="string">pendulum_debug.ljoint4_tor</member>
-			<member name="last_addr" type="uint32">0x20008B08</member>
+			<member name="last_addr" type="uint32">0x20008B0C</member>
 			<member name="byte_size" type="sint32">4</member>
 			<member name="description" type="string"/>
 			<member name="comment" type="string"/>
@@ -2342,7 +2342,7 @@
 			<member name="unit" type="string">unit</member>
 			<member name="period" type="sint32">1000</member>
 			<member name="address" type="string">pendulum_debug.rjoint1_tor</member>
-			<member name="last_addr" type="uint32">0x20008B14</member>
+			<member name="last_addr" type="uint32">0x20008B18</member>
 			<member name="byte_size" type="sint32">4</member>
 			<member name="description" type="string"/>
 			<member name="comment" type="string"/>
@@ -2391,7 +2391,7 @@
 			<member name="unit" type="string">unit</member>
 			<member name="period" type="sint32">1000</member>
 			<member name="address" type="string">pendulum_debug.ljoint1_tor</member>
-			<member name="last_addr" type="uint32">0x20008B0C</member>
+			<member name="last_addr" type="uint32">0x20008B10</member>
 			<member name="byte_size" type="sint32">4</member>
 			<member name="description" type="string"/>
 			<member name="comment" type="string"/>
@@ -2440,7 +2440,7 @@
 			<member name="unit" type="string">unit</member>
 			<member name="period" type="sint32">1000</member>
 			<member name="address" type="string">pendulum_debug.lflat</member>
-			<member name="last_addr" type="uint32">0x20008AF8</member>
+			<member name="last_addr" type="uint32">0x20008AFC</member>
 			<member name="byte_size" type="sint32">1</member>
 			<member name="description" type="string"/>
 			<member name="comment" type="string"/>
@@ -2489,7 +2489,7 @@
 			<member name="unit" type="string">unit</member>
 			<member name="period" type="sint32">1000</member>
 			<member name="address" type="string">pendulum_debug.rjoint1_pos</member>
-			<member name="last_addr" type="uint32">0x20008B24</member>
+			<member name="last_addr" type="uint32">0x20008B28</member>
 			<member name="byte_size" type="sint32">4</member>
 			<member name="description" type="string"/>
 			<member name="comment" type="string"/>
@@ -2538,7 +2538,7 @@
 			<member name="unit" type="string">unit</member>
 			<member name="period" type="sint32">1000</member>
 			<member name="address" type="string">pendulum_debug.ljoint4_pos</member>
-			<member name="last_addr" type="uint32">0x20008B18</member>
+			<member name="last_addr" type="uint32">0x20008B1C</member>
 			<member name="byte_size" type="sint32">4</member>
 			<member name="description" type="string"/>
 			<member name="comment" type="string"/>
@@ -2587,7 +2587,7 @@
 			<member name="unit" type="string">unit</member>
 			<member name="period" type="sint32">1000</member>
 			<member name="address" type="string">pendulum_debug.rflat</member>
-			<member name="last_addr" type="uint32">0x20008AF9</member>
+			<member name="last_addr" type="uint32">0x20008AFD</member>
 			<member name="byte_size" type="sint32">1</member>
 			<member name="description" type="string"/>
 			<member name="comment" type="string"/>
@@ -2636,7 +2636,7 @@
 			<member name="unit" type="string">unit</member>
 			<member name="period" type="sint32">1000</member>
 			<member name="address" type="string">pendulum_debug.rjoint4_tor</member>
-			<member name="last_addr" type="uint32">0x20008B10</member>
+			<member name="last_addr" type="uint32">0x20008B14</member>
 			<member name="byte_size" type="sint32">4</member>
 			<member name="description" type="string"/>
 			<member name="comment" type="string"/>
@@ -2685,7 +2685,7 @@
 			<member name="unit" type="string">unit</member>
 			<member name="period" type="sint32">1000</member>
 			<member name="address" type="string">pendulum_debug.ljoint1_pos</member>
-			<member name="last_addr" type="uint32">0x20008B1C</member>
+			<member name="last_addr" type="uint32">0x20008B20</member>
 			<member name="byte_size" type="sint32">4</member>
 			<member name="description" type="string"/>
 			<member name="comment" type="string"/>
@@ -2734,7 +2734,7 @@
 			<member name="unit" type="string">unit</member>
 			<member name="period" type="sint32">1000</member>
 			<member name="address" type="string">pendulum_debug.rwheel_tor</member>
-			<member name="last_addr" type="uint32">0x20008B04</member>
+			<member name="last_addr" type="uint32">0x20008B08</member>
 			<member name="byte_size" type="sint32">4</member>
 			<member name="description" type="string"/>
 			<member name="comment" type="string"/>
@@ -2783,7 +2783,7 @@
 			<member name="unit" type="string">unit</member>
 			<member name="period" type="sint32">1000</member>
 			<member name="address" type="string">pendulum_debug.lwheel_tor</member>
-			<member name="last_addr" type="uint32">0x20008B00</member>
+			<member name="last_addr" type="uint32">0x20008B04</member>
 			<member name="byte_size" type="sint32">4</member>
 			<member name="description" type="string"/>
 			<member name="comment" type="string"/>
@@ -2832,7 +2832,7 @@
 			<member name="unit" type="string">unit</member>
 			<member name="period" type="sint32">1000</member>
 			<member name="address" type="string">pendulum_debug.lwheel_spd</member>
-			<member name="last_addr" type="uint32">0x20008B28</member>
+			<member name="last_addr" type="uint32">0x20008B2C</member>
 			<member name="byte_size" type="sint32">4</member>
 			<member name="description" type="string"/>
 			<member name="comment" type="string"/>
@@ -2881,7 +2881,7 @@
 			<member name="unit" type="string">unit</member>
 			<member name="period" type="sint32">1000</member>
 			<member name="address" type="string">pendulum_debug.rwheel_spd</member>
-			<member name="last_addr" type="uint32">0x20008B2C</member>
+			<member name="last_addr" type="uint32">0x20008B30</member>
 			<member name="byte_size" type="sint32">4</member>
 			<member name="description" type="string"/>
 			<member name="comment" type="string"/>
@@ -3028,7 +3028,7 @@
 			<member name="unit" type="string">unit</member>
 			<member name="period" type="sint32">1000</member>
 			<member name="address" type="string">pendulum_debug.N</member>
-			<member name="last_addr" type="uint32">0x20008AD0</member>
+			<member name="last_addr" type="uint32">0x20008AD4</member>
 			<member name="byte_size" type="sint32">4</member>
 			<member name="description" type="string"/>
 			<member name="comment" type="string"/>
@@ -3077,7 +3077,7 @@
 			<member name="unit" type="string">unit</member>
 			<member name="period" type="sint32">1000</member>
 			<member name="address" type="string">pendulum_debug.offground</member>
-			<member name="last_addr" type="uint32">0x20008AFC</member>
+			<member name="last_addr" type="uint32">0x20008B00</member>
 			<member name="byte_size" type="sint32">1</member>
 			<member name="description" type="string"/>
 			<member name="comment" type="string"/>
@@ -3126,7 +3126,7 @@
 			<member name="unit" type="string">unit</member>
 			<member name="period" type="sint32">1000</member>
 			<member name="address" type="string">pendulum_debug.Cl</member>
-			<member name="last_addr" type="uint32">0x20008AA0</member>
+			<member name="last_addr" type="uint32">0x20008AA4</member>
 			<member name="byte_size" type="sint32">4</member>
 			<member name="description" type="string"/>
 			<member name="comment" type="string"/>
@@ -3175,7 +3175,7 @@
 			<member name="unit" type="string">unit</member>
 			<member name="period" type="sint32">1000</member>
 			<member name="address" type="string">pendulum_debug.Cr</member>
-			<member name="last_addr" type="uint32">0x20008AA4</member>
+			<member name="last_addr" type="uint32">0x20008AA8</member>
 			<member name="byte_size" type="sint32">4</member>
 			<member name="description" type="string"/>
 			<member name="comment" type="string"/>
@@ -3224,7 +3224,7 @@
 			<member name="unit" type="string">unit</member>
 			<member name="period" type="sint32">1000</member>
 			<member name="address" type="string">pendulum_debug.alphal_eq</member>
-			<member name="last_addr" type="uint32">0x20008A5C</member>
+			<member name="last_addr" type="uint32">0x20008A60</member>
 			<member name="byte_size" type="sint32">4</member>
 			<member name="description" type="string"/>
 			<member name="comment" type="string"/>
@@ -3273,7 +3273,7 @@
 			<member name="unit" type="string">unit</member>
 			<member name="period" type="sint32">1000</member>
 			<member name="address" type="string">pendulum_debug.alphar_eq</member>
-			<member name="last_addr" type="uint32">0x20008A60</member>
+			<member name="last_addr" type="uint32">0x20008A64</member>
 			<member name="byte_size" type="sint32">4</member>
 			<member name="description" type="string"/>
 			<member name="comment" type="string"/>
@@ -3616,7 +3616,7 @@
 			<member name="unit" type="string">unit</member>
 			<member name="period" type="sint32">1000</member>
 			<member name="address" type="string">pendulum_debug.stage</member>
-			<member name="last_addr" type="uint32">0x20008B30</member>
+			<member name="last_addr" type="uint32">0x20008B34</member>
 			<member name="byte_size" type="sint32">1</member>
 			<member name="description" type="string"/>
 			<member name="comment" type="string"/>
@@ -3665,7 +3665,7 @@
 			<member name="unit" type="string">unit</member>
 			<member name="period" type="sint32">1000</member>
 			<member name="address" type="string">pendulum_debug.rlenref</member>
-			<member name="last_addr" type="uint32">0x20008A94</member>
+			<member name="last_addr" type="uint32">0x20008A98</member>
 			<member name="byte_size" type="sint32">4</member>
 			<member name="description" type="string"/>
 			<member name="comment" type="string"/>
@@ -3714,7 +3714,7 @@
 			<member name="unit" type="string">unit</member>
 			<member name="period" type="sint32">1000</member>
 			<member name="address" type="string">pendulum_debug.llenref</member>
-			<member name="last_addr" type="uint32">0x20008A90</member>
+			<member name="last_addr" type="uint32">0x20008A94</member>
 			<member name="byte_size" type="sint32">4</member>
 			<member name="description" type="string"/>
 			<member name="comment" type="string"/>
@@ -3763,7 +3763,7 @@
 			<member name="unit" type="string">unit</member>
 			<member name="period" type="sint32">1000</member>
 			<member name="address" type="string">pendulum_debug.motorL4error</member>
-			<member name="last_addr" type="uint32">0x20008B32</member>
+			<member name="last_addr" type="uint32">0x20008B36</member>
 			<member name="byte_size" type="sint32">1</member>
 			<member name="description" type="string"/>
 			<member name="comment" type="string"/>
@@ -3812,7 +3812,7 @@
 			<member name="unit" type="string">unit</member>
 			<member name="period" type="sint32">1000</member>
 			<member name="address" type="string">debug_motor.yawmotor_cur</member>
-			<member name="last_addr" type="uint32">0x20007144</member>
+			<member name="last_addr" type="uint32">0x20007148</member>
 			<member name="byte_size" type="sint32">4</member>
 			<member name="description" type="string"/>
 			<member name="comment" type="string"/>
@@ -3959,7 +3959,7 @@
 			<member name="unit" type="string">unit</member>
 			<member name="period" type="sint32">1000</member>
 			<member name="address" type="string">pendulum_debug.state</member>
-			<member name="last_addr" type="uint32">0x20008B31</member>
+			<member name="last_addr" type="uint32">0x20008B35</member>
 			<member name="byte_size" type="sint32">1</member>
 			<member name="description" type="string"/>
 			<member name="comment" type="string"/>
@@ -4008,7 +4008,7 @@
 			<member name="unit" type="string">unit</member>
 			<member name="period" type="sint32">1000</member>
 			<member name="address" type="string">pendulum_debug.az</member>
-			<member name="last_addr" type="uint32">0x20008AD4</member>
+			<member name="last_addr" type="uint32">0x20008AD8</member>
 			<member name="byte_size" type="sint32">4</member>
 			<member name="description" type="string"/>
 			<member name="comment" type="string"/>
@@ -4057,7 +4057,7 @@
 			<member name="unit" type="string">unit</member>
 			<member name="period" type="sint32">1000</member>
 			<member name="address" type="string">pendulum_debug.Fsl</member>
-			<member name="last_addr" type="uint32">0x20008AB8</member>
+			<member name="last_addr" type="uint32">0x20008ABC</member>
 			<member name="byte_size" type="sint32">4</member>
 			<member name="description" type="string"/>
 			<member name="comment" type="string"/>
@@ -4106,7 +4106,7 @@
 			<member name="unit" type="string">unit</member>
 			<member name="period" type="sint32">1000</member>
 			<member name="address" type="string">pendulum_debug.Fsr</member>
-			<member name="last_addr" type="uint32">0x20008ABC</member>
+			<member name="last_addr" type="uint32">0x20008AC0</member>
 			<member name="byte_size" type="sint32">4</member>
 			<member name="description" type="string"/>
 			<member name="comment" type="string"/>
@@ -4155,7 +4155,7 @@
 			<member name="unit" type="string">unit</member>
 			<member name="period" type="sint32">1000</member>
 			<member name="address" type="string">pendulum_debug.landing</member>
-			<member name="last_addr" type="uint32">0x20008AFD</member>
+			<member name="last_addr" type="uint32">0x20008B01</member>
 			<member name="byte_size" type="sint32">1</member>
 			<member name="description" type="string"/>
 			<member name="comment" type="string"/>
@@ -4204,7 +4204,7 @@
 			<member name="unit" type="string">unit</member>
 			<member name="period" type="sint32">1000</member>
 			<member name="address" type="string">pendulum_debug.lphi</member>
-			<member name="last_addr" type="uint32">0x20008AF0</member>
+			<member name="last_addr" type="uint32">0x20008AF4</member>
 			<member name="byte_size" type="sint32">4</member>
 			<member name="description" type="string"/>
 			<member name="comment" type="string"/>
@@ -4253,7 +4253,7 @@
 			<member name="unit" type="string">unit</member>
 			<member name="period" type="sint32">1000</member>
 			<member name="address" type="string">pendulum_debug.Tphil</member>
-			<member name="last_addr" type="uint32">0x20008B34</member>
+			<member name="last_addr" type="uint32">0x20008B38</member>
 			<member name="byte_size" type="sint32">4</member>
 			<member name="description" type="string"/>
 			<member name="comment" type="string"/>
@@ -4302,7 +4302,7 @@
 			<member name="unit" type="string">unit</member>
 			<member name="period" type="sint32">1000</member>
 			<member name="address" type="string">pendulum_debug.rphi</member>
-			<member name="last_addr" type="uint32">0x20008AF4</member>
+			<member name="last_addr" type="uint32">0x20008AF8</member>
 			<member name="byte_size" type="sint32">4</member>
 			<member name="description" type="string"/>
 			<member name="comment" type="string"/>
@@ -4351,7 +4351,7 @@
 			<member name="unit" type="string">unit</member>
 			<member name="period" type="sint32">1000</member>
 			<member name="address" type="string">pendulum_debug.Tphir</member>
-			<member name="last_addr" type="uint32">0x20008B38</member>
+			<member name="last_addr" type="uint32">0x20008B3C</member>
 			<member name="byte_size" type="sint32">4</member>
 			<member name="description" type="string"/>
 			<member name="comment" type="string"/>
@@ -4400,7 +4400,7 @@
 			<member name="unit" type="string">unit</member>
 			<member name="period" type="sint32">1000</member>
 			<member name="address" type="string">debug_dist</member>
-			<member name="last_addr" type="uint32">0x20007130</member>
+			<member name="last_addr" type="uint32">0x20007134</member>
 			<member name="byte_size" type="sint32">4</member>
 			<member name="description" type="string"/>
 			<member name="comment" type="string"/>
@@ -4449,7 +4449,7 @@
 			<member name="unit" type="string">unit</member>
 			<member name="period" type="sint32">1000</member>
 			<member name="address" type="string">debug_ui_reset</member>
-			<member name="last_addr" type="uint32">0x20009410</member>
+			<member name="last_addr" type="uint32">0x20009414</member>
 			<member name="byte_size" type="sint32">1</member>
 			<member name="description" type="string"/>
 			<member name="comment" type="string"/>
@@ -4622,7 +4622,7 @@
 		</object>
 		<object name="ObjId0482" type="CPrjItemRS_VarInfo">
 			<member name="variable" type="CObject_ptr">ObjId0014</member>
-			<member name="visible" type="sint32">1</member>
+			<member name="visible" type="sint32">0</member>
 			<member name="y_block" type="sint32">0</member>
 			<member name="color" type="uint32">0xD0E040</member>
 		</object>

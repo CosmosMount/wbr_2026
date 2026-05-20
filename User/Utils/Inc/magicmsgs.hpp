@@ -114,6 +114,11 @@ struct msg_pendulum_t
     bool flying;
     bool normal;
     bool recovered;
+    bool stairing;
+    bool spinning;
+    float lalpha;
+    float ralpha;
+    float pitch;
 };
 
 struct msg_ctrl_t
@@ -153,14 +158,15 @@ struct msg_cmd_t
 struct msg_referee_t
 {
     GameRobotStatus_t robot_status;
+    RobotHurt_t robot_hurt;
     uint16_t heat_now;
     uint16_t power_buffer;
+    uint8_t remained_energy;
 };
 
 struct msg_chassisui_t
 {
     float relative_angle;
-    float len;
-    float v;
     float dist;
+    bool jumping;
 };

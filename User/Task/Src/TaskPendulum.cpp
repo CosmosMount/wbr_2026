@@ -827,6 +827,11 @@ DMMotorHandler *dmmotorhandler = DMMotorHandler::Instance();
         pendulum_data.N = (lpendulum.N+rpendulum.N)*0.5f;
         pendulum_data.len = (lpendulum.len+rpendulum.len)*0.5f;
         pendulum_data.flying = flying;
+        pendulum_data.stairing = going_stair;
+        pendulum_data.lalpha = lpendulum.alpha;
+        pendulum_data.ralpha = rpendulum.alpha;
+        pendulum_data.pitch = pitch;
+        pendulum_data.spinning = (chassis_state==SPIN);
         om_publish(pendulum_pub, &pendulum_data, sizeof(msg_pendulum_t), true, false);  
         tx_semaphore_put(&PendulumThreadSem);
 
