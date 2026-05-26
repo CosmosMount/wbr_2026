@@ -604,7 +604,7 @@ DMMotorHandler *dmmotorhandler = DMMotorHandler::Instance();
             else
             {
                 pendulum_data.normal = true;
-                len_slope.SetPath(0.0002f);
+                len_slope.SetPath(0.00035f);
             }
                 
             offground = (N<0.0f) && (lpendulum.dlen > 0.05f) && (rpendulum.dlen > 0.05f) && (airprotect_cnt>500);
@@ -655,7 +655,7 @@ DMMotorHandler *dmmotorhandler = DMMotorHandler::Instance();
             if (flying)
                 landing = (lpendulum.dlen < -0.05f) && (rpendulum.dlen < -0.05f) && (landing_cnt>100);
             else
-                landing = (lpendulum.dlen < -0.03f) && (rpendulum.dlen < -0.03f);
+                landing = (lpendulum.dlen < -0.0f) && (rpendulum.dlen < -0.0f);
 
             if (lpendulum.alpha >= 0.8f || rpendulum.alpha >= 0.8f)
             {
@@ -673,7 +673,10 @@ DMMotorHandler *dmmotorhandler = DMMotorHandler::Instance();
                 just_offground = true;
                 target_len = chassis::Lmin;
                 len_slope.SetDefault(lpendulum.len);
-                len_slope.SetPath(0.0006f);
+                if (flying)
+                    len_slope.SetPath(0.0006f);
+                else
+                    len_slope.SetPath(0.0009f);
                 flying = false;
             }
             break;
