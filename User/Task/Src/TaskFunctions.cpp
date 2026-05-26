@@ -360,7 +360,7 @@ SuperCap* debug_supercap = SuperCap::Instance();
                         if (fabs(cmd_msg->vx*0.1f) > 0.005f)
                         {
                             cmd.dyaw = -relative_angle*4.0f;
-                            cmd.v = vx_updater.UpdateVal(cmd_msg->vx*0.1f*1.5f);
+                            cmd.v = vx_updater.UpdateVal(cmd_msg->vx*0.1f*2.0f);
                         }
                     }
                     else
