@@ -401,6 +401,11 @@ DMMotorHandler *dmmotorhandler = DMMotorHandler::Instance();
         {
             pendulum_data.normal = true;
             pendulum_data.recovered = true;
+            if ((lpendulum.phi >= 0.9f && lpendulum.phi <= 1.4f) && (rpendulum.phi >= 0.9f && rpendulum.phi <= 1.4f))
+            {
+                chassis_state = NEUTRAL;
+                break;
+            }
             if (lpendulum.flat) 
             {
                 Fl[0] = 0.0f;
@@ -452,8 +457,14 @@ DMMotorHandler *dmmotorhandler = DMMotorHandler::Instance();
             odom.Reset();
             Fl[0] = lpendulum.LenControl(lpendulum.len+(Lmin-lpendulum.len)*0.6f)-lpendulum.Fs;
             Fr[0] = rpendulum.LenControl(rpendulum.len+(Lmin-rpendulum.len)*0.6f)-rpendulum.Fs;
-            Fl[1] = lpendulum.PhiControl(PI*0.5f, 25.0f, 10.0f, 0.003f, false);
-            Fr[1] = rpendulum.PhiControl(PI*0.5f, 25.0f, 10.0f, 0.003f, false);
+            if (lpendulum.phi >= PI*0.45f)
+                Fl[1] = lpendulum.PhiControl(PI*0.5f, 30.0f, 10.0f, 0.003f, false);
+            else
+                Fl[1] = lpendulum.PhiControl(PI*0.5f, 30.0f, 10.0f, 0.003f, true);
+            if (rpendulum.phi >= PI*0.45f)
+                Fr[1] = rpendulum.PhiControl(PI*0.5f, 30.0f, 10.0f, 0.003f, false);
+            else
+                Fr[1] = rpendulum.PhiControl(PI*0.5f, 30.0f, 10.0f, 0.003f, true);
             if (cmd.v > 0.005f)
             {
                 Twl = 1.5f;
@@ -662,7 +673,7 @@ DMMotorHandler *dmmotorhandler = DMMotorHandler::Instance();
                 just_offground = true;
                 target_len = chassis::Lmin;
                 len_slope.SetDefault(lpendulum.len);
-                len_slope.SetPath(0.0008f);
+                len_slope.SetPath(0.0006f);
                 flying = false;
             }
             break;
