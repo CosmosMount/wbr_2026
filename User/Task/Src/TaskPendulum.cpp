@@ -675,14 +675,14 @@ DMMotorHandler *dmmotorhandler = DMMotorHandler::Instance();
             refX[1] = cmd.v;
             refX[2] = cmd.yaw;
             refX[3] = cmd.dyaw;
-            refX[4] = 0.0f;//lpendulum.alpha_eq;
+            refX[4] = lpendulum.alpha_eq-0.03f;
             refX[5] = 0.0f;
-            refX[6] = 0.0f;//rpendulum.alpha_eq;
+            refX[6] = rpendulum.alpha_eq-0.03f;
             refX[7] = 0.0f;
             refX[8] = 0.0f;//pitch_eq;
             refX[9] = 0.0f;
 
-            lqr.lqr_type = LQR_LOW;
+            lqr.lqr_type = LQR_SPIN;
             lqr.Update(lpendulum.len, rpendulum.len);
 
             Twl = lqr.Tout[0];
@@ -690,8 +690,12 @@ DMMotorHandler *dmmotorhandler = DMMotorHandler::Instance();
             Fl[1] = lqr.Tout[2];
             Fr[1] = lqr.Tout[3];
 
-            Fl[0] = lpendulum.LenControl(Lmin)+Gff-lpendulum.Fs;
-            Fr[0] = rpendulum.LenControl(Lmin)+Gff-rpendulum.Fs;
+            roll_pd.ref = 0.0f;
+            roll_pd.fdb = ins.roll*DegreeToRad;
+            roll_pd.UpdateResult(ins.gyro_r);
+
+            Fl[0] = lpendulum.LenControl(Lmin+roll_pd.result)+Gff-lpendulum.Fs;
+            Fr[0] = rpendulum.LenControl(Lmin-roll_pd.result)+Gff-rpendulum.Fs;
 
             lpendulum.TorqueControl(Fl, Twl);
             rpendulum.TorqueControl(Fr, Twr);
