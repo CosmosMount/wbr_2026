@@ -368,8 +368,8 @@ DMMotorHandler *dmmotorhandler = DMMotorHandler::Instance();
 
                 if (both_zero)
                 {
-                    Fl[1] = -5.0f;
-                    Fr[1] = 5.0f;
+                    Fl[1] = -35.0f;
+                    Fr[1] = 35.0f;
                 }
             }
             else
@@ -381,8 +381,8 @@ DMMotorHandler *dmmotorhandler = DMMotorHandler::Instance();
 
                 if (both_pi)
                 {
-                    Fl[1] = 5.0f;
-                    Fr[1] = -5.0f;
+                    Fl[1] = 35.0f;
+                    Fr[1] = -35.0f;
                 }
             }
 
