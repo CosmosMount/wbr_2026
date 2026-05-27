@@ -61,7 +61,7 @@ constexpr float Lnormal = 0.16f;
 constexpr float Lmin = 0.16f;
 constexpr float Lmid = 0.22f;
 constexpr float Lmax = 0.36f;
-constexpr float Lfly = 0.22f;
+constexpr float Lfly = 0.23f;
 constexpr float Lqr_len_resolution = 0.01f;
 constexpr float Lswitch = 0.24f;
 

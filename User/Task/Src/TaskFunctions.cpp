@@ -96,12 +96,10 @@ SuperCap* debug_supercap = SuperCap::Instance();
     trigger_motor.controlMode = DJIMotor::SPD_MODE;
     trigger_motor.gearBox = GearBox_None; // 使用速度×36，其实精度更高
     trigger_motor.speedPid.kp = 100.0f;
-    bool yaw_init = false, lock_offset = false, comm_lost = false, offset_inited = false;
+    bool yaw_init = false, lock_offset = false, comm_lost = false, first_init_tried = false;
     float distance1, distance2, front_offset, relative_angle, init_offset;
     int16_t prev_yaw_cur = 0;
     uint32_t comm_lost_cnt = 0;
-    PID yaw_init_pos_pid(80.0f, 0.0f, 1800.0f, 500.0f, 10.0f, PID_POSITION | PID_Derivative_On_Measurement);
-    PID yaw_init_spd_pid(4000.0f, 0.0f, 0.0f, 25000.0f, 100.0f, PID_POSITION);
     
     /* Communication with Gimbal */
     uint8_t CommMsg[8] = {0};
@@ -196,7 +194,9 @@ SuperCap* debug_supercap = SuperCap::Instance();
         
         power_limit = power_limit - 7.0f + buffer_coeff * 3.5f;
 
-        if (SuperCap::Instance()->supercap_fdb.fdb.cap_state_fdb == 0 && SuperCap::Instance()->supercap_fdb.fdb.cap_voltage_x5 !=0)
+        if (!referee_data.robot_status.power_management_chassis_output)
+            SuperCap::Instance()->supercap_set.set.cap_state_set = 0;
+        else if (SuperCap::Instance()->supercap_fdb.fdb.cap_state_fdb == 0 && SuperCap::Instance()->supercap_fdb.fdb.cap_voltage_x5 !=0)
             SuperCap::Instance()->supercap_set.set.cap_state_set = 2;
         else
             SuperCap::Instance()->supercap_set.set.cap_state_set = 1;
@@ -212,25 +212,30 @@ SuperCap* debug_supercap = SuperCap::Instance();
         if (disabled)
         {
             yaw_init = false;
+            first_init_tried = false;
             chassis_msg.inited = false;
             yaw_motor.currentSet = 0;
             trigger_motor.speedSet = 0.0f;
         }
+        else if (not_recovered)
+        {
+            if (!first_init_tried)
+            {
+                yaw_motor.currentSet = (((yaw_motor.motorFeedback.positionFdb - yaw_offset1) > 0.0f) ? -1 : 1)*8000;
+                if (fabs(yaw_motor.motorFeedback.positionFdb-yaw_offset1)<0.2f)
+                {
+                    first_init_tried = true;
+                } 
+            }
+            else
+            {
+                yaw_motor.currentSet = 0;
+            }
+        }
         else if (not_ready)
         {
-            if (!offset_inited)
-            {
-                distance1 = fabs(yaw_motor.motorFeedback.positionFdb-yaw_offset1);
-                distance2 = fabs(yaw_motor.motorFeedback.positionFdb-yaw_offset2);
-                init_offset = distance1 < distance2 ? yaw_offset1 : yaw_offset2;
-            }
-
-            if (init_offset == yaw_offset1)
-                yaw_motor.currentSet = (((yaw_motor.motorFeedback.positionFdb - yaw_offset1) > 0.0f) ? -1 : 1)*15000;
-            else if (init_offset == yaw_offset2)
-                yaw_motor.currentSet = (((yaw_motor.motorFeedback.positionFdb - yaw_offset2) > 0.0f) ? 1 : -1)*15000;
-
-            if (fabs(yaw_motor.motorFeedback.positionFdb-init_offset)<0.2f)
+            yaw_motor.currentSet = (((yaw_motor.motorFeedback.positionFdb - yaw_offset1) > 0.0f) ? -1 : 1)*8000;
+            if (fabs(yaw_motor.motorFeedback.positionFdb-yaw_offset1)<0.2f)
             {
                 yaw_init = true;
                 chassis_msg.inited = true;
@@ -376,7 +381,7 @@ SuperCap* debug_supercap = SuperCap::Instance();
                         if (fabs(cmd_msg->vx*0.1f) > 0.005f)
                         {
                             cmd.dyaw = -relative_angle*4.0f;
-                            cmd.v = vx_updater.UpdateVal(cmd_msg->vx*0.1f*1.7f);
+                            cmd.v = vx_updater.UpdateVal(cmd_msg->vx*0.1f*2.0f);
                         }
                     }
                     else
