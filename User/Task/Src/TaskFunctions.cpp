@@ -194,7 +194,7 @@ SuperCap* debug_supercap = SuperCap::Instance();
         
         power_limit = power_limit - 7.0f + buffer_coeff * 3.5f;
 
-        if (!referee_data.robot_status.power_management_chassis_output)
+        if (!referee_data.robot_status.power_management_chassis_output || !cmd_msg->ifmove)
             SuperCap::Instance()->supercap_set.set.cap_state_set = 0;
         else if (SuperCap::Instance()->supercap_fdb.fdb.cap_state_fdb == 0 && SuperCap::Instance()->supercap_fdb.fdb.cap_voltage_x5 !=0)
             SuperCap::Instance()->supercap_set.set.cap_state_set = 2;
@@ -232,7 +232,7 @@ SuperCap* debug_supercap = SuperCap::Instance();
                 yaw_motor.currentSet = 0;
             }
         }
-        else if (not_ready)
+        else if (not_ready && !cmd_msg->ifgimbalonly)
         {
             yaw_motor.currentSet = (((yaw_motor.motorFeedback.positionFdb - yaw_offset1) > 0.0f) ? -1 : 1)*8000;
             if (fabs(yaw_motor.motorFeedback.positionFdb-yaw_offset1)<0.2f)
