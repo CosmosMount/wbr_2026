@@ -74,7 +74,7 @@ constexpr float Tk_wheel = 1400.0f;
 constexpr float Thip_max = 40.0f;
 constexpr float Twheel_max = 11.0f;
 
-constexpr float Fspring = 450.0f;
+constexpr float Fspring = 250.0f;
 constexpr float Dspring1 = 0.03f;
 constexpr float Dspring2 = 0.05f;
 constexpr float Ang_spring = 0.2164f;
@@ -89,14 +89,7 @@ constexpr float alpha_eq_coeff[3] = { 0.280918f, -1.101757f, 1.232768f };
 
 constexpr float imu_offset_x = 0.2f;
 
-constexpr uint8_t ljoint1_id = 0x01;
-constexpr uint8_t ljoint4_id = 0x02;
-constexpr uint8_t rjoint1_id = 0x04;
-constexpr uint8_t rjoint4_id = 0x03;
-constexpr uint16_t lwheel_id = 0x202;
-constexpr uint16_t rwheel_id = 0x201;
-
-constexpr float yaw_offset1 = -2.28699344f;
-constexpr float yaw_offset2 = 0.852893309f;
+constexpr float yaw_offset1 = -2.54257321f;
+constexpr float yaw_offset2 = 0.599019443f;
 
 };
