@@ -401,7 +401,7 @@ DMMotorHandler *dmmotorhandler = DMMotorHandler::Instance();
         {
             pendulum_data.normal = true;
             pendulum_data.recovered = true;
-            if ((lpendulum.phi >= 0.9f && lpendulum.phi <= 1.4f) && (rpendulum.phi >= 0.9f && rpendulum.phi <= 1.4f))
+            if ((lpendulum.phi >= 0.7f && lpendulum.phi <= 1.4f) && (rpendulum.phi >= 0.7f && rpendulum.phi <= 1.4f))
             {
                 chassis_state = NEUTRAL;
                 break;
