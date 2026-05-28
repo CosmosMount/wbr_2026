@@ -772,8 +772,8 @@ DMMotorHandler *dmmotorhandler = DMMotorHandler::Instance();
                     Twr = lqr.Tout[1];
                     Fl[1] = lqr.Tout[2];
                     Fr[1] = lqr.Tout[3];
-                    Fl[0] = 700.0f;
-                    Fr[0] = 700.0f;
+                    Fl[0] = 750.0f;
+                    Fr[0] = 750.0f;
 
                     if (lpendulum.len>=0.32f && rpendulum.len>=0.32f)
                     {
