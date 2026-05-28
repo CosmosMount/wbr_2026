@@ -217,7 +217,7 @@ SuperCap* debug_supercap = SuperCap::Instance();
             yaw_motor.currentSet = 0;
             trigger_motor.speedSet = 0.0f;
         }
-        else if (not_recovered)
+        else if (not_recovered && !cmd_msg->ifgimbalonly)
         {
             if (!first_init_tried)
             {
@@ -232,7 +232,7 @@ SuperCap* debug_supercap = SuperCap::Instance();
                 yaw_motor.currentSet = 0;
             }
         }
-        else if (not_ready && !cmd_msg->ifgimbalonly)
+        else if (not_ready)
         {
             yaw_motor.currentSet = (((yaw_motor.motorFeedback.positionFdb - yaw_offset1) > 0.0f) ? -1 : 1)*8000;
             if (fabs(yaw_motor.motorFeedback.positionFdb-yaw_offset1)<0.2f)
@@ -347,7 +347,7 @@ SuperCap* debug_supercap = SuperCap::Instance();
                 if (jumping)
                 {
                     jumping_cnt ++;
-                    if (tof_distance <= 80.0f && tof_valid)
+                    if (tof_distance > 40.0f && tof_distance <= 80.0f && tof_valid)
                     {
                         cmd.ifjump = true;
                         jumping = false;
