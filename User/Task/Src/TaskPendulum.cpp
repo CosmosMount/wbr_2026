@@ -497,9 +497,9 @@ DMMotorHandler *dmmotorhandler = DMMotorHandler::Instance();
             refX[1] = cmd.v;
             refX[2] = cmd.yaw;
             refX[3] = cmd.dyaw;
-            refX[4] = lpendulum.alpha_eq;
+            refX[4] = lpendulum.alpha_eq+0.03f;
             refX[5] = 0.0f;
-            refX[6] = rpendulum.alpha_eq;
+            refX[6] = rpendulum.alpha_eq+0.03f;
             refX[7] = 0.0f;
             refX[8] = 0.0f;
             refX[9] = 0.0f;
@@ -604,7 +604,7 @@ DMMotorHandler *dmmotorhandler = DMMotorHandler::Instance();
             else
             {
                 pendulum_data.normal = true;
-                len_slope.SetPath(0.00035f);
+                len_slope.SetPath(0.00027f);
             }
                 
             offground = (N<0.0f) && (lpendulum.dlen > 0.05f) && (rpendulum.dlen > 0.05f) && (airprotect_cnt>500);
