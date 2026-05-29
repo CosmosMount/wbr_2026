@@ -112,6 +112,9 @@ SuperCap* debug_supercap = SuperCap::Instance();
     bool jumping = false;
     uint32_t jumping_cnt = 0;
 
+    /* Supercap */
+    uint32_t capstable_cnt = 0;
+
     for (;;)
     {
 
@@ -155,18 +158,9 @@ SuperCap* debug_supercap = SuperCap::Instance();
         }
 
         /* Handle Gimbal Motors */
-        // distance1 = fabs(yaw_motor.motorFeedback.positionFdb-yaw_offset1);
-        // distance2 = fabs(yaw_motor.motorFeedback.positionFdb-yaw_offset2);
-        // if (!lock_offset)
-        // {
-        //     front_offset = distance1 < distance2 ? yaw_offset1 : yaw_offset2;
-        // }
         front_offset = yaw_offset1;
 
-        relative_angle = LoopFloatConstrain(
-            yaw_motor.motorFeedback.positionFdb - front_offset,
-            -PI, PI
-        );
+        relative_angle = LoopFloatConstrain(yaw_motor.motorFeedback.positionFdb - front_offset, -PI, PI);
 
         /* Handel Power */
 
@@ -192,10 +186,14 @@ SuperCap* debug_supercap = SuperCap::Instance();
         else if (buffer_coeff < 0.01f)
             buffer_coeff = 0.01f;
         
-        power_limit = power_limit - 7.0f + buffer_coeff * 3.5f;
+        power_limit = power_limit - 7.0f + buffer_coeff * 5.5f;
 
-        if (!referee_data.robot_status.power_management_chassis_output || !cmd_msg->ifmove)
+        capstable_cnt++;
+        if (!referee_data.robot_status.power_management_chassis_output)
+        {
             SuperCap::Instance()->supercap_set.set.cap_state_set = 0;
+            capstable_cnt = 0;
+        }   
         else if (SuperCap::Instance()->supercap_fdb.fdb.cap_state_fdb == 0 && SuperCap::Instance()->supercap_fdb.fdb.cap_voltage_x5 !=0)
             SuperCap::Instance()->supercap_set.set.cap_state_set = 2;
         else
