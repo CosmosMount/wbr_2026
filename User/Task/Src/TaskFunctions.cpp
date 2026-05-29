@@ -112,6 +112,9 @@ SuperCap* debug_supercap = SuperCap::Instance();
     bool jumping = false;
     uint32_t jumping_cnt = 0;
 
+    /* Super Cap */
+    uint32_t capstable_cnt = 0;
+
     for (;;)
     {
 
@@ -155,18 +158,9 @@ SuperCap* debug_supercap = SuperCap::Instance();
         }
 
         /* Handle Gimbal Motors */
-        // distance1 = fabs(yaw_motor.motorFeedback.positionFdb-yaw_offset1);
-        // distance2 = fabs(yaw_motor.motorFeedback.positionFdb-yaw_offset2);
-        // if (!lock_offset)
-        // {
-        //     front_offset = distance1 < distance2 ? yaw_offset1 : yaw_offset2;
-        // }
         front_offset = yaw_offset1;
 
-        relative_angle = LoopFloatConstrain(
-            yaw_motor.motorFeedback.positionFdb - front_offset,
-            -PI, PI
-        );
+        relative_angle = LoopFloatConstrain(yaw_motor.motorFeedback.positionFdb - front_offset,-PI, PI);
 
         /* Handel Power */
 
@@ -180,7 +174,7 @@ SuperCap* debug_supercap = SuperCap::Instance();
 
         if (referee_data.remained_energy == 0)
             power_limit *= 0.33f;
-        else if ((!(referee_data.remained_energy & 0x10))&&referee_data.remained_energy != 0x80)
+        else if (!(referee_data.remained_energy & 0x10))
             power_limit *= 0.75f;
 
         if (power_limit < 20.0f)
@@ -194,8 +188,12 @@ SuperCap* debug_supercap = SuperCap::Instance();
         
         power_limit = power_limit - 7.0f + buffer_coeff * 3.5f;
 
-        if (!referee_data.robot_status.power_management_chassis_output || !cmd_msg->ifmove)
+        capstable_cnt ++;
+        if ((!referee_data.robot_status.power_management_chassis_output || !cmd_msg->ifmove) && capstable_cnt >= 500)
+        {
+            capstable_cnt = 0;
             SuperCap::Instance()->supercap_set.set.cap_state_set = 0;
+        }   
         else if (SuperCap::Instance()->supercap_fdb.fdb.cap_state_fdb == 0 && SuperCap::Instance()->supercap_fdb.fdb.cap_voltage_x5 !=0)
             SuperCap::Instance()->supercap_set.set.cap_state_set = 2;
         else
