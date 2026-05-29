@@ -4,10 +4,7 @@
 #define DEBUG
 #endif
 
-// #define GIMBAL_ONLY
-
 #define JUMP_UP
-// #define STAIR_UP
 
 #define TOF_DATA_SIZE 9
 
@@ -72,7 +69,7 @@ constexpr float Mbody = 14.0f;
 
 constexpr float Tk_wheel = 1400.0f;
 constexpr float Thip_max = 40.0f;
-constexpr float Twheel_max = 11.0f;
+constexpr float Twheel_max = 10.0f;
 
 constexpr float Fspring = 250.0f;
 constexpr float Dspring1 = 0.03f;

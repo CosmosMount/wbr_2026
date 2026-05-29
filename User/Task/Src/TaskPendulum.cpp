@@ -778,7 +778,7 @@ DMMotorHandler *dmmotorhandler = DMMotorHandler::Instance();
                     Fl[0] = 700.0f;
                     Fr[0] = 700.0f;
 
-                    if (lpendulum.len>=0.32f && rpendulum.len>=0.32f)
+                    if (lpendulum.len>=0.3f && rpendulum.len>=0.3f)
                     {
                         jumpair_cnt = 0;
                         jump_stage = INAIR;
@@ -813,7 +813,7 @@ DMMotorHandler *dmmotorhandler = DMMotorHandler::Instance();
                     Fl[0] = lpendulum.LenControl(Lmin)-lpendulum.Fs;
                     Fr[0] = rpendulum.LenControl(Lmin)-rpendulum.Fs;
 
-                    if (jumpair_cnt > 1200)
+                    if (jumpair_cnt > 500)
                     {
                         target_len = chassis::Lmin;
                         len_slope.SetDefault(lpendulum.len);
