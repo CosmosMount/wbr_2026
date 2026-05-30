@@ -188,11 +188,9 @@ SuperCap* debug_supercap = SuperCap::Instance();
         
         power_limit = power_limit - 7.0f + buffer_coeff * 5.5f;
 
-        capstable_cnt++;
         if (!referee_data.robot_status.power_management_chassis_output)
         {
             SuperCap::Instance()->supercap_set.set.cap_state_set = 0;
-            capstable_cnt = 0;
         }   
         else if (SuperCap::Instance()->supercap_fdb.fdb.cap_state_fdb == 0 && SuperCap::Instance()->supercap_fdb.fdb.cap_voltage_x5 !=0)
             SuperCap::Instance()->supercap_set.set.cap_state_set = 2;
