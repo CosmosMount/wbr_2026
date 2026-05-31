@@ -546,7 +546,7 @@ DMMotorHandler *dmmotorhandler = DMMotorHandler::Instance();
                 }
             }
             
-            if (going_stair && airprotect_cnt >= 200)
+            if (going_stair && airprotect_cnt >= 100)
             {
                 target_len = chassis::Lmax;
                 if ((lpendulum.alpha-lpendulum.alpha_eq>0.2f) && (rpendulum.alpha-rpendulum.alpha_eq>0.2f))
