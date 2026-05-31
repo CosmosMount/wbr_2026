@@ -546,7 +546,7 @@ DMMotorHandler *dmmotorhandler = DMMotorHandler::Instance();
                 }
             }
             
-            if (going_stair && airprotect_cnt >= 100)
+            if (going_stair && airprotect_cnt >= 75)
             {
                 target_len = chassis::Lmax;
                 if ((lpendulum.alpha-lpendulum.alpha_eq>0.2f) && (rpendulum.alpha-rpendulum.alpha_eq>0.2f))
@@ -714,8 +714,9 @@ DMMotorHandler *dmmotorhandler = DMMotorHandler::Instance();
             roll_pd.fdb = ins.roll*DegreeToRad;
             roll_pd.UpdateResult(ins.gyro_r);
 
-            Fl[0] = lpendulum.LenControl(cmd.len+roll_pd.result)+Gff-lpendulum.Fs;
-            Fr[0] = rpendulum.LenControl(cmd.len-roll_pd.result)+Gff-rpendulum.Fs;
+            cmd_len = len_slope.UpdateVal(cmd.len);
+            Fl[0] = lpendulum.LenControl(cmd_len+roll_pd.result)+Gff-lpendulum.Fs;
+            Fr[0] = rpendulum.LenControl(cmd_len-roll_pd.result)+Gff-rpendulum.Fs;
 
             lpendulum.TorqueControl(Fl, Twl);
             rpendulum.TorqueControl(Fr, Twr);
