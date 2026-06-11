@@ -708,8 +708,11 @@ DMMotorHandler *dmmotorhandler = DMMotorHandler::Instance();
             roll_pd.fdb = ins.roll*DegreeToRad;
             roll_pd.UpdateResult(ins.gyro_r);
 
-            Fl[0] = lpendulum.LenControl(Lmin+roll_pd.result)+Gff-lpendulum.Fs;
-            Fr[0] = rpendulum.LenControl(Lmin-roll_pd.result)+Gff-rpendulum.Fs;
+            len_slope.SetPath(spin_len_amp * spin_len_omega * 0.001f * 1.2f);
+            cmd_len = len_slope.UpdateVal(cmd.len);
+
+            Fl[0] = lpendulum.LenControl(cmd_len+roll_pd.result)+Gff-lpendulum.Fs;
+            Fr[0] = rpendulum.LenControl(cmd_len-roll_pd.result)+Gff-rpendulum.Fs;
 
             lpendulum.TorqueControl(Fl, Twl);
             rpendulum.TorqueControl(Fr, Twr);

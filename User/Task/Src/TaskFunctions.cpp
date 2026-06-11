@@ -112,6 +112,10 @@ SuperCap* debug_supercap = SuperCap::Instance();
     bool jumping = false;
     uint32_t jumping_cnt = 0;
 
+    /* Spin leg length sinusoidal modulation */
+    float spin_len_phase = 0.0f;
+    bool prev_spin = false;
+
     /* Super Cap */
     uint32_t capstable_cnt = 0;
 
@@ -186,12 +190,10 @@ SuperCap* debug_supercap = SuperCap::Instance();
         else if (buffer_coeff < 0.01f)
             buffer_coeff = 0.01f;
         
-        power_limit = power_limit - 7.0f + buffer_coeff * 6.0f;
+        power_limit = power_limit - 7.0f + buffer_coeff * 5.5f;
 
-        capstable_cnt ++;
-        if ((!referee_data.robot_status.power_management_chassis_output) && capstable_cnt >= 500)
+        if (!referee_data.robot_status.power_management_chassis_output)
         {
-            capstable_cnt = 0;
             SuperCap::Instance()->supercap_set.set.cap_state_set = 0;
         }   
         else if (SuperCap::Instance()->supercap_fdb.fdb.cap_state_fdb == 0 && SuperCap::Instance()->supercap_fdb.fdb.cap_voltage_x5 !=0)
@@ -305,21 +307,28 @@ SuperCap* debug_supercap = SuperCap::Instance();
             {
                 lock_offset = true;
                 cmd.spin = true;
-                if (pendulum_data.len > 0.17f)
-                {
-                    cmd.dyaw = -relative_angle*4.0f;
-                    cmd.v = 0.0f;
-                }
-                else
-                {
-                    cmd.dyaw = yaw_updater.UpdateVal(10.0f);
-                    cmd.v = - vx_updater.UpdateVal(cmd_msg->vx*0.1f)*arm_sin_f32(relative_angle)
-                            - vy_updater.UpdateVal(cmd_msg->vy*0.1f)*arm_cos_f32(relative_angle);
-                }
+                if (!prev_spin)
+                    spin_len_phase = 0.0f;
+                spin_len_phase += spin_len_omega * 0.001f;
+                cmd.len = Lmid + spin_len_amp * arm_sin_f32(spin_len_phase);
+                cmd.len = FloatConstrain(cmd.len, Lmin, Lmax);
+                // if (pendulum_data.len > 0.17f)
+                // {
+                //     cmd.dyaw = yaw_updater.UpdateVal(10.0f*0.17f/pendulum_data.len);
+                //     cmd.v = 0.0f;
+                // }
+                // else
+                // {
+                cmd.dyaw = yaw_updater.UpdateVal(10.0f);
+                cmd.v = 0.0f; 
+                    // - vx_updater.UpdateVal(cmd_msg->vx*0.1f)*arm_sin_f32(relative_angle)
+                    //         - vy_updater.UpdateVal(cmd_msg->vy*0.1f)*arm_cos_f32(relative_angle);
+                // }
                 cmd.roll = 0.0f;
             }
             else 
             {
+                spin_len_phase = 0.0f;
                 if (cmd_msg->ifstair)
                 {
                     cmd.gostair = true;
@@ -406,6 +415,7 @@ SuperCap* debug_supercap = SuperCap::Instance();
                 }
                 cmd.roll = 0.0f;
             }
+            prev_spin = cmd_msg->ifspin;
         }
 
         if (front_offset == yaw_offset2)

@@ -56,8 +56,8 @@ constexpr float L1 = 0.220f;
 constexpr float L2 = 0.260f;
 constexpr float Lnormal = 0.16f;
 constexpr float Lmin = 0.16f;
-constexpr float Lmid = 0.22f;
-constexpr float Lmax = 0.36f;
+constexpr float Lmid = 0.25f;
+constexpr float Lmax = 0.35f;
 constexpr float Lfly = 0.23f;
 constexpr float Lqr_len_resolution = 0.01f;
 constexpr float Lswitch = 0.24f;
@@ -75,6 +75,9 @@ constexpr float Fspring = 250.0f;
 constexpr float Dspring1 = 0.03f;
 constexpr float Dspring2 = 0.05f;
 constexpr float Ang_spring = 0.2164f;
+
+constexpr float spin_len_amp = 0.08f;
+constexpr float spin_len_omega = 2.94395f; // 2*pi/3 rad/s, 周期约 3s
 
 constexpr float Gff = 67.865f;
 
