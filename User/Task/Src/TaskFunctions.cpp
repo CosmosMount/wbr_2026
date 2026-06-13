@@ -354,7 +354,7 @@ SuperCap* debug_supercap = SuperCap::Instance();
                 if (jumping)
                 {
                     jumping_cnt ++;
-                    if (tof_distance > 5.0f && tof_distance <= 50.0f && tof_valid)
+                    if (tof_distance > 40.0f && tof_distance <= 80.0f && tof_valid)
                     {
                         cmd.ifjump = true;
                         jumping = false;
